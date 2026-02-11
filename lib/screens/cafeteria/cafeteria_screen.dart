@@ -81,10 +81,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     return names[d.weekday - 1];
   }
 
-  String _weekdayKo(DateTime d) {
-    const names = ['월', '화', '수', '목', '금', '토', '일'];
-    return names[d.weekday - 1];
-  }
+
 
   bool _isToday(DateTime d) {
     final now = DateTime.now();
