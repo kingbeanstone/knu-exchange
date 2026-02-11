@@ -3,13 +3,15 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'screens/main_screen.dart';
 import 'package:provider/provider.dart';
 import 'providers/favorite_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'providers/auth_provider.dart';
 
 
 
 void main() async {
   // 1. 위젯 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp();
   // 2. 깃허브 가이드 방식의 초기화
   await FlutterNaverMap().init(
     clientId: '8px8q0aopz', // 사용자님의 Client ID
@@ -34,13 +36,16 @@ void main() async {
     },
   );
 
+
+
   runApp(
     MultiProvider(
       providers: [
-        // FavoriteProvider 클래스를 생성하고, 앱 전체 위젯트리에 공급합니다.
         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
+        // 3. AuthProvider 등록
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: const KnuExApp(), // 기존 앱의 시작점
+      child: const KnuExApp(),
     ),
   );
 }
