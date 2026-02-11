@@ -21,6 +21,13 @@ lib/
 │   ├── facility.dart       # 건물 정보 (지도용)
 
 │   └── cafeteria_menu.dart # 식당 메뉴 정보 (식당탭용)
+│   └── post.dart
+├── providers/
+
+│   ├── favorite_provider.dart       # 건물 정보 (지도용)
+
+
+
 
 ├── services/               # 데이터 가져오는 일꾼
 
