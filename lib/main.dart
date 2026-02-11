@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'screens/main_screen.dart';
+import 'package:provider/provider.dart';
+import 'providers/favorite_provider.dart';
+
+
 
 void main() async {
   // 1. 위젯 바인딩 초기화
@@ -30,7 +34,15 @@ void main() async {
     },
   );
 
-  runApp(const KnuExApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // FavoriteProvider 클래스를 생성하고, 앱 전체 위젯트리에 공급합니다.
+        ChangeNotifierProvider(create: (_) => FavoriteProvider()),
+      ],
+      child: const KnuExApp(), // 기존 앱의 시작점
+    ),
+  );
 }
 
 class KnuExApp extends StatelessWidget {

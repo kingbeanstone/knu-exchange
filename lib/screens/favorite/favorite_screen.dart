@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../models/facility.dart';
 import '../../widgets/facility_card.dart';
+import 'package:provider/provider.dart';
+import '../../providers/favorite_provider.dart';
+import '../../services/map_service.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -13,29 +16,6 @@ class FavoriteScreen extends StatefulWidget {
 class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // 샘플 데이터
-  final List<Facility> _favoriteFacilities = [
-    Facility(
-      id: 'global_plaza',
-      korName: '글로벌플라자 (국제교류처)',
-      engName: 'Global Plaza (Office of International Affairs)',
-      latitude: 35.8899,
-      longitude: 128.6105,
-      korDesc: '교환학생 관련 서류 제출 및 상담이 진행되는 곳입니다.',
-      engDesc: 'Office for international exchange programs and documents.',
-      category: 'Admin',
-    ),
-    Facility(
-      id: 'gs25_dorm',
-      korName: 'GS25 첨성관점',
-      engName: 'GS25 Cheomseong-gwan',
-      latitude: 35.8865,
-      longitude: 128.6146,
-      korDesc: '첨성관 기숙사 1층에 있는 편의점입니다.',
-      engDesc: 'Convenience store located in Cheomseong-gwan dorm.',
-      category: 'Store',
-    ),
-  ];
 
   @override
   void initState() {
@@ -73,24 +53,36 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
       body: TabBarView(
         controller: _tabController,
         children: [
-          // 1. 즐겨찾기한 시설/장소 탭
-          _favoriteFacilities.isEmpty
-              ? _buildEmptyState('No favorite places yet.\nAdd places from the map!')
-              : ListView.builder(
-            padding: const EdgeInsets.only(top: 12, bottom: 20),
-            itemCount: _favoriteFacilities.length,
-            itemBuilder: (context, index) {
-              return FacilityCard(
-                facility: _favoriteFacilities[index],
-                onTap: () {
-                  // 상세 정보 페이지로 이동하거나 지도로 이동하는 로직
+          Consumer<FavoriteProvider>(
+            builder: (context, favoriteProvider, child) {
+              final favoriteIds = favoriteProvider.favoriteIds;
+
+              final allFacilities =
+                  MapService().getFacilitiesByCategory('All');
+
+              final favoriteFacilities = allFacilities
+                  .where((facility) => favoriteIds.contains(facility.id))
+                  .toList();
+
+              if (favoriteFacilities.isEmpty) {
+                return _buildEmptyState(
+                    'No favorite places yet.\nAdd places from the map!');
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 12, bottom: 20),
+                itemCount: favoriteFacilities.length,
+                itemBuilder: (context, index) {
+                  return FacilityCard(
+                    facility: favoriteFacilities[index],
+                    onTap: () {},
+                  );
                 },
               );
             },
           ),
-
-          // 2. 즐겨찾기한 커뮤니티 게시글 탭
-          _buildEmptyState('No favorite posts yet.\nSave useful tips from the community!'),
+          _buildEmptyState(
+              'No favorite posts yet.\nSave useful tips from the community!'),
         ],
       ),
     );

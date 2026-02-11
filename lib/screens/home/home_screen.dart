@@ -3,6 +3,8 @@ import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../../utils/app_colors.dart';
 import '../../models/facility.dart';
 import '../../services/map_service.dart';
+import 'package:provider/provider.dart';
+import '../../providers/favorite_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,6 +143,9 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
+        return Consumer<FavoriteProvider>(
+          builder: (context, favoriteProvider, child) {
+            final bool isFav = favoriteProvider.isFavorite(facility.id);
         return Container(
           padding: const EdgeInsets.all(24),
           height: 250,
@@ -164,6 +169,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      isFav ? Icons.star : Icons.star_border,
+                      color: isFav ? Colors.red : Colors.grey,
+                      size: 28,
+                    ),
+                    onPressed: () {
+                      favoriteProvider.toggleFavorite(facility.id);
+                    },
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -212,5 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
-  }
-}
+  });
+
+}}
