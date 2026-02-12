@@ -7,17 +7,21 @@ class AuthService {
   Stream<User?> get user => _auth.authStateChanges();
 
   // 이메일/비밀번호 회원가입
-  Future<UserCredential?> signUp(String email, String password) async {
-    return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signUp(String email, String password) {
+    return _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   // 이메일/비밀번호 로그인
-  Future<UserCredential?> signIn(String email, String password) async {
-    return await _auth.signInWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signIn(String email, String password) {
+    return _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   // 로그아웃
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
+  Future<void> signOut() => _auth.signOut();
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,7 +18,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoginMode = true; // true: 로그인, false: 회원가입
   bool _isLoading = false;
 
-  // KNU Red 컬러 선언
   final Color knuRed = const Color(0xFFDD1829);
 
   @override
@@ -27,34 +27,51 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // 로그인/회원가입 처리 함수
-  void _submit() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
       if (_isLoginMode) {
-        // 로그인 로직
-        await authProvider.login(_emailController.text.trim(), _passwordController.text.trim());
+        await authProvider.login(email, password);
+        if (mounted) Navigator.pop(context);
       } else {
-        // 회원가입 로직 (필요 시 AuthService에 구현한 signUp 호출 가능)
-        // 여기서는 간단히 로직 흐름만 구성합니다.
-        // await authProvider.signUp(...);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful! Please login.')),
-        );
+        await authProvider.signUp(email, password);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('인증 메일을 보냈어! 메일 인증 후 로그인해줘.')),
+          );
+        }
         setState(() => _isLoginMode = true);
       }
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'email-already-in-use' => '이미 사용 중인 이메일이야.',
+        'invalid-email' => '이메일 형식이 올바르지 않아.',
+        'weak-password' => '비밀번호가 너무 약해. (6자 이상)',
+        'user-not-found' => '해당 이메일의 사용자가 없어.',
+        'wrong-password' => '비밀번호가 틀렸어.',
+        'email-not-verified' => '이메일 인증을 먼저 완료해줘.',
+        'network-request-failed' => '네트워크 연결을 확인해줘.',
+        'user-null' => '인증 처리 중 문제가 생겼어.',
+        _ => '인증 오류: ${e.message ?? e.code}',
+      };
 
-      if (mounted && _isLoginMode) {
-        Navigator.pop(context); // 성공 시 이전 화면(Settings)으로 돌아감
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -76,16 +93,18 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 앱 로고 또는 상징 아이콘
                 Icon(Icons.school, size: 80, color: knuRed),
                 const SizedBox(height: 10),
                 Text(
                   'KNU Exchange',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: knuRed),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: knuRed,
+                  ),
                 ),
                 const SizedBox(height: 30),
 
-                // 이메일 입력창
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -94,11 +113,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (val) => val!.contains('@') ? null : 'Enter a valid email',
+                  validator: (val) {
+                    final v = (val ?? '').trim();
+                    if (v.isEmpty) return 'Enter email';
+                    if (!v.contains('@')) return 'Enter a valid email';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
-                // 비밀번호 입력창
                 TextFormField(
                   controller: _passwordController,
                   decoration: const InputDecoration(
@@ -107,11 +130,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.lock),
                   ),
                   obscureText: true,
-                  validator: (val) => val!.length < 6 ? 'Password too short' : null,
+                  validator: (val) {
+                    final v = (val ?? '').trim();
+                    if (v.isEmpty) return 'Enter password';
+                    if (v.length < 6) return 'Password too short';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24),
 
-                // 로그인/회원가입 버튼
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -127,9 +154,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                // 모드 전환 버튼
                 TextButton(
-                  onPressed: () => setState(() => _isLoginMode = !_isLoginMode),
+                  onPressed: _isLoading
+                      ? null
+                      : () => setState(() => _isLoginMode = !_isLoginMode),
                   child: Text(
                     _isLoginMode
                         ? "Don't have an account? Sign Up"
