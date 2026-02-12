@@ -20,11 +20,11 @@ class _MainScreenState extends State<MainScreen> {
 
   // 탭별 화면 리스트
   final List<Widget> _screens = [
-    const HomeScreen(),      // 0: 홈 (지도)
+    const HomeScreen(), // 0: 홈 (지도)
     const CafeteriaScreen(), // 1: 식당
     const CommunityScreen(), // 2: 커뮤니티
-    const FavoriteScreen(),  // 3: 즐겨찾기
-    const SettingsScreen(),  // 4: 설정
+    const FavoriteScreen(), // 3: 즐겨찾기
+    const SettingsScreen(), // 4: 설정
   ];
 
   void _onItemTapped(int index) {
@@ -45,7 +45,8 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.map), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: '식당'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant_menu), label: '식당'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
           BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
