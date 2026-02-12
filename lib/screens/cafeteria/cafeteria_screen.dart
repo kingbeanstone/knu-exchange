@@ -10,9 +10,9 @@ class CafeteriaScreen extends StatefulWidget {
 
 class _CafeteriaScreenState extends State<CafeteriaScreen> {
   static const Map<String, String> _mealLabel = {
-    'breakfast': 'Breakfast (아침)',
-    'lunch': 'Lunch (점심)',
-    'dinner': 'Dinner (저녁)',
+    'breakfast': 'Breakfast',
+    'lunch': 'Lunch',
+    'dinner': 'Dinner',
   };
 
   static const Map<String, int> _mealOrder = {
@@ -20,9 +20,16 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     'lunch': 1,
     'dinner': 2,
   };
+  static const Map<String, String> _studentFacilityDisplay = {
+    'welfare_bldg': 'Welfare Bldg',
+    'information_center': 'Information Center',
+    'engineering_bldg': 'Engineering Bldg.',
+    'global_plaza': 'Global Plaza Cafeteria',
+  };
 
   // 날짜 선택 (기본: 오늘)
   late DateTime _selectedDate;
+  String _selectedStudentFacility = 'welfare_bldg';
 
   @override
   void initState() {
@@ -132,14 +139,16 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     );
   }
 
-  List<Widget> _buildDormitoryMenu(List<Map<String, String>> menuList) {
+  List<Widget> _buildMenuForFacility(
+    List<Map<String, String>> menuList,
+    String facilityId,
+  ) {
     final iso = _toIsoDate(_selectedDate);
 
     final dayMenu = menuList
-        .where((e) => e['facility'] == 'dormitory' && e['date'] == iso)
+        .where((e) => e['facility'] == facilityId && e['date'] == iso)
         .toList();
 
-    // meal 순서대로 정렬
     dayMenu.sort((a, b) {
       final aKey = (a['meal'] ?? '').toLowerCase();
       final bKey = (b['meal'] ?? '').toLowerCase();
@@ -161,7 +170,6 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
       ];
     }
 
-    // meal별로 묶기
     final Map<String, List<Map<String, String>>> grouped = {};
     for (final item in dayMenu) {
       final meal = (item['meal'] ?? '').toLowerCase();
@@ -206,6 +214,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3, // 탭 개수 (학생식당, 기숙사, 교직원)
+      initialIndex: 1, // Default: Dormitory
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Cafeteria Menu'),
@@ -224,7 +233,57 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
         ),
         body: TabBarView(
           children: [
-            const Center(child: Text('Student Cafeteria Menu Here')),
+            FutureBuilder<List<Map<String, String>>>(
+              future: loadMenu(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Failed to load menu: ${snapshot.error}'),
+                  );
+                }
+
+                final menuList = snapshot.data ?? [];
+
+                return Column(
+                  children: [
+                    _buildDateHeader(),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedStudentFacility,
+                        items: _studentFacilityDisplay.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _selectedStudentFacility = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView(
+                        children: _buildMenuForFacility(
+                          menuList,
+                          _selectedStudentFacility,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
             // Dormitory 탭: 날짜 선택 + 선택한 날짜의 아침/점심/저녁 표시
             FutureBuilder<List<Map<String, String>>>(
               future: loadMenu(),
@@ -246,7 +305,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                     const Divider(height: 1),
                     Expanded(
                       child: ListView(
-                        children: _buildDormitoryMenu(menuList),
+                        children: _buildMenuForFacility(menuList, 'cheomsung_dorm'),
                       ),
                     ),
                   ],
