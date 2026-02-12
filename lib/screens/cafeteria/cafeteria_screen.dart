@@ -47,7 +47,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
 
     final fid = widget.initialFacilityId;
     if (fid != null) {
-      if (fid == 'cheomsung_dorm_cafeteria') {
+      if (fid == 'cheomseong_dorm_cafeteria') {
         _initialTabIndex = 1; // Dormitory tab
       } else {
         _initialTabIndex = 0; // Student tab
