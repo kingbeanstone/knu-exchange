@@ -30,12 +30,14 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
   // 날짜 선택 (기본: 오늘)
   late DateTime _selectedDate;
   String _selectedStudentFacility = 'welfare_bldg';
+  late Future<List<Map<String, String>>> _menuFuture;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
+    _menuFuture = loadMenu();
   }
 
   // CSV 스키마: facility,date,meal,menu
@@ -234,7 +236,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
         body: TabBarView(
           children: [
             FutureBuilder<List<Map<String, String>>>(
-              future: loadMenu(),
+              future: _menuFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
@@ -251,24 +253,44 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                   children: [
                     _buildDateHeader(),
                     Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: _selectedStudentFacility,
-                        items: _studentFacilityDisplay.entries
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e.key,
-                                child: Text(e.value),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _selectedStudentFacility = value;
-                          });
-                        },
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedStudentFacility,
+                            icon: const Icon(Icons.expand_more),
+                            items: _studentFacilityDisplay.entries
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e.key,
+                                    child: Text(
+                                      e.value,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setState(() {
+                                _selectedStudentFacility = value;
+                              });
+                            },
+                          ),
+                        ),
                       ),
                     ),
                     const Divider(height: 1),
@@ -286,7 +308,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
             ),
             // Dormitory 탭: 날짜 선택 + 선택한 날짜의 아침/점심/저녁 표시
             FutureBuilder<List<Map<String, String>>>(
-              future: loadMenu(),
+              future: _menuFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
