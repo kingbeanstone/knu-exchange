@@ -1,52 +1,42 @@
-﻿facility,date (YYYY-MM-DD),meal (breakfast/lunch/dinner),menu (English)
-cheomsung_dorm,2026-02-09,breakfast,"Toast, Scrambled Eggs, Milk"
-cheomsung_dorm,2026-02-09,lunch,"Bibimbap, Kimchi Soup"
-cheomsung_dorm,2026-02-09,dinner,"Spaghetti, Garlic Bread, Salad"
-welfare_bldg,2026-02-09,lunch,"Bulgogi, Rice, Seasonal Salad, Fruit Cup"
-welfare_bldg,2026-02-09,dinner,"Pork Cutlet, Fries, Salad, Soft Drink"
-information_center,2026-02-09,lunch,"Chicken Katsu, Rice, Coleslaw, Iced Tea"
-engineering_bldg,2026-02-09,lunch,"Jajangmyeon, Danmuji, Soup, Soup of the Day"
-engineering_bldg,2026-02-09,dinner,"Beef Stew, Bread, Salad, Dessert"
-global_plaza,2026-02-09,lunch,"Cold Noodles, Mandu, Broth, Side Dish"
-cheomsung_dorm,2026-02-10,breakfast,"Cereal, Banana, Yogurt"
-cheomsung_dorm,2026-02-10,lunch,"Bulgogi, Rice, Seasonal Salad"
-cheomsung_dorm,2026-02-10,dinner,"Kimchi Fried Rice, Dumplings"
-welfare_bldg,2026-02-10,lunch,"Curry Rice, Pickles, Miso Soup, Fruit Cup"
-welfare_bldg,2026-02-10,dinner,"Chicken Teriyaki, Rice, Soup, Soft Drink"
-information_center,2026-02-10,lunch,"Jajangmyeon, Danmuji, Soup, Iced Tea"
-engineering_bldg,2026-02-10,lunch,"Spicy Pork, Rice, Kimchi, Soup of the Day"
-engineering_bldg,2026-02-10,dinner,"Tteokbokki, Fish Cake Soup, Dessert"
-global_plaza,2026-02-10,lunch,"Bibimbap, Kimchi Soup, Side Dish"
-cheomsung_dorm,2026-02-11,breakfast,"Pancakes, Syrup, Milk"
-cheomsung_dorm,2026-02-11,lunch,"Curry Rice, Pickles, Miso Soup"
-cheomsung_dorm,2026-02-11,dinner,"Pork Cutlet, Fries, Salad"
-welfare_bldg,2026-02-11,lunch,"Chicken Katsu, Rice, Coleslaw, Fruit Cup"
-welfare_bldg,2026-02-11,dinner,"Seafood Udon, Tempura, Soft Drink"
-information_center,2026-02-11,lunch,"Spicy Pork, Rice, Kimchi, Iced Tea"
-engineering_bldg,2026-02-11,lunch,"Cold Noodles, Mandu, Broth, Soup of the Day"
-engineering_bldg,2026-02-11,dinner,"Spaghetti, Garlic Bread, Salad, Dessert"
-global_plaza,2026-02-11,lunch,"Bulgogi, Rice, Seasonal Salad, Side Dish"
-cheomsung_dorm,2026-02-12,breakfast,"Bagel, Cream Cheese, Orange Juice"
-cheomsung_dorm,2026-02-12,lunch,"Chicken Katsu, Rice, Coleslaw"
-cheomsung_dorm,2026-02-12,dinner,"Chicken Teriyaki, Rice, Soup"
-welfare_bldg,2026-02-12,lunch,"Jajangmyeon, Danmuji, Soup, Fruit Cup"
-welfare_bldg,2026-02-12,dinner,"Beef Stew, Bread, Salad, Soft Drink"
-information_center,2026-02-12,lunch,"Cold Noodles, Mandu, Broth, Iced Tea"
-engineering_bldg,2026-02-12,lunch,"Bibimbap, Kimchi Soup, Soup of the Day"
-engineering_bldg,2026-02-12,dinner,"Kimchi Fried Rice, Dumplings, Dessert"
-global_plaza,2026-02-12,lunch,"Curry Rice, Pickles, Miso Soup, Side Dish"
-cheomsung_dorm,2026-02-13,breakfast,"Rice Porridge, Side Dishes, Tea"
-cheomsung_dorm,2026-02-13,lunch,"Jajangmyeon, Danmuji, Soup"
-cheomsung_dorm,2026-02-13,dinner,"Seafood Udon, Tempura"
-welfare_bldg,2026-02-13,lunch,"Spicy Pork, Rice, Kimchi, Fruit Cup"
-welfare_bldg,2026-02-13,dinner,"Tteokbokki, Fish Cake Soup, Soft Drink"
-information_center,2026-02-13,lunch,"Bibimbap, Kimchi Soup, Iced Tea"
-engineering_bldg,2026-02-13,lunch,"Bulgogi, Rice, Seasonal Salad, Soup of the Day"
-engineering_bldg,2026-02-13,dinner,"Pork Cutlet, Fries, Salad, Dessert"
-global_plaza,2026-02-13,lunch,"Chicken Katsu, Rice, Coleslaw, Side Dish"
-cheomsung_dorm,2026-02-14,breakfast,"French Toast, Sausage, Milk"
-cheomsung_dorm,2026-02-14,lunch,"Spicy Pork, Rice, Kimchi"
-cheomsung_dorm,2026-02-14,dinner,"Beef Stew, Bread, Salad"
-cheomsung_dorm,2026-02-15,breakfast,"Omelet, Hash Browns, Milk"
-cheomsung_dorm,2026-02-15,lunch,"Cold Noodles, Mandu, Broth"
-cheomsung_dorm,2026-02-15,dinner,"Tteokbokki, Fish Cake Soup"
+﻿facility,date,meal,menu
+cheomseong_dorm_cafeteria,2026-02-09,breakfast,Dorm Breakfast Sample 1
+cheomseong_dorm_cafeteria,2026-02-09,lunch,Dorm Lunch Sample 1
+cheomseong_dorm_cafeteria,2026-02-09,dinner,Dorm Dinner Sample 1
+cheomseong_dorm_cafeteria,2026-02-10,breakfast,Dorm Breakfast Sample 2
+cheomseong_dorm_cafeteria,2026-02-10,lunch,Dorm Lunch Sample 2
+cheomseong_dorm_cafeteria,2026-02-10,dinner,Dorm Dinner Sample 2
+cheomseong_dorm_cafeteria,2026-02-11,breakfast,Dorm Breakfast Sample 3
+cheomseong_dorm_cafeteria,2026-02-11,lunch,Dorm Lunch Sample 3
+cheomseong_dorm_cafeteria,2026-02-11,dinner,Dorm Dinner Sample 3
+cheomseong_dorm_cafeteria,2026-02-12,breakfast,Dorm Breakfast Sample 4
+cheomseong_dorm_cafeteria,2026-02-12,lunch,Dorm Lunch Sample 4
+cheomseong_dorm_cafeteria,2026-02-12,dinner,Dorm Dinner Sample 4
+cheomseong_dorm_cafeteria,2026-02-13,breakfast,Dorm Breakfast Sample 5
+cheomseong_dorm_cafeteria,2026-02-13,lunch,Dorm Lunch Sample 5
+cheomseong_dorm_cafeteria,2026-02-13,dinner,Dorm Dinner Sample 5
+cheomseong_dorm_cafeteria,2026-02-14,breakfast,Dorm Breakfast Sample 6
+cheomseong_dorm_cafeteria,2026-02-14,lunch,Dorm Lunch Sample 6
+cheomseong_dorm_cafeteria,2026-02-14,dinner,Dorm Dinner Sample 6
+cheomseong_dorm_cafeteria,2026-02-15,breakfast,Dorm Breakfast Sample 7
+cheomseong_dorm_cafeteria,2026-02-15,lunch,Dorm Lunch Sample 7
+cheomseong_dorm_cafeteria,2026-02-15,dinner,Dorm Dinner Sample 7
+welfare_bldg_cafeteria,2026-02-09,lunch,Welfare Lunch Sample 1
+information_center_cafeteria,2026-02-09,lunch,Info Center Lunch Sample 1
+engineering_bldg_cafeteria,2026-02-09,lunch,Engineering Lunch Sample 1
+global_plaza_cafeteria,2026-02-09,lunch,Global Plaza Lunch Sample 1
+welfare_bldg_cafeteria,2026-02-10,lunch,Welfare Lunch Sample 2
+information_center_cafeteria,2026-02-10,lunch,Info Center Lunch Sample 2
+engineering_bldg_cafeteria,2026-02-10,lunch,Engineering Lunch Sample 2
+global_plaza_cafeteria,2026-02-10,lunch,Global Plaza Lunch Sample 2
+welfare_bldg_cafeteria,2026-02-11,lunch,Welfare Lunch Sample 3
+information_center_cafeteria,2026-02-11,lunch,Info Center Lunch Sample 3
+engineering_bldg_cafeteria,2026-02-11,lunch,Engineering Lunch Sample 3
+global_plaza_cafeteria,2026-02-11,lunch,Global Plaza Lunch Sample 3
+welfare_bldg_cafeteria,2026-02-12,lunch,Welfare Lunch Sample 4
+information_center_cafeteria,2026-02-12,lunch,Info Center Lunch Sample 4
+engineering_bldg_cafeteria,2026-02-12,lunch,Engineering Lunch Sample 4
+global_plaza_cafeteria,2026-02-12,lunch,Global Plaza Lunch Sample 4
+welfare_bldg_cafeteria,2026-02-13,lunch,Welfare Lunch Sample 5
+information_center_cafeteria,2026-02-13,lunch,Info Center Lunch Sample 5
+engineering_bldg_cafeteria,2026-02-13,lunch,Engineering Lunch Sample 5
+global_plaza_cafeteria,2026-02-13,lunch,Global Plaza Lunch Sample 5

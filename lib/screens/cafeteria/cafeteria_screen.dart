@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CafeteriaScreen extends StatefulWidget {
-  const CafeteriaScreen({super.key});
+  final String? initialFacilityId;
+
+  const CafeteriaScreen({
+    super.key,
+    this.initialFacilityId,
+  });
 
   @override
   State<CafeteriaScreen> createState() => _CafeteriaScreenState();
@@ -21,21 +26,36 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     'dinner': 2,
   };
   static const Map<String, String> _studentFacilityDisplay = {
-    'welfare_bldg': 'Welfare Bldg',
-    'information_center': 'Information Center',
-    'engineering_bldg': 'Engineering Bldg.',
-    'global_plaza': 'Global Plaza Cafeteria',
+    'welfare_bldg_cafeteria': 'Welfare Bldg',
+    'information_center_cafeteria': 'Information Center',
+    'engineering_bldg_cafeteria': 'Engineering Bldg.',
+    'global_plaza_cafeteria': 'Global Plaza Cafeteria',
   };
 
   // 날짜 선택 (기본: 오늘)
   late DateTime _selectedDate;
-  String _selectedStudentFacility = 'welfare_bldg';
+  String _selectedStudentFacility = 'welfare_bldg_cafeteria';
+  late Future<List<Map<String, String>>> _menuFuture;
+  int _initialTabIndex = 1; // default: Dormitory
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
+    _menuFuture = loadMenu();
+
+    final fid = widget.initialFacilityId;
+    if (fid != null) {
+      if (fid == 'cheomseong_dorm_cafeteria') {
+        _initialTabIndex = 1; // Dormitory tab
+      } else {
+        _initialTabIndex = 0; // Student tab
+        if (_studentFacilityDisplay.containsKey(fid)) {
+          _selectedStudentFacility = fid;
+        }
+      }
+    }
   }
 
   // CSV 스키마: facility,date,meal,menu
@@ -214,7 +234,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3, // 탭 개수 (학생식당, 기숙사, 교직원)
-      initialIndex: 1, // Default: Dormitory
+      initialIndex: _initialTabIndex,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Cafeteria Menu'),
@@ -234,7 +254,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
         body: TabBarView(
           children: [
             FutureBuilder<List<Map<String, String>>>(
-              future: loadMenu(),
+              future: _menuFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
@@ -251,24 +271,52 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                   children: [
                     _buildDateHeader(),
                     Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: _selectedStudentFacility,
-                        items: _studentFacilityDisplay.entries
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e.key,
-                                child: Text(e.value),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _selectedStudentFacility = value;
-                          });
-                        },
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedStudentFacility,
+                            icon: const Icon(Icons.expand_more),
+                            borderRadius: BorderRadius.circular(14),
+                            dropdownColor: Colors.white,
+                            menuMaxHeight: 320,
+                            items: _studentFacilityDisplay.entries
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e.key,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
+                                      child: Text(
+                                        e.value,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setState(() {
+                                _selectedStudentFacility = value;
+                              });
+                            },
+                          ),
+                        ),
                       ),
                     ),
                     const Divider(height: 1),
@@ -286,7 +334,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
             ),
             // Dormitory 탭: 날짜 선택 + 선택한 날짜의 아침/점심/저녁 표시
             FutureBuilder<List<Map<String, String>>>(
-              future: loadMenu(),
+              future: _menuFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
@@ -305,7 +353,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                     const Divider(height: 1),
                     Expanded(
                       child: ListView(
-                        children: _buildMenuForFacility(menuList, 'cheomsung_dorm'),
+                        children: _buildMenuForFacility(menuList, 'cheomseong_dorm_cafeteria'),
                       ),
                     ),
                   ],
