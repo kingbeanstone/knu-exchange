@@ -8,15 +8,14 @@ class LikeProvider with ChangeNotifier {
   Future<void> toggleLike(String postId, String userId) async {
     try {
       await _service.toggleLike(postId, userId);
-      // Firestore Stream이 UI를 갱신하므로 별도의 notifyListeners는 필요 없음
     } catch (e) {
-      debugPrint("좋아요 토글 중 오류 발생: $e");
+      debugPrint("Like toggle error: $e");
       rethrow;
     }
   }
 
-  // 특정 유저의 좋아요 여부 확인 스트림 제공
-  Stream<bool> getIsLikedStream(String postId, String userId) {
-    return _service.isLikedStream(postId, userId);
+  // 좋아요 여부 확인 (단발성)
+  Future<bool> getIsLikedOnce(String postId, String userId) async {
+    return await _service.checkIsLiked(postId, userId);
   }
 }
