@@ -15,6 +15,16 @@ class MapService {
         engDesc: 'Global Plaza building on KNU campus.',
         category: 'Admin',
       ),
+      Facility(
+        id: 'oia_office',
+        korName: '국제교류처(OIA)',
+        engName: 'Office of International Affairs (OIA)',
+        latitude: 35.8899,   // TODO: replace with real coordinates
+        longitude: 128.6105, // TODO: replace with real coordinates
+        korDesc: '교환학생/유학생 관련 서류 제출 및 상담이 진행되는 곳입니다.',
+        engDesc: 'Support for exchange/international students (documents & consultation).',
+        category: 'Admin',
+      ),
       // 카페 (Cafe)
       // 카페 (Cafe)
       Facility(
@@ -100,9 +110,9 @@ class MapService {
         category: 'Restaurant',
       ),
       Facility(
-        id: 'cheomsung_dorm_cafeteria',
+        id: 'cheomseong_dorm_cafeteria',
         korName: '첨성관(기숙사) 식당',
-        engName: 'Cheomsung Dorm Cafeteria',
+        engName: 'Cheomseong Dorm Cafeteria',
         latitude: 35.8862,
         longitude: 128.6142,
         korDesc: '기숙사생들을 위한 식당입니다.',

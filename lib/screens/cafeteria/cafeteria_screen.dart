@@ -287,15 +287,23 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                             isExpanded: true,
                             value: _selectedStudentFacility,
                             icon: const Icon(Icons.expand_more),
+                            borderRadius: BorderRadius.circular(14),
+                            dropdownColor: Colors.white,
+                            menuMaxHeight: 320,
                             items: _studentFacilityDisplay.entries
                                 .map(
                                   (e) => DropdownMenuItem(
                                     value: e.key,
-                                    child: Text(
-                                      e.value,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
+                                      child: Text(
+                                        e.value,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -345,7 +353,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                     const Divider(height: 1),
                     Expanded(
                       child: ListView(
-                        children: _buildMenuForFacility(menuList, 'cheomsung_dorm_cafeteria'),
+                        children: _buildMenuForFacility(menuList, 'cheomseong_dorm_cafeteria'),
                       ),
                     ),
                   ],
