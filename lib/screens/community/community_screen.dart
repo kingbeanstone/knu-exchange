@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
+import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../settings/login_screen.dart';
+import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -10,48 +15,17 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  // 샘플 데이터 리스트
-  final List<Post> _allPosts = [
-    Post(
-      id: '1',
-      title: 'How to get a student ID card?',
-      content: 'I just arrived and I don\'t know where to go for the ID card...',
-      author: 'JohnDoe',
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      category: PostCategory.question,
-      likes: 5,
-      comments: 3,
-    ),
-    Post(
-      id: '2',
-      title: 'Selling my bike (Cheap!)',
-      content: 'Good condition, I\'m leaving Korea next month.',
-      author: 'Emma_W',
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-      category: PostCategory.market,
-      likes: 12,
-      comments: 1,
-    ),
-    Post(
-      id: '3',
-      title: 'Nice cafe near the North Gate',
-      content: 'I found a very quiet place to study near the North Gate...',
-      author: 'K-Student',
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      category: PostCategory.tip,
-      likes: 24,
-      comments: 8,
-    ),
-  ];
-
-  PostCategory? _selectedCategory; // null이면 전체보기
+  PostCategory? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
-    // 필터링된 게시글 리스트
+    final community = Provider.of<CommunityProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
+
+    // 카테고리 필터링 (메모리 내 필터링 - 규칙 준수)
     final filteredPosts = _selectedCategory == null
-        ? _allPosts
-        : _allPosts.where((p) => p.category == _selectedCategory).toList();
+        ? community.posts
+        : community.posts.where((p) => p.category == _selectedCategory).toList();
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -59,31 +33,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
         title: const Text('KNU Community'),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.notifications_none), onPressed: () {}),
-        ],
       ),
       body: Column(
         children: [
-          // 1. 카테고리 선택 탭
           _buildCategoryBar(),
-
-          // 2. 게시글 리스트
           Expanded(
-            child: ListView.builder(
+            child: community.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredPosts.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: filteredPosts.length,
-              itemBuilder: (context, index) {
-                return _buildPostCard(filteredPosts[index]);
-              },
+              itemBuilder: (context, index) => _buildPostCard(filteredPosts[index]),
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 글쓰기 페이지 이동 로직
+          if (auth.isAuthenticated) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+            );
+          } else {
+            _showLoginDialog();
+          }
         },
         backgroundColor: AppColors.knuRed,
         child: const Icon(Icons.edit, color: Colors.white),
@@ -91,7 +67,26 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  // 상단 카테고리 필터 바
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('You need to log in to write a post.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryBar() {
     return Container(
       color: Colors.white,
@@ -117,34 +112,38 @@ class _CommunityScreenState extends State<CommunityScreen> {
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
-        onSelected: (selected) {
-          setState(() {
-            _selectedCategory = category;
-          });
-        },
+        onSelected: (selected) => setState(() => _selectedCategory = category),
         selectedColor: AppColors.knuRed,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black87,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
+        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
         showCheckmark: false,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 
-  // 게시글 카드 UI
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.speaker_notes_off, size: 60, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text('No posts found in this category.', style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPostCard(Post post) {
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Colors.grey.shade200),
       ),
+      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          // 게시글 상세 이동
+          // TODO: 게시글 상세 보기 구현
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -152,7 +151,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 카테고리 태그 및 작성 시간
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -160,33 +158,25 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.knuRed.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      post.categoryLabel,
-                      style: const TextStyle(
-                        color: AppColors.knuRed,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      post.categoryLabel.toUpperCase(),
+                      style: const TextStyle(color: AppColors.knuRed, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Text(
-                    '2h ago', // 실제로는 post.createdAt 계산 로직 필요
+                    '${post.createdAt.month}/${post.createdAt.day} ${post.createdAt.hour}:${post.createdAt.minute.toString().padLeft(2, '0')}',
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-
-              // 제목
               Text(
                 post.title,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 6),
-
-              // 내용 요약
+              const SizedBox(height: 8),
               Text(
                 post.content,
                 maxLines: 2,
@@ -194,8 +184,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 style: TextStyle(color: Colors.grey[700], fontSize: 14),
               ),
               const SizedBox(height: 16),
-
-              // 하단 정보 (작성자, 좋아요, 댓글)
               Row(
                 children: [
                   const Icon(Icons.person_outline, size: 16, color: Colors.grey),

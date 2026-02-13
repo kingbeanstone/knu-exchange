@@ -16,22 +16,32 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-  Future<void> signUp(String email, String password) async {
-    final credential = await _authService.signUp(email, password);
-    final user = credential.user;
-
-    if (user == null) {
-      throw FirebaseAuthException(
-        code: 'user-null',
-        message: '회원가입에 실패했어.',
+  // 회원가입 메서드 확장: 닉네임 인자 추가
+  Future<void> signUp(String email, String password, {required String nickname}) async {
+    try {
+      final credential = await _authService.signUp(
+        email,
+        password,
+        nickname: nickname,
       );
+
+      final user = credential.user;
+
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'user-null',
+          message: '회원가입에 실패했어.',
+        );
+      }
+
+      // 인증메일 발송
+      await user.sendEmailVerification();
+
+      // 인증 전에는 로그인 상태로 두지 않기 위해 로그아웃 처리 (추천 UX)
+      await _authService.signOut();
+    } catch (e) {
+      rethrow;
     }
-
-    // 인증메일 발송
-    await user.sendEmailVerification();
-
-    // 인증 전에는 로그인 상태로 두지 않게(추천 UX)
-    await _authService.signOut();
   }
 
   Future<void> login(String email, String password) async {
@@ -45,11 +55,11 @@ class AuthProvider with ChangeNotifier {
       );
     }
 
-    // 최신 인증상태 반영
+    // 최신 인증상태 반영을 위해 리로드
     await user.reload();
-    final refreshed = FirebaseAuth.instance.currentUser;
+    final refreshedUser = FirebaseAuth.instance.currentUser;
 
-    if (refreshed != null && !refreshed.emailVerified) {
+    if (refreshedUser != null && !refreshedUser.emailVerified) {
       await _authService.signOut();
       throw FirebaseAuthException(
         code: 'email-not-verified',

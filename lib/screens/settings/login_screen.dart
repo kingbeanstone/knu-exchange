@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../../providers/auth_provider.dart';
+import '../../utils/app_colors.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,11 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  bool _isLoginMode = true; // true: 로그인, false: 회원가입
   bool _isLoading = false;
-
-  final Color knuRed = const Color(0xFFDD1829);
 
   @override
   void dispose() {
@@ -34,43 +32,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-
-      if (_isLoginMode) {
-        await authProvider.login(email, password);
-        if (mounted) Navigator.pop(context);
-      } else {
-        await authProvider.signUp(email, password);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('인증 메일을 보냈어! 메일 인증 후 로그인해줘.')),
-          );
-        }
-        setState(() => _isLoginMode = true);
-      }
+      await authProvider.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+      if (mounted) Navigator.pop(context); // 로그인 성공 시 이전 화면으로
     } on FirebaseAuthException catch (e) {
-      final msg = switch (e.code) {
-        'email-already-in-use' => '이미 사용 중인 이메일이야.',
-        'invalid-email' => '이메일 형식이 올바르지 않아.',
-        'weak-password' => '비밀번호가 너무 약해. (6자 이상)',
-        'user-not-found' => '해당 이메일의 사용자가 없어.',
-        'wrong-password' => '비밀번호가 틀렸어.',
-        'email-not-verified' => '이메일 인증을 먼저 완료해줘.',
-        'network-request-failed' => '네트워크 연결을 확인해줘.',
-        'user-null' => '인증 처리 중 문제가 생겼어.',
-        _ => '인증 오류: ${e.message ?? e.code}',
-      };
+      String msg = '로그인에 실패했어.';
+      if (e.code == 'user-not-found') msg = '등록되지 않은 이메일이야.';
+      if (e.code == 'wrong-password') msg = '비밀번호가 틀렸어.';
+      if (e.code == 'email-not-verified') msg = '이메일 인증을 먼저 완료해줘.';
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -81,89 +55,88 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isLoginMode ? 'Login' : 'Sign Up'),
-        backgroundColor: knuRed,
+        title: const Text('Login'),
+        backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(28.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.school, size: 80, color: knuRed),
-                const SizedBox(height: 10),
-                Text(
-                  'KNU Exchange',
+                const Icon(Icons.account_balance, size: 80, color: AppColors.knuRed),
+                const SizedBox(height: 16),
+                const Text(
+                  'KNU EXCHANGE',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: knuRed,
+                    color: AppColors.knuRed,
+                    letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 40),
 
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email (ID)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (val) {
-                    final v = (val ?? '').trim();
-                    if (v.isEmpty) return 'Enter email';
-                    if (!v.contains('@')) return 'Enter a valid email';
-                    return null;
-                  },
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Enter your email' : null,
                 ),
                 const SizedBox(height: 16),
 
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   obscureText: true,
-                  validator: (val) {
-                    final v = (val ?? '').trim();
-                    if (v.isEmpty) return 'Enter password';
-                    if (v.length < 6) return 'Password too short';
-                    return null;
-                  },
+                  validator: (v) => (v?.isEmpty ?? true) ? 'Enter your password' : null,
                 ),
                 const SizedBox(height: 24),
 
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 54,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: knuRed,
+                      backgroundColor: AppColors.knuRed,
                       foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(_isLoginMode ? 'Login' : 'Sign Up'),
+                        : const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
 
-                TextButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => setState(() => _isLoginMode = !_isLoginMode),
-                  child: Text(
-                    _isLoginMode
-                        ? "Don't have an account? Sign Up"
-                        : "Already have an account? Login",
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                        );
+                      },
+                      child: const Text('Sign Up', style: TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ],
             ),
