@@ -32,7 +32,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 키보드 닫기
+    FocusScope.of(context).unfocus();
+
     setState(() => _isLoading = true);
+
+    // Provider 접근 시 listen: false 필수 (비동기 함수 내)
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
@@ -40,7 +45,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final password = _passwordController.text.trim();
       final nickname = _nicknameController.text.trim();
 
-      // AuthProvider의 signUp 메서드에서 nickname 정보를 함께 처리하도록 호출합니다.
       await authProvider.signUp(
         email,
         password,
@@ -48,13 +52,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (mounted) {
-        showDialog(
+        // 로딩 해제 후 다이얼로그 표시
+        setState(() => _isLoading = false);
+
+        await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
             title: const Text('Verify Your Email'),
             content: const Text(
-              '회원가입 신청이 완료되었어!\n입력한 이메일로 발송된 인증 링크를 클릭한 후 로그인해줘.',
+              'A verification email has been sent.\nPlease check your inbox and click the link to verify.',
             ),
             actions: [
               TextButton(
@@ -69,22 +76,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      String msg = '회원가입 중 에러가 발생했어.';
-      if (e.code == 'email-already-in-use') msg = '이미 사용 중인 이메일이야.';
-      if (e.code == 'weak-password') msg = '비밀번호가 너무 약해 (6자 이상).';
-      if (e.code == 'invalid-email') msg = '유효하지 않은 이메일 형식이야.';
-
       if (mounted) {
+        String msg = 'An error occurred during sign up.';
+        if (e.code == 'email-already-in-use') msg = 'This email is already in use.';
+        if (e.code == 'weak-password') msg = 'Password is too weak.';
+        if (e.code == 'invalid-email') msg = 'Invalid email format.';
+
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // 어떤 상황에서도 로딩 상태가 해제되도록 보장
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -108,10 +118,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.knuRed),
               ),
               const SizedBox(height: 8),
-              const Text('Please provide your information to join the community.', style: TextStyle(color: Colors.grey)),
+              const Text('Provide your information to get started.', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 32),
 
-              // --- Email ---
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -121,6 +130,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                enabled: !_isLoading,
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Please enter your email';
                   if (!val.contains('@') || !val.contains('.')) return 'Enter a valid email';
@@ -129,24 +139,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 16),
 
-              // --- Nickname ---
               TextFormField(
                 controller: _nicknameController,
                 decoration: const InputDecoration(
                   labelText: 'Nickname',
-                  hintText: 'Choose a name for community',
+                  hintText: 'Choose your nickname',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person_outline),
                 ),
+                enabled: !_isLoading,
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Please enter a nickname';
-                  if (val.length < 2) return 'Nickname too short';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // --- Password ---
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(
@@ -155,11 +163,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
+                enabled: !_isLoading,
                 validator: (val) => (val?.length ?? 0) < 6 ? 'Minimum 6 characters' : null,
               ),
               const SizedBox(height: 16),
 
-              // --- Confirm Password ---
               TextFormField(
                 controller: _confirmPasswordController,
                 decoration: const InputDecoration(
@@ -168,6 +176,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   prefixIcon: Icon(Icons.lock_reset_outlined),
                 ),
                 obscureText: true,
+                enabled: !_isLoading,
                 validator: (val) {
                   if (val != _passwordController.text) return 'Passwords do not match';
                   return null;
@@ -175,7 +184,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 40),
 
-              // --- Submit Button ---
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -187,7 +195,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
                       : const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
