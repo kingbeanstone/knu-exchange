@@ -16,11 +16,11 @@ class CommunityProvider with ChangeNotifier {
     _init();
   }
 
+  // Firestore 스트림 구독 및 데이터 정렬
   void _init() {
-    // Firestore 스트림 구독
     _subscription = _service.getPostsStream().listen((newList) {
       _posts = newList;
-      // 최신순 정렬 (서버 쿼리 대신 메모리에서 수행 - 규칙 준수)
+      // 최신순 정렬 (서버 부하 감소를 위해 메모리에서 수행)
       _posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       _isLoading = false;
       notifyListeners();
@@ -31,9 +31,10 @@ class CommunityProvider with ChangeNotifier {
     });
   }
 
+  // 새 게시글 작성 요청
   Future<void> createPost(String title, String content, String author, PostCategory category) async {
     final newPost = Post(
-      id: '', // Firestore에서 자동 생성
+      id: '', // Firestore에서 자동 생성됨
       title: title,
       content: content,
       author: author,
