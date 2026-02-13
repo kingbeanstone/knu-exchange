@@ -16,25 +16,36 @@ class CommunityProvider with ChangeNotifier {
     _init();
   }
 
-  // Firestore 스트림 구독 및 데이터 정렬
   void _init() {
     _subscription = _service.getPostsStream().listen((newList) {
       _posts = newList;
-      // 최신순 정렬 (서버 부하 감소를 위해 메모리에서 수행)
       _posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       _isLoading = false;
       notifyListeners();
     }, onError: (error) {
-      print("Community Stream Error: $error");
       _isLoading = false;
       notifyListeners();
     });
   }
 
-  // 새 게시글 작성 요청
+  // [수정] 좋아요 토글 호출
+  Future<void> toggleLike(String postId, String userId) async {
+    try {
+      await _service.toggleLike(postId, userId);
+    } catch (e) {
+      debugPrint("Toggle Like Error: $e");
+      rethrow;
+    }
+  }
+
+  // 좋아요 상태 확인 스트림 제공
+  Stream<bool> isLiked(String postId, String userId) {
+    return _service.isLikedStream(postId, userId);
+  }
+
   Future<void> createPost(String title, String content, String author, PostCategory category) async {
     final newPost = Post(
-      id: '', // Firestore에서 자동 생성됨
+      id: '',
       title: title,
       content: content,
       author: author,
