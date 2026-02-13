@@ -1,42 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/facility.dart';
 import '../utils/app_colors.dart';
+import '../providers/favorite_provider.dart';
+import '../providers/auth_provider.dart';
+import '../screens/settings/login_screen.dart';
 
-class FacilityCard extends StatefulWidget {
+class FacilityCard extends StatelessWidget {
   final Facility facility;
   final VoidCallback? onTap;
 
   const FacilityCard({super.key, required this.facility, this.onTap});
 
-  @override
-  State<FacilityCard> createState() => _FacilityCardState();
-}
-
-class _FacilityCardState extends State<FacilityCard> {
-  // 실제로는 전역 상태나 DB를 확인해야 하지만, 현재는 로컬 상태로 구현합니다.
-  bool isFavorited = true;
-
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
-      case 'admin':
-        return Icons.account_balance_outlined;
-      case 'dormitory':
-        return Icons.hotel_outlined;
-      case 'restaurant':
-        return Icons.restaurant_outlined;
-      case 'bank':
-        return Icons.payments_outlined;
-      case 'store':
-        return Icons.shopping_bag_outlined;
-      case 'cafe':
-        return Icons.coffee_outlined;
-      default:
-        return Icons.location_on_outlined;
+      case 'admin': return Icons.account_balance_outlined;
+      case 'dormitory': return Icons.hotel_outlined;
+      case 'restaurant': return Icons.restaurant_outlined;
+      case 'bank': return Icons.payments_outlined;
+      case 'store': return Icons.shopping_bag_outlined;
+      case 'cafe': return Icons.coffee_outlined;
+      default: return Icons.location_on_outlined;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // FavoriteProvider를 구독하여 실시간 반영
+    final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final bool isFav = favoriteProvider.isFavorite(facility.id);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 0,
@@ -45,13 +39,12 @@ class _FacilityCardState extends State<FacilityCard> {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              // 왼쪽: 카테고리 아이콘
               Container(
                 width: 48,
                 height: 48,
@@ -59,49 +52,38 @@ class _FacilityCardState extends State<FacilityCard> {
                   color: AppColors.knuRed.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  _getCategoryIcon(widget.facility.category),
-                  color: AppColors.knuRed,
-                ),
+                child: Icon(_getCategoryIcon(facility.category), color: AppColors.knuRed),
               ),
               const SizedBox(width: 16),
-
-              // 중간: 장소 정보
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.facility.engName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
+                    Text(facility.engName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(
-                      widget.facility.korName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    Text(facility.korName, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
-
-              // 오른쪽: 즐겨찾기 토글 버튼
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    isFavorited = !isFavorited;
-                  });
-                  // 여기에 실제 즐겨찾기 리스트에서 추가/삭제하는 로직 추가
+                  if (!authProvider.isAuthenticated) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text("Log in is required to save favorites."),
+                        action: SnackBarAction(
+                          label: "Login",
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  favoriteProvider.toggleFavorite(facility.id);
                 },
                 icon: Icon(
-                  isFavorited ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorited ? AppColors.knuRed : Colors.grey[400],
+                  isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? AppColors.knuRed : Colors.grey[400],
                   size: 24,
                 ),
               ),
