@@ -45,4 +45,16 @@ class CommentProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  // [추가] 댓글 삭제
+  Future<void> removeComment(String postId, String commentId) async {
+    try {
+      await _service.deleteComment(postId, commentId);
+      // 삭제 후 목록 새로고침
+      await loadComments(postId);
+    } catch (e) {
+      debugPrint("Comment delete error: $e");
+      rethrow;
+    }
+  }
 }

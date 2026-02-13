@@ -30,4 +30,16 @@ class CommentService {
 
     await batch.commit();
   }
+
+  // [추가] 댓글 삭제 및 게시글 댓글 수 감소 (Batch)
+  Future<void> deleteComment(String postId, String commentId) async {
+    final postRef = _postRef(postId);
+    final commentRef = postRef.collection('comments').doc(commentId);
+
+    final batch = _db.batch();
+    batch.delete(commentRef);
+    batch.update(postRef, {'comments': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
 }

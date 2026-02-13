@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/comment_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../utils/app_colors.dart';
-import '../../screens/settings/login_screen.dart';
+import '../providers/comment_provider.dart';
+import '../providers/auth_provider.dart';
+import '../utils/app_colors.dart';
+import '../screens/settings/login_screen.dart';
 
-/// 댓글 목록만 표시하는 위젯
+/// 댓글 목록 표시 위젯
 class CommentSection extends StatelessWidget {
   final String postId;
   const CommentSection({super.key, required this.postId});
@@ -13,14 +13,15 @@ class CommentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CommentProvider>(context);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
-          "Comments",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            "Comments",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
         ),
         const SizedBox(height: 16),
 
@@ -42,27 +43,42 @@ class CommentSection extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 24),
             itemBuilder: (context, index) {
               final comment = provider.comments[index];
-              return Column(
+              // 본인이 작성한 댓글인지 확인
+              final isMyComment = auth.user?.uid == comment.authorId;
+
+              return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        comment.author,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "${comment.createdAt.month}/${comment.createdAt.day}",
-                        style: const TextStyle(color: Colors.grey, fontSize: 11),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                                comment.author,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                                "${comment.createdAt.month}/${comment.createdAt.day}",
+                                style: const TextStyle(color: Colors.grey, fontSize: 11)
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                            comment.content,
+                            style: const TextStyle(fontSize: 14, height: 1.4)
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    comment.content,
-                    style: const TextStyle(fontSize: 14, height: 1.4),
-                  ),
+                  if (isMyComment)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                      onPressed: () => _confirmDelete(context, provider, comment.id),
+                    ),
                 ],
               );
             },
@@ -71,9 +87,32 @@ class CommentSection extends StatelessWidget {
       ],
     );
   }
+
+  void _confirmDelete(BuildContext context, CommentProvider provider, String commentId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Comment"),
+        content: const Text("Are you sure you want to delete this comment?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await provider.removeComment(postId, commentId);
+            },
+            child: const Text("Delete", style: TextStyle(color: AppColors.knuRed)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-/// 카톡 스타일로 하단에 고정될 입력창 위젯
+/// 댓글 입력창 위젯
 class CommentInput extends StatefulWidget {
   final String postId;
   const CommentInput({super.key, required this.postId});
@@ -84,8 +123,11 @@ class CommentInput extends StatefulWidget {
 
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _commentController = TextEditingController();
+  bool _isSubmitting = false;
 
   Future<void> _submitComment() async {
+    if (_isSubmitting) return;
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final commentProvider = Provider.of<CommentProvider>(context, listen: false);
 
@@ -97,6 +139,8 @@ class _CommentInputState extends State<CommentInput> {
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
 
+    setState(() => _isSubmitting = true);
+
     try {
       await commentProvider.addComment(
         widget.postId,
@@ -105,13 +149,15 @@ class _CommentInputState extends State<CommentInput> {
         content,
       );
       _commentController.clear();
-      FocusScope.of(context).unfocus();
+      if (mounted) FocusScope.of(context).unfocus();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to post comment.")),
+          SnackBar(content: Text("Failed to post comment: $e")),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -119,11 +165,11 @@ class _CommentInputState extends State<CommentInput> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: const Text("Log in is required."),
       action: SnackBarAction(
-        label: "Login",
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        ),
+          label: "Login",
+          onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen())
+          )
       ),
     ));
   }
@@ -134,6 +180,7 @@ class _CommentInputState extends State<CommentInput> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -143,7 +190,6 @@ class _CommentInputState extends State<CommentInput> {
         ],
       ),
       child: SafeArea(
-        top: false,
         child: Row(
           children: [
             Expanded(
@@ -155,6 +201,7 @@ class _CommentInputState extends State<CommentInput> {
                 ),
                 child: TextField(
                   controller: _commentController,
+                  enabled: !_isSubmitting,
                   decoration: const InputDecoration(
                     hintText: "Add a comment...",
                     border: InputBorder.none,
@@ -165,7 +212,13 @@ class _CommentInputState extends State<CommentInput> {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
+            _isSubmitting
+                ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+                : IconButton(
               onPressed: _submitComment,
               icon: const Icon(Icons.send_rounded, color: AppColors.knuRed),
             ),
