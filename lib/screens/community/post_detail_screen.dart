@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/like_provider.dart'; // LikeProvider 추가
 import '../../utils/app_colors.dart';
 import '../settings/login_screen.dart';
 
@@ -14,8 +15,8 @@ class PostDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<CommunityProvider>(
-      builder: (context, provider, child) {
-        final currentPost = provider.posts.firstWhere(
+      builder: (context, communityProvider, child) {
+        final currentPost = communityProvider.posts.firstWhere(
               (p) => p.id == post.id,
           orElse: () => post,
         );
@@ -48,12 +49,12 @@ class PostDetailScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 16, height: 1.7, color: Colors.black87),
                     ),
                   ),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
-          bottomNavigationBar: _buildBottomBar(context, provider, currentPost),
+          bottomNavigationBar: _buildBottomBar(context, currentPost),
         );
       },
     );
@@ -95,8 +96,9 @@ class PostDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, CommunityProvider provider, Post currentPost) {
+  Widget _buildBottomBar(BuildContext context, Post currentPost) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final likeProvider = Provider.of<LikeProvider>(context, listen: false); // LikeProvider 가져오기
 
     return SafeArea(
       child: Container(
@@ -107,9 +109,9 @@ class PostDetailScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 좋아요 버튼 (실시간 상태 반영)
+            // 좋아요 버튼 (LikeProvider 사용)
             StreamBuilder<bool>(
-                stream: provider.isLiked(currentPost.id, authProvider.user?.uid ?? ""),
+                stream: likeProvider.getIsLikedStream(currentPost.id, authProvider.user?.uid ?? ""),
                 builder: (context, snapshot) {
                   final isLiked = snapshot.data ?? false;
                   return InkWell(
@@ -119,7 +121,7 @@ class PostDetailScreen extends StatelessWidget {
                         return;
                       }
                       try {
-                        await provider.toggleLike(currentPost.id, authProvider.user!.uid);
+                        await likeProvider.toggleLike(currentPost.id, authProvider.user!.uid);
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,10 +147,6 @@ class PostDetailScreen extends StatelessWidget {
                   );
                 }
             ),
-            const SizedBox(width: 24),
-            const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
-            const SizedBox(width: 8),
-            Text('${currentPost.comments}', style: const TextStyle(color: Colors.grey, fontSize: 16)),
             const Spacer(),
             IconButton(
               onPressed: () {},

@@ -6,6 +6,7 @@ import 'providers/favorite_provider.dart';
 import 'providers/community_provider.dart'; // 추가
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
+import 'providers/like_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FavoriteProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CommunityProvider()), // 커뮤니티 프로바이더 등록
+        ChangeNotifierProvider(create: (_) => LikeProvider()),
       ],
       child: const KnuExApp(),
     ),

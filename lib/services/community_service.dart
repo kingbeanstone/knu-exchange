@@ -44,35 +44,5 @@ class CommunityService {
     });
   }
 
-  // [수정] 좋아요 토글 로직 (중복 방지)
-  Future<void> toggleLike(String postId, String userId) async {
-    // 유저가 해당 포스트에 남긴 좋아요 문서 참조
-    final likeRef = _postsRef.doc(postId).collection('likes').doc(userId);
-
-    // 트랜잭션을 사용하여 데이터 일관성 보장
-    await _db.runTransaction((transaction) async {
-      final likeDoc = await transaction.get(likeRef);
-      final postRef = _postsRef.doc(postId);
-
-      if (likeDoc.exists) {
-        // 이미 좋아요를 누른 경우: 좋아요 기록 삭제 및 카운트 -1
-        transaction.delete(likeRef);
-        transaction.update(postRef, {'likes': FieldValue.increment(-1)});
-      } else {
-        // 처음 누르는 경우: 좋아요 기록 생성 및 카운트 +1
-        transaction.set(likeRef, {'createdAt': FieldValue.serverTimestamp()});
-        transaction.update(postRef, {'likes': FieldValue.increment(1)});
-      }
-    });
-  }
-
-  // 특정 유저가 이 글에 좋아요를 눌렀는지 확인하는 스트림
-  Stream<bool> isLikedStream(String postId, String userId) {
-    return _postsRef
-        .doc(postId)
-        .collection('likes')
-        .doc(userId)
-        .snapshots()
-        .map((doc) => doc.exists);
-  }
+// 좋아요 관련 로직은 LikeService로 이동되었습니다.
 }

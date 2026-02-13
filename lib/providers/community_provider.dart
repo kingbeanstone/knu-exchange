@@ -28,21 +28,6 @@ class CommunityProvider with ChangeNotifier {
     });
   }
 
-  // [수정] 좋아요 토글 호출
-  Future<void> toggleLike(String postId, String userId) async {
-    try {
-      await _service.toggleLike(postId, userId);
-    } catch (e) {
-      debugPrint("Toggle Like Error: $e");
-      rethrow;
-    }
-  }
-
-  // 좋아요 상태 확인 스트림 제공
-  Stream<bool> isLiked(String postId, String userId) {
-    return _service.isLikedStream(postId, userId);
-  }
-
   Future<void> createPost(String title, String content, String author, PostCategory category) async {
     final newPost = Post(
       id: '',
@@ -54,6 +39,8 @@ class CommunityProvider with ChangeNotifier {
     );
     await _service.addPost(newPost);
   }
+
+  // 좋아요 관련 메서드는 LikeProvider로 이동되었습니다.
 
   @override
   void dispose() {
