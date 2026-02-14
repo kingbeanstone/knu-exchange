@@ -20,7 +20,7 @@ class MapService {
         id: 'cafe_gp',
         korName: 'GP 카페',
         engName: 'GP Cafe',
-        latitude: 35.8901,
+        latitude: 35.8902,
         longitude: 128.6106,
         korDesc: '글로벌플라자 1층에 위치한 카페입니다.',
         engDesc: 'A cafe located on the 1st floor of Global Plaza.',
