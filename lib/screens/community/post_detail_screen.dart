@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/comment_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/comment_section.dart';
 import '../../widgets/post_action_bar.dart';
@@ -40,8 +41,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (mounted) setState(() => _isFetching = false);
   }
 
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await Provider.of<CommunityProvider>(context, listen: false).removePost(_currentPost.id);
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted.')));
+                }
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.knuRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // AuthProvider에서 현재 로그인한 유저의 정보를 가져옵니다.
+    final auth = Provider.of<AuthProvider>(context);
+
+    // 작성자 확인 로직: UID가 일치하는지 확인합니다.
+    final bool isMyPost = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -49,8 +84,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // 내 글일 때만 삭제 아이콘 표시
+          if (isMyPost)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _confirmDelete,
+            ),
+        ],
       ),
-      // 핵심: Column으로 묶어서 스크롤 영역과 입력창 영역을 완전히 분리
       body: _isFetching
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -64,19 +106,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   _buildHeader(),
                   const Divider(height: 40),
                   SelectionArea(
-                      child: Text(
-                          _currentPost.content,
-                          style: const TextStyle(fontSize: 16, height: 1.7)
-                      )
+                      child: Text(_currentPost.content, style: const TextStyle(fontSize: 16, height: 1.7))
                   ),
                   const SizedBox(height: 40),
-                  // 댓글 목록 (입력창 제외)
                   CommentSection(postId: _currentPost.id),
                 ],
               ),
             ),
           ),
-          // 카톡 스타일: 키보드가 올라오면 이 입력창이 자동으로 밀려 올라감
           CommentInput(postId: _currentPost.id),
         ],
       ),
@@ -90,33 +127,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-              color: AppColors.knuRed.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(4)
-          ),
-          child: Text(
-              _currentPost.categoryLabel.toUpperCase(),
-              style: const TextStyle(color: AppColors.knuRed, fontSize: 11, fontWeight: FontWeight.bold)
-          ),
+          decoration: BoxDecoration(color: AppColors.knuRed.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+          child: Text(_currentPost.categoryLabel.toUpperCase(), style: const TextStyle(color: AppColors.knuRed, fontSize: 11, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 16),
-        Text(
-            _currentPost.title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.3)
-        ),
+        Text(_currentPost.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.3)),
         const SizedBox(height: 20),
         Row(children: [
-          const CircleAvatar(
-              backgroundColor: AppColors.lightGrey,
-              child: Icon(Icons.person, color: Colors.grey)
-          ),
+          const CircleAvatar(backgroundColor: AppColors.lightGrey, child: Icon(Icons.person, color: Colors.grey)),
           const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(_currentPost.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text(
-                '${_currentPost.createdAt.year}.${_currentPost.createdAt.month}.${_currentPost.createdAt.day}',
-                style: const TextStyle(color: Colors.grey, fontSize: 12)
-            ),
+            Text('${_currentPost.createdAt.year}.${_currentPost.createdAt.month}.${_currentPost.createdAt.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ]),
         ]),
       ],

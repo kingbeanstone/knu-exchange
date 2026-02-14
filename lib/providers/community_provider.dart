@@ -14,13 +14,11 @@ class CommunityProvider with ChangeNotifier {
     fetchPosts();
   }
 
-  // 게시글 목록 새로고침
   Future<void> fetchPosts() async {
     _isLoading = true;
     notifyListeners();
     try {
       _posts = await _service.getPosts();
-      _posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     } catch (e) {
       debugPrint("Fetch error: $e");
     } finally {
@@ -29,7 +27,6 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  // [해결] PostDetailScreen에서 호출하는 단건 조회 메서드
   Future<Post?> getPostDetail(String postId) async {
     return await _service.getPost(postId);
   }
@@ -40,6 +37,17 @@ class CommunityProvider with ChangeNotifier {
       await fetchPosts();
     } catch (e) {
       debugPrint("Create Post Error: $e");
+      rethrow;
+    }
+  }
+
+  // [추가] 게시글 삭제 프로바이더 로직
+  Future<void> removePost(String postId) async {
+    try {
+      await _service.deletePost(postId);
+      await fetchPosts(); // 삭제 후 목록 새로고침
+    } catch (e) {
+      debugPrint("Delete Post Error: $e");
       rethrow;
     }
   }
