@@ -16,11 +16,11 @@ class FavoriteScreen extends StatefulWidget {
 class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    // 탭 항목을 1개로 설정하여 'Places'만 나타나도록 합니다.
+    _tabController = TabController(length: 1, vsync: this);
   }
 
   @override
@@ -38,18 +38,18 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        // 탭바를 다시 추가하되, 탭 항목은 'Places' 하나만 넣습니다.
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          indicatorWeight: 3,
           tabs: const [
             Tab(text: 'Places'),
-            Tab(text: 'Community'),
           ],
         ),
       ),
+      // TabBarView를 사용하여 탭 구조를 유지합니다.
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -57,8 +57,8 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
             builder: (context, favoriteProvider, child) {
               final favoriteIds = favoriteProvider.favoriteIds;
 
-              final allFacilities =
-                  MapService().getFacilitiesByCategory('All');
+              // 전체 시설 중 즐겨찾기에 포함된 시설만 필터링
+              final allFacilities = MapService().getAllFacilities();
 
               final favoriteFacilities = allFacilities
                   .where((facility) => favoriteIds.contains(facility.id))
@@ -75,14 +75,14 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
                 itemBuilder: (context, index) {
                   return FacilityCard(
                     facility: favoriteFacilities[index],
-                    onTap: () {},
+                    onTap: () {
+                      // 필요한 경우 상세 화면 이동 로직을 추가하세요.
+                    },
                   );
                 },
               );
             },
           ),
-          _buildEmptyState(
-              'No favorite posts yet.\nSave useful tips from the community!'),
         ],
       ),
     );
@@ -98,7 +98,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.grey[100],
-              shape: BoxShape.circle, // BoxType.circle을 BoxShape.circle로 수정했습니다.
+              shape: BoxShape.circle,
             ),
             child: Icon(Icons.favorite_border, size: 60, color: Colors.grey[300]),
           ),
