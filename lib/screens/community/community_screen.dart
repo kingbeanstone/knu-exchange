@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
-import 'post_detail_screen.dart';
-import 'create_post_screen.dart'; // 글쓰기 화면
+import '../../widgets/post_card.dart'; // 새로 만든 PostCard 임포트
+import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -18,10 +18,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // CommunityProvider 구독
     final communityProvider = Provider.of<CommunityProvider>(context);
 
-    // 카테고리 필터링 (메모리 내 수행)
     final filteredPosts = _selectedCategory == null
         ? communityProvider.posts
         : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
@@ -42,17 +40,20 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : filteredPosts.isEmpty
                 ? _buildEmptyState()
-                : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: filteredPosts.length,
-              itemBuilder: (context, index) => _buildPostCard(filteredPosts[index]),
+                : RefreshIndicator(
+              onRefresh: communityProvider.fetchPosts,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: filteredPosts.length,
+                // 분리된 PostCard 위젯 사용
+                itemBuilder: (context, index) => PostCard(post: filteredPosts[index]),
+              ),
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 글쓰기 화면으로 이동
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CreatePostScreen()),
@@ -110,72 +111,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             style: TextStyle(color: Colors.grey),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPostCard(Post post) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailScreen(post: post),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  post.categoryLabel,
-                  style: const TextStyle(
-                    color: AppColors.knuRed,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  )
-              ),
-              const SizedBox(height: 8),
-              Text(
-                  post.title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
-              ),
-              const SizedBox(height: 6),
-              Text(
-                post.content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[700], fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Icon(Icons.person_outline, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(post.author, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  const Spacer(),
-                  Icon(Icons.favorite_border, size: 14, color: Colors.grey[400]),
-                  const SizedBox(width: 4),
-                  Text('${post.likes}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  const SizedBox(width: 12),
-                  Icon(Icons.chat_bubble_outline, size: 14, color: Colors.grey[400]),
-                  const SizedBox(width: 4),
-                  Text('${post.comments}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

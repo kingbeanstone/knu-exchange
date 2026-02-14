@@ -31,16 +31,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final community = Provider.of<CommunityProvider>(context, listen: false);
+    // Provider 접근
+    final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
 
     try {
-      final authorName = auth.user?.email?.split('@')[0] ?? 'Guest';
-
-      await community.createPost(
+      // 수정된 로직: 인자에서 'authorName'을 제거합니다.
+      // 서비스(CommunityService)가 현재 로그인된 사용자의 닉네임을 직접 처리합니다.
+      await communityProvider.createPost(
         _titleController.text.trim(),
         _contentController.text.trim(),
-        authorName,
         _selectedCategory,
       );
 

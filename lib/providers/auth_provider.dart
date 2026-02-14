@@ -17,42 +17,38 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
+  // [추가] 프로필 수정 호출 메서드
+  Future<void> updateNickname(String newNickname) async {
+    try {
+      await _authService.updateNickname(newNickname);
+      // 최신 사용자 정보로 로컬 상태 갱신
+      _user = FirebaseAuth.instance.currentUser;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> signUp(String email, String password, {required String nickname}) async {
     try {
-      final credential = await _authService.signUp(
-        email,
-        password,
-        nickname: nickname,
-      ).timeout(const Duration(seconds: 15)); // 전체 프로세스 타임아웃
-
-      final user = credential.user;
-
-      if (user != null) {
-        // 인증메일 발송
-        await user.sendEmailVerification();
-        // 인증 전에는 세션을 유지하지 않도록 로그아웃
+      final credential = await _authService.signUp(email, password, nickname: nickname);
+      if (credential.user != null) {
+        await credential.user!.sendEmailVerification();
         await _authService.signOut();
       }
     } catch (e) {
-      // 에러 발생 시 상위(Screen)로 전달
       rethrow;
     }
   }
 
   Future<void> login(String email, String password) async {
     final credential = await _authService.signIn(email, password);
-    final user = credential.user;
-
-    if (user != null) {
-      await user.reload();
+    if (credential.user != null) {
+      await credential.user!.reload();
       final refreshedUser = FirebaseAuth.instance.currentUser;
-
       if (refreshedUser != null && !refreshedUser.emailVerified) {
         await _authService.signOut();
-        throw FirebaseAuthException(
-          code: 'email-not-verified',
-          message: 'Please verify your email first.',
-        );
+        throw FirebaseAuthException(code: 'email-not-verified', message: 'Please verify your email first.');
       }
     }
   }

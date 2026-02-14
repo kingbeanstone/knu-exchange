@@ -34,16 +34,13 @@ class CommunityProvider with ChangeNotifier {
     return await _service.getPost(postId);
   }
 
-  Future<void> createPost(String title, String content, String author, PostCategory category) async {
-    final newPost = Post(
-      id: '',
-      title: title,
-      content: content,
-      author: author,
-      createdAt: DateTime.now(),
-      category: category,
-    );
-    await _service.addPost(newPost);
-    await fetchPosts();
+  Future<void> createPost(String title, String content, PostCategory category) async {
+    try {
+      await _service.addPost(title, content, category);
+      await fetchPosts();
+    } catch (e) {
+      debugPrint("Create Post Error: $e");
+      rethrow;
+    }
   }
 }

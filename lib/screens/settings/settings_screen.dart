@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'login_screen.dart'; // 로그인 화면으로 이동하기 위해 필요
+import 'profile_edit_screen.dart'; // 수정 화면 임포트
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -77,14 +78,27 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: Color(0xFFDD1829),
         child: Icon(Icons.person, color: Colors.white),
       ),
-      title: Text(auth.user?.email ?? 'User'),
-      subtitle: const Text('Logged in via Email'),
-      trailing: OutlinedButton(
-        onPressed: () => auth.logout(),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFDD1829)),
-        ),
-        child: const Text('Logout', style: TextStyle(color: Color(0xFFDD1829))),
+      // 닉네임 표시 (displayName이 없으면 이메일 앞부분 표시)
+      title: Text(auth.user?.displayName ?? auth.user?.email?.split('@')[0] ?? 'User'),
+      subtitle: Text(auth.user?.email ?? ''),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 프로필 수정 버튼 추가
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.grey),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: () => auth.logout(),
+            style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFDD1829))),
+            child: const Text('Logout', style: TextStyle(color: Color(0xFFDD1829))),
+          ),
+        ],
       ),
     );
   }
