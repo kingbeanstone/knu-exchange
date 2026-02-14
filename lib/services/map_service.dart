@@ -77,6 +77,16 @@ class MapService {
         engDesc: 'A cafe near Global Plaza.',
         category: 'Cafe',
       ),
+      Facility(
+        id: 'cheomseong_cafe',
+        korName: '첨성관 카페',
+        engName: 'Cheomseong Dorm Cafe',
+        latitude: 35.8863,
+        longitude: 128.6143,
+        korDesc: '첨성관 기숙사 내에 있는 카페입니다.',
+        engDesc: 'A cafe located inside Cheomseong-gwan dormitory.',
+        category: 'Cafe',
+      ),
       // 편의점 (Store)
       Facility(
         id: 'gs25_dorm',
@@ -147,6 +157,16 @@ class MapService {
         longitude: 128.6108,
         korDesc: '글로벌플라자 내부에 위치한 식당입니다.',
         engDesc: 'Cafeteria located inside Global Plaza.',
+        category: 'Restaurant',
+      ),
+      Facility(
+        id: 'kyungdaria_restaurant',
+        korName: '경대리아',
+        engName: 'Kyungdaria',
+        latitude: 35.892,
+        longitude: 128.6114,
+        korDesc: '경북대 도서관 휴게실에 있는 식당입니다.',
+        engDesc: 'A restaurant in the KNU library lounge.',
         category: 'Restaurant',
       ),
     ];
