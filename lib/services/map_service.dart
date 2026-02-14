@@ -36,6 +36,16 @@ class MapService {
         engDesc: 'Cafe inside the IT Convergence Building.',
         category: 'Cafe',
       ),
+      Facility(
+        id: 'cafe_cheomseong',
+        korName: '첨성관 카페',
+        engName: 'Cheomseong-gwan Cafe',
+        latitude: 35.8915820,
+        longitude: 128.6145320,
+        korDesc: '첨성관 인근에 위치한 카페입니다.',
+        engDesc: 'A cafe located in Cheomseong-gwan.',
+        category: 'Cafe',
+      ),
       // 편의점 (Store)
       Facility(
         id: 'gs25_dorm',
@@ -58,6 +68,16 @@ class MapService {
         category: 'Store',
       ),
       // 식당 (Restaurant)
+      Facility(
+        id: 'rest_kyungdaria',
+        korName: '경대리아',
+        engName: 'Kyungdaria',
+        latitude: 35.8922680,
+        longitude: 128.6128730,
+        korDesc: '캠퍼스 내 경대리아 식당입니다.',
+        engDesc: 'A campus restaurant.',
+        category: 'Restaurant',
+      ),
       Facility(
         id: 'rest_student',
         korName: '정보센터식당',
