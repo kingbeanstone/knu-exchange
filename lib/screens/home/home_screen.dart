@@ -245,12 +245,39 @@ class _HomeScreenState extends State<HomeScreen> {
       marker.setSize(const Size(36, 36)); // 지도 위 실제 표시 크기
 
       marker.setOnTapListener((marker) {
+
+        // 🔹 현재 마커 크게 만들기
+        marker.setSize(const Size(50, 50));
+        _selectedMarker = marker;
+
+        // 🔹 지도 확대 + 이동
+        _mapController.updateCamera(
+          NCameraUpdate.withParams(
+            target: NLatLng(facility.latitude, facility.longitude),
+            zoom: 16, // 원하는 확대 수준
+          )
+          ..setAnimation(
+            animation: NCameraAnimation.linear,
+            duration: const Duration(milliseconds: 250),
+          ),
+        );
+
         _showFacilityDetail(facility);
       });
+
 
       _mapController.addOverlay(marker);
     }
   }
+
+  void _resetSelectedMarkerSize() {
+    if (_selectedMarker != null) {
+      _selectedMarker!.setSize(const Size(36, 36)); // 기본 크기
+      _selectedMarker = null;
+    }
+  }
+
+  NMarker? _selectedMarker;
 
   IconData _iconForCategory(String category) {
     switch (category) {
@@ -416,7 +443,10 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      // ✅ 바텀시트 내려서 닫히면 마커 원래 크기로
+      _resetSelectedMarkerSize();
+    });
   }
 }
 
