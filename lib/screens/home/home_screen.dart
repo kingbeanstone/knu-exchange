@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.knuRed.withOpacity(0.1),
+                                color: AppColors.knuRed.withAlpha(26),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: const Text(
@@ -369,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.knuRed.withOpacity(0.1),
+                          color: AppColors.knuRed.withAlpha(26),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
