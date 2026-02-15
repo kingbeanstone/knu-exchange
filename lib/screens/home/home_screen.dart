@@ -238,11 +238,11 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: _bgForCategory(facility.category),
         ),
         context: context,
-        size: const Size(80, 80), // 렌더링 캔버스 크기(여유)
+        size: const Size(70, 70), // 렌더링 캔버스 크기(여유)
       );
 
       marker.setIcon(overlayIcon);
-      marker.setSize(const Size(50, 50)); // 지도 위 실제 표시 크기
+      marker.setSize(const Size(36, 36)); // 지도 위 실제 표시 크기
 
       marker.setOnTapListener((marker) {
         _showFacilityDetail(facility);
@@ -433,8 +433,8 @@ class _MarkerIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64,
-      height: 64,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
