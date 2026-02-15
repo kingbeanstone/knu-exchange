@@ -31,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {'label': 'All', 'icon': Icons.map, 'value': 'All'},
     {'label': 'Cafe', 'icon': Icons.coffee, 'value': 'Cafe'},
     {'label': 'Store', 'icon': Icons.local_convenience_store, 'value': 'Store'},
-    {'label': 'Eat', 'icon': Icons.restaurant, 'value': 'Restaurant'},
+    {'label': 'Cafeteria', 'icon': Icons.restaurant, 'value': 'Restaurant'},
     {'label': 'Office', 'icon': Icons.account_balance, 'value': 'Admin'},
   ];
 
