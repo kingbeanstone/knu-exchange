@@ -231,6 +231,19 @@ class _HomeScreenState extends State<HomeScreen> {
         caption: NOverlayCaption(text: facility.engName),
       );
 
+      // ✅ 아이콘 마커(위젯)로 만들기 (PNG 필요 없음)
+      final overlayIcon = await NOverlayImage.fromWidget(
+        widget: _MarkerIcon(
+          icon: _iconForCategory(facility.category),
+          backgroundColor: _bgForCategory(facility.category),
+        ),
+        context: context,
+        size: const Size(80, 80), // 렌더링 캔버스 크기(여유)
+      );
+
+      marker.setIcon(overlayIcon);
+      marker.setSize(const Size(50, 50)); // 지도 위 실제 표시 크기
+
       marker.setOnTapListener((marker) {
         _showFacilityDetail(facility);
       });
@@ -238,6 +251,39 @@ class _HomeScreenState extends State<HomeScreen> {
       _mapController.addOverlay(marker);
     }
   }
+
+  IconData _iconForCategory(String category) {
+    switch (category) {
+      case 'Cafe':
+        return Icons.coffee;
+      case 'Store':
+        return Icons.local_convenience_store;
+      case 'Restaurant':
+        return Icons.restaurant;
+      case 'Admin':
+        return Icons.account_balance;
+      default:
+        return Icons.place;
+    }
+  }
+
+  Color _bgForCategory(String category) {
+    switch (category) {
+      case 'Cafe':
+        return const Color(0xFF8D6E63);
+      case 'Store':
+        return const Color(0xFF43A047);
+      case 'Restaurant':
+        return const Color(0xFFE53935);
+      case 'Admin':
+        return const Color(0xFF1E88E5);
+      default:
+        return const Color(0xFF616161);
+    }
+  }
+
+
+
 
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
@@ -370,6 +416,41 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+}
+
+class _MarkerIcon extends StatelessWidget {
+  final IconData icon;
+  final Color backgroundColor;
+
+  const _MarkerIcon({
+    Key? key,
+    required this.icon,
+    required this.backgroundColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: 30,
+      ),
     );
   }
 }
