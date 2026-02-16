@@ -10,6 +10,7 @@ import 'providers/auth_provider.dart';
 import 'providers/like_provider.dart';
 import 'providers/comment_provider.dart';
 import 'providers/menu_provider.dart';
+import 'providers/notice_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LikeProvider()),
         ChangeNotifierProvider(create: (_) => CommentProvider()),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
+        ChangeNotifierProvider(create: (_) => NoticeProvider()),
       ],
       child: const KnuExApp(),
     ),
