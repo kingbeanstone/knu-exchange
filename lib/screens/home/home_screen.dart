@@ -31,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {'label': 'All', 'icon': Icons.map, 'value': 'All'},
     {'label': 'Cafe', 'icon': Icons.coffee, 'value': 'Cafe'},
     {'label': 'Store', 'icon': Icons.local_convenience_store, 'value': 'Store'},
-    {'label': 'Eat', 'icon': Icons.restaurant, 'value': 'Restaurant'},
+    {'label': 'Cafeteria', 'icon': Icons.restaurant, 'value': 'Restaurant'},
     {'label': 'Office', 'icon': Icons.account_balance, 'value': 'Admin'},
   ];
 
@@ -113,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.knuRed.withOpacity(0.1),
+                                color: AppColors.knuRed.withAlpha(26),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: const Text(
@@ -231,13 +231,86 @@ class _HomeScreenState extends State<HomeScreen> {
         caption: NOverlayCaption(text: facility.engName),
       );
 
+      // ✅ 아이콘 마커(위젯)로 만들기 (PNG 필요 없음)
+      final overlayIcon = await NOverlayImage.fromWidget(
+        widget: _MarkerIcon(
+          icon: _iconForCategory(facility.category),
+          backgroundColor: _bgForCategory(facility.category),
+        ),
+        context: context,
+        size: const Size(70, 70), // 렌더링 캔버스 크기(여유)
+      );
+
+      marker.setIcon(overlayIcon);
+      marker.setSize(const Size(36, 36)); // 지도 위 실제 표시 크기
+
       marker.setOnTapListener((marker) {
+
+        // 🔹 현재 마커 크게 만들기
+        marker.setSize(const Size(50, 50));
+        _selectedMarker = marker;
+
+        // 🔹 지도 확대 + 이동
+        _mapController.updateCamera(
+          NCameraUpdate.withParams(
+            target: NLatLng(facility.latitude, facility.longitude),
+            zoom: 16, // 원하는 확대 수준
+          )
+          ..setAnimation(
+            animation: NCameraAnimation.linear,
+            duration: const Duration(milliseconds: 250),
+          ),
+        );
+
         _showFacilityDetail(facility);
       });
+
 
       _mapController.addOverlay(marker);
     }
   }
+
+  void _resetSelectedMarkerSize() {
+    if (_selectedMarker != null) {
+      _selectedMarker!.setSize(const Size(36, 36)); // 기본 크기
+      _selectedMarker = null;
+    }
+  }
+
+  NMarker? _selectedMarker;
+
+  IconData _iconForCategory(String category) {
+    switch (category) {
+      case 'Cafe':
+        return Icons.coffee;
+      case 'Store':
+        return Icons.local_convenience_store;
+      case 'Restaurant':
+        return Icons.restaurant;
+      case 'Admin':
+        return Icons.account_balance;
+      default:
+        return Icons.place;
+    }
+  }
+
+  Color _bgForCategory(String category) {
+    switch (category) {
+      case 'Cafe':
+        return const Color(0xFF8D6E63);
+      case 'Store':
+        return const Color(0xFF43A047);
+      case 'Restaurant':
+        return const Color(0xFFE53935);
+      case 'Admin':
+        return const Color(0xFF1E88E5);
+      default:
+        return const Color(0xFF616161);
+    }
+  }
+
+
+
 
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
@@ -296,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.knuRed.withOpacity(0.1),
+                          color: AppColors.knuRed.withAlpha(26),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -370,6 +443,44 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    ).whenComplete(() {
+      // ✅ 바텀시트 내려서 닫히면 마커 원래 크기로
+      _resetSelectedMarkerSize();
+    });
+  }
+}
+
+class _MarkerIcon extends StatelessWidget {
+  final IconData icon;
+  final Color backgroundColor;
+
+  const _MarkerIcon({
+    Key? key,
+    required this.icon,
+    required this.backgroundColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: 30,
+      ),
     );
   }
 }
