@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/comment_section.dart';
 import '../../widgets/post_action_bar.dart';
+import '../../widgets/report_dialog.dart'; // 신고 다이얼로그 추가
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -69,12 +70,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  // 신고 다이얼로그 호출 함수
+  void _showReportDialog() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => ReportDialog(
+        targetId: _currentPost.id,
+        targetType: 'post',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // AuthProvider에서 현재 로그인한 유저의 정보를 가져옵니다.
     final auth = Provider.of<AuthProvider>(context);
-
-    // 작성자 확인 로직: UID가 일치하는지 확인합니다.
     final bool isMyPost = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
 
     return Scaffold(
@@ -85,11 +102,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // 내 글일 때만 삭제 아이콘 표시
+          // 내 글이면 삭제, 남의 글이면 신고 아이콘 표시
           if (isMyPost)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _confirmDelete,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.report_problem_outlined),
+              onPressed: _showReportDialog,
+              tooltip: 'Report this post',
             ),
         ],
       ),

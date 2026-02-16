@@ -11,6 +11,7 @@ import 'providers/like_provider.dart';
 import 'providers/comment_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/notice_provider.dart';
+import 'providers/report_provider.dart'; // ReportProvider 추가
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CommentProvider()),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => NoticeProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
       child: const KnuExApp(),
     ),
