@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/date_selector.dart';
-import '../../widgets/menu_section.dart';
+import '../../widgets/date_selector.dart'; // 기존에 분리한 위젯 경로 확인 필요
+import '../../widgets/menu_section.dart'; // 기존에 분리한 위젯 경로 확인 필요
 
 class CafeteriaScreen extends StatefulWidget {
   final String? initialFacilityId;
@@ -31,6 +31,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     _menuFuture = _loadMenu();
   }
 
+  // 로컬 CSV 파일 로드 로직 유지
   Future<List<Map<String, String>>> _loadMenu() async {
     final rawData = await rootBundle.loadString('assets/data/menu.csv');
     List<List<dynamic>> listData = const CsvToListConverter().convert(rawData);
@@ -53,7 +54,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2, // 탭 개수를 2개로 수정
       initialIndex: widget.initialFacilityId == 'cheomseong_dorm_cafeteria' ? 1 : 0,
       child: Scaffold(
         appBar: AppBar(
@@ -64,11 +65,15 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
-            tabs: [Tab(text: 'Student'), Tab(text: 'Dormitory'), Tab(text: 'Staff')],
+            tabs: [
+              Tab(text: 'Student'),
+              Tab(text: 'Dormitory'),
+            ], // Staff 탭 제거
           ),
         ),
         body: Column(
           children: [
+            // 날짜 선택 위젯
             CafeteriaDateSelector(
               selectedDate: _selectedDate,
               onPrev: () => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
@@ -85,7 +90,9 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
 
                   return TabBarView(
                     children: [
+                      // 1. 학생 식당 탭
                       _buildStudentTab(menuList, dateStr),
+                      // 2. 기숙사 식당 탭
                       SingleChildScrollView(
                         child: CafeteriaMenuSection(
                             allMenuData: menuList,
@@ -93,8 +100,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
                             selectedDate: dateStr
                         ),
                       ),
-                      const Center(child: Text('Staff Cafeteria Menu (Coming Soon)')),
-                    ],
+                    ], // Staff 관련 View 제거
                   );
                 },
               ),
@@ -105,6 +111,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     );
   }
 
+  // 학생 식당 탭 빌더
   Widget _buildStudentTab(List<Map<String, String>> menuList, String dateStr) {
     return ListView(
       children: [
@@ -112,7 +119,11 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
           padding: const EdgeInsets.all(16.0),
           child: DropdownButtonFormField<String>(
             value: _selectedStudentFacility,
-            decoration: const InputDecoration(labelText: 'Select Cafeteria', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Select Cafeteria',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
             items: _studentFacilities.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (val) => setState(() => _selectedStudentFacility = val!),
           ),
