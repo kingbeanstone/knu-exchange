@@ -11,7 +11,7 @@ class MenuProvider with ChangeNotifier {
   List<MenuItem> get allMenus => _allMenus;
   bool get isLoading => _isLoading;
 
-  // 메뉴 데이터 새로고침
+  // 전체 메뉴 새로고침 (사용자가 탭을 누를 때 호출 가능)
   Future<void> refreshMenu() async {
     _isLoading = true;
     notifyListeners();
@@ -19,14 +19,14 @@ class MenuProvider with ChangeNotifier {
     try {
       _allMenus = await _service.fetchRemoteMenu();
     } catch (e) {
-      debugPrint("Menu Provider Error: $e");
+      debugPrint("Menu refresh failed: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // 필터링 로직: 특정 식당, 특정 날짜의 메뉴만 반환
+  // 화면에서 특정 식당과 날짜로 필터링된 메뉴를 가져올 때 사용
   List<MenuItem> getFilteredMenu(String facilityId, String date) {
     return _allMenus.where((m) => m.facility == facilityId && m.date == date).toList();
   }

@@ -1,8 +1,8 @@
 class MenuItem {
-  final String facility; // 식당 ID (예: welfare_bldg_cafeteria)
-  final String date;     // 날짜 (예: 2026-02-09)
-  final String meal;     // 끼니 (breakfast, lunch, dinner)
-  final String menu;     // 메뉴 내용
+  final String facility;
+  final String date;
+  final String meal;
+  final String menu;
 
   MenuItem({
     required this.facility,
@@ -11,13 +11,19 @@ class MenuItem {
     required this.menu,
   });
 
-  // CSV 행 데이터를 객체로 변환
   factory MenuItem.fromCsv(List<dynamic> row) {
+    // CSV 데이터 파싱 시 발생할 수 있는 공백 및 null 오류 방지
+    String safeGet(int index) {
+      if (index < 0 || index >= row.length) return '';
+      return row[index]?.toString().trim() ?? '';
+    }
+
     return MenuItem(
-      facility: row.length > 0 ? row[0].toString().trim() : '',
-      date: row.length > 1 ? row[1].toString().trim() : '',
-      meal: row.length > 2 ? row[2].toString().trim().toLowerCase() : '',
-      menu: row.length > 3 ? row[3].toString().trim() : '',
+      facility: safeGet(0),
+      date: safeGet(1),
+      // meal 데이터는 대소문자 구분 없이 비교하기 위해 소문자로 변환
+      meal: safeGet(2).toLowerCase(),
+      menu: safeGet(3),
     );
   }
 }
