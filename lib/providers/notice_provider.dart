@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/notice.dart';
 import '../services/notice_service.dart';
 
-class NoticeProvider extends ChangeNotifier {
+class NoticeProvider with ChangeNotifier {
   final NoticeService _service = NoticeService();
 
   List<Notice> _notices = [];
@@ -11,15 +11,15 @@ class NoticeProvider extends ChangeNotifier {
   List<Notice> get notices => _notices;
   bool get isLoading => _isLoading;
 
-  // 공지사항 데이터를 새로고침
-  Future<void> fetchNotices() async {
+  // 공지사항 새로고침
+  Future<void> refreshNotices() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _notices = await _service.getNotices();
+      _notices = await _service.fetchRemoteNotices();
     } catch (e) {
-      debugPrint('NoticeProvider fetch error: $e');
+      debugPrint("공지사항 업데이트 오류: $e");
     } finally {
       _isLoading = false;
       notifyListeners();

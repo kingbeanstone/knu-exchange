@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
 
@@ -15,9 +14,9 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   void initState() {
     super.initState();
-    // 화면 로드 시 공지사항 가져오기
+    // 화면 로드 시 공지사항 가져오기 (메서드명 수정: refreshNotices)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NoticeProvider>().fetchNotices();
+      context.read<NoticeProvider>().refreshNotices();
     });
   }
 
@@ -34,7 +33,8 @@ class _NoticeScreenState extends State<NoticeScreen> {
         elevation: 0,
       ),
       body: RefreshIndicator(
-        onRefresh: () => noticeProvider.fetchNotices(),
+        // 새로고침 시 호출 (메서드명 수정)
+        onRefresh: () => noticeProvider.refreshNotices(),
         child: noticeProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
             : noticeProvider.notices.isEmpty
@@ -62,7 +62,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    DateFormat('yyyy.MM.dd').format(notice.createdAt),
+                    notice.date, // 필드명 수정: createdAt -> date
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),
@@ -83,14 +83,14 @@ class _NoticeScreenState extends State<NoticeScreen> {
   }
 
   Widget _buildEmptyState() {
-    return ListView( // RefreshIndicator 작동을 위해 ListView 사용
+    return ListView(
       children: [
         SizedBox(height: MediaQuery.of(context).size.height * 0.3),
         const Center(
           child: Column(
             children: [
               Icon(Icons.notifications_none, size: 60, color: Colors.grey),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text('등록된 공지사항이 없습니다.', style: TextStyle(color: Colors.grey)),
             ],
           ),

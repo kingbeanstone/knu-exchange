@@ -1,26 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Notice {
-  final String id;
-  final String title;
-  final String content;
-  final DateTime createdAt;
+  final String date;    // 공지 날짜
+  final String title;   // 공지 제목
+  final String content; // 공지 내용
 
   Notice({
-    required this.id,
+    required this.date,
     required this.title,
     required this.content,
-    required this.createdAt,
   });
 
-  // Firestore 문서 스냅샷을 Notice 객체로 변환
-  factory Notice.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  // 구글 시트 CSV의 한 행(row) 데이터를 객체로 변환
+  factory Notice.fromCsv(List<dynamic> row) {
     return Notice(
-      id: doc.id,
-      title: data['title'] ?? '제목 없음',
-      content: data['content'] ?? '',
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      date: row.length > 0 ? row[0].toString().trim() : '',
+      title: row.length > 1 ? row[1].toString().trim() : '제목 없음',
+      content: row.length > 2 ? row[2].toString().trim() : '',
     );
   }
 }
