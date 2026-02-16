@@ -1,122 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../../providers/auth_provider.dart';
-import 'login_screen.dart'; // 로그인 화면으로 이동하기 위해 필요
-import 'profile_edit_screen.dart'; // 수정 화면 임포트
+import 'login_screen.dart';
+import 'profile_edit_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // AuthProvider의 상태를 지켜봅니다.
     final authProvider = Provider.of<AuthProvider>(context);
     const knuRed = Color(0xFFDD1829);
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Settings'),
         backgroundColor: knuRed,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: ListView(
         children: [
           const SizedBox(height: 10),
-
-          // --- 로그인/프로필 섹션 ---
           authProvider.isAuthenticated
               ? _buildProfileTile(context, authProvider)
               : _buildLoginTile(context),
+          const Divider(),
+
+          // 일반 설정 항목들 (예시)
+          _buildMenuTile(Icons.language, 'Language', 'English'),
+          _buildMenuTile(Icons.notifications_outlined, 'Notifications', 'On'),
 
           const Divider(),
 
-          // --- 기존 설정 항목들 ---
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            subtitle: const Text('English / Korean'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // 언어 변경 기능
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            trailing: Switch(
-              value: true,
-              onChanged: (val) {
-                // 알림 끄기/켜기
-              },
-              activeColor: knuRed,
+          // 로그인 상태일 때만 회원 탈퇴 버튼 표시
+          if (authProvider.isAuthenticated)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: TextButton(
+                onPressed: () => _showDeleteAccountDialog(context, authProvider),
+                child: const Text(
+                  'Delete Account',
+                  style: TextStyle(color: Colors.red, decoration: TextDecoration.underline),
+                ),
+              ),
             ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App Version'),
-            trailing: const Text('1.0.0', style: TextStyle(color: Colors.grey)),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.contact_support),
-            title: const Text('Contact Us'),
-            onTap: () {
-              // 문의하기 (이메일 등)
-            },
-          ),
         ],
       ),
     );
   }
 
-  // 로그인 상태일 때 표시될 프로필 타일
   Widget _buildProfileTile(BuildContext context, AuthProvider auth) {
-    return ListTile(
-      leading: const CircleAvatar(
-        backgroundColor: Color(0xFFDD1829),
-        child: Icon(Icons.person, color: Colors.white),
-      ),
-      // 닉네임 표시 (displayName이 없으면 이메일 앞부분 표시)
-      title: Text(auth.user?.displayName ?? auth.user?.email?.split('@')[0] ?? 'User'),
-      subtitle: Text(auth.user?.email ?? ''),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 프로필 수정 버튼 추가
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.grey),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
+    return Container(
+      color: Colors.white,
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Color(0xFFDD1829),
+          child: Icon(Icons.person, color: Colors.white),
+        ),
+        title: Text(auth.user?.displayName ?? auth.user?.email?.split('@')[0] ?? 'User'),
+        subtitle: Text(auth.user?.email ?? ''),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.grey),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: () => auth.logout(),
-            style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFDD1829))),
-            child: const Text('Logout', style: TextStyle(color: Color(0xFFDD1829))),
-          ),
-        ],
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: () => auth.logout(),
+              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFDD1829))),
+              child: const Text('Logout', style: TextStyle(color: Color(0xFFDD1829))),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 로그아웃 상태일 때 표시될 로그인 유도 타일
   Widget _buildLoginTile(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.login, color: Color(0xFFDD1829)),
-      title: const Text('Login / Sign Up'),
-      subtitle: const Text('Log in to save your favorites'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: () {
-        // 로그인 화면으로 이동
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      },
+    return Container(
+      color: Colors.white,
+      child: ListTile(
+        leading: const Icon(Icons.login, color: Color(0xFFDD1829)),
+        title: const Text('Login / Sign Up'),
+        subtitle: const Text('Log in to save your favorites'),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
+      ),
+    );
+  }
+
+  Widget _buildMenuTile(IconData icon, String title, String trailing) {
+    return Container(
+      color: Colors.white,
+      child: ListTile(
+        leading: Icon(icon, color: Colors.grey),
+        title: Text(title),
+        trailing: Text(trailing, style: const TextStyle(color: Colors.grey)),
+        onTap: () {},
+      ),
+    );
+  }
+
+  // 계정 삭제 확인 다이얼로그
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account?\nAll your profile information will be permanently removed. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await auth.deleteAccount();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Account has been deleted.')),
+                  );
+                }
+              } on FirebaseAuthException catch (e) {
+                if (e.code == 'requires-recent-login') {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please log in again to delete your account.')),
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${e.message}')),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 }

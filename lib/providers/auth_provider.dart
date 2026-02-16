@@ -17,12 +17,21 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-  // [추가] 프로필 수정 호출 메서드
   Future<void> updateNickname(String newNickname) async {
     try {
       await _authService.updateNickname(newNickname);
-      // 최신 사용자 정보로 로컬 상태 갱신
       _user = FirebaseAuth.instance.currentUser;
+      notifyListeners();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // [추가] 계정 삭제 호출 메서드
+  Future<void> deleteAccount() async {
+    try {
+      await _authService.deleteAccount();
+      _user = null;
       notifyListeners();
     } catch (e) {
       rethrow;
