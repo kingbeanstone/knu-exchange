@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:provider/provider.dart';
-
-import '../../models/facility.dart';
-import '../../providers/favorite_provider.dart';
-import '../../services/map_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../utils/app_colors.dart';
-import '../cafeteria/cafeteria_screen.dart';
+import '../../models/facility.dart';
+import '../../services/map_service.dart';
+import '../../widgets/category_filter.dart';
+import '../../widgets/facility_bottom_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,21 +18,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late NaverMapController _mapController;
   final MapService _mapService = MapService();
-
-  // Current selected category (All, Cafe, Store, Restaurant, Admin)
   String _selectedCategory = 'All';
 
-  // Hidden admin mode (tap the title 5 times)
+  // 어드민 모드 로직 복구
   bool _adminMode = false;
   int _titleTapCount = 0;
-
-  final List<Map<String, dynamic>> _categories = [
-    {'label': 'All', 'icon': Icons.map, 'value': 'All'},
-    {'label': 'Cafe', 'icon': Icons.coffee, 'value': 'Cafe'},
-    {'label': 'Store', 'icon': Icons.local_convenience_store, 'value': 'Store'},
-    {'label': 'Cafeteria', 'icon': Icons.restaurant, 'value': 'Restaurant'},
-    {'label': 'Office', 'icon': Icons.account_balance, 'value': 'Admin'},
-  ];
+  NMarker? _selectedMarker;
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {
             _titleTapCount++;
             if (_titleTapCount >= 5) {
-              setState(() {
-                _adminMode = !_adminMode;
-              });
+              setState(() => _adminMode = !_adminMode);
               _titleTapCount = 0;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    _adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled',
-                  ),
+                  content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
                   duration: const Duration(seconds: 1),
                 ),
               );
@@ -74,94 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
               locationButtonEnable: true,
               consumeSymbolTapEvents: false,
             ),
-            onMapReady: (controller) {
+            onMapReady: (controller) async {
               _mapController = controller;
+              await _initializeLocation();
               _updateMarkers();
             },
             onMapLongTapped: (point, latLng) {
-              if (!_adminMode) return;
-
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                builder: (context) {
-                  final lat = latLng.latitude;
-                  final lng = latLng.longitude;
-                  final text = '$lat, $lng';
-
-                  return Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Selected Coordinates',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.knuRed.withAlpha(26),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Text(
-                                'ADMIN',
-                                style: TextStyle(
-                                  color: AppColors.knuRed,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text('lat: $lat', style: const TextStyle(fontSize: 15)),
-                        Text('lng: $lng', style: const TextStyle(fontSize: 15)),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.knuRed,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: text));
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Copied to clipboard'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.copy),
-                            label: const Text('Copy to Clipboard'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tip: Paste into map_service.dart as latitude/longitude.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
+              if (_adminMode) _showAdminCoords(latLng);
             },
           ),
 
@@ -169,49 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 10,
             left: 0,
             right: 0,
-            child: SizedBox(
-              height: 50,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = _selectedCategory == cat['value'];
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: FilterChip(
-                      showCheckmark: false,
-                      avatar: Icon(
-                        cat['icon'],
-                        size: 18,
-                        color: isSelected ? Colors.white : AppColors.knuRed,
-                      ),
-                      label: Text(cat['label']),
-                      selected: isSelected,
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedCategory = cat['value'];
-                        });
-                        _updateMarkers();
-                      },
-                      selectedColor: AppColors.knuRed,
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.knuRed : Colors.grey.shade300,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            child: CategoryFilter(
+              selectedCategory: _selectedCategory,
+              onCategorySelected: (category) {
+                setState(() => _selectedCategory = category);
+                _updateMarkers();
+              },
             ),
           ),
         ],
@@ -219,268 +87,123 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _updateMarkers() async {
-    await _mapController.clearOverlays();
+  Future<void> _initializeLocation() async {
+    final status = await Permission.location.request();
+    if (status.isGranted) {
+      _mapController.setLocationTrackingMode(NLocationTrackingMode.follow);
+    }
+  }
 
+  // 어드민 좌표 복사 바텀시트
+  void _showAdminCoords(NLatLng latLng) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Selected Coordinates', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text('lat: ${latLng.latitude}'),
+            Text('lng: ${latLng.longitude}'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: '${latLng.latitude}, ${latLng.longitude}'));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
+                },
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy to Clipboard'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.knuRed, foregroundColor: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _updateMarkers() async {
+    await _mapController.clearOverlays();
     final facilities = _mapService.getFacilitiesByCategory(_selectedCategory);
 
-    for (final facility in facilities) {
+    for (var f in facilities) {
       final marker = NMarker(
-        id: facility.id,
-        position: NLatLng(facility.latitude, facility.longitude),
-        caption: NOverlayCaption(text: facility.engName),
+        id: f.id,
+        position: NLatLng(f.latitude, f.longitude),
+        caption: NOverlayCaption(text: f.engName),
       );
 
-      // ✅ 아이콘 마커(위젯)로 만들기 (PNG 필요 없음)
-      final overlayIcon = await NOverlayImage.fromWidget(
-        widget: _MarkerIcon(
-          icon: _iconForCategory(facility.category),
-          backgroundColor: _bgForCategory(facility.category),
-        ),
+      // 위젯 마커 로직 복구
+      final iconImage = await NOverlayImage.fromWidget(
+        widget: _MarkerIcon(category: f.category),
         context: context,
-        size: const Size(70, 70), // 렌더링 캔버스 크기(여유)
+        size: const Size(60, 60),
       );
+      marker.setIcon(iconImage);
+      marker.setSize(const Size(36, 36));
 
-      marker.setIcon(overlayIcon);
-      marker.setSize(const Size(36, 36)); // 지도 위 실제 표시 크기
-
-      marker.setOnTapListener((marker) {
-
-        // 🔹 현재 마커 크게 만들기
+      marker.setOnTapListener((_) {
+        // 선택 시 마커 크기 키우고 카메라 이동
+        _resetSelectedMarkerSize();
         marker.setSize(const Size(50, 50));
         _selectedMarker = marker;
 
-        // 🔹 지도 확대 + 이동
         _mapController.updateCamera(
-          NCameraUpdate.withParams(
-            target: NLatLng(facility.latitude, facility.longitude),
-            zoom: 16, // 원하는 확대 수준
-          )
-          ..setAnimation(
-            animation: NCameraAnimation.linear,
-            duration: const Duration(milliseconds: 250),
-          ),
+            NCameraUpdate.withParams(
+              target: NLatLng(f.latitude, f.longitude),
+              zoom: 16,
+            )..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250))
         );
 
-        _showFacilityDetail(facility);
+        _showFacilityDetail(f);
       });
-
-
       _mapController.addOverlay(marker);
     }
   }
 
   void _resetSelectedMarkerSize() {
     if (_selectedMarker != null) {
-      _selectedMarker!.setSize(const Size(36, 36)); // 기본 크기
+      _selectedMarker!.setSize(const Size(36, 36));
       _selectedMarker = null;
     }
   }
 
-  NMarker? _selectedMarker;
-
-  IconData _iconForCategory(String category) {
-    switch (category) {
-      case 'Cafe':
-        return Icons.coffee;
-      case 'Store':
-        return Icons.local_convenience_store;
-      case 'Restaurant':
-        return Icons.restaurant;
-      case 'Admin':
-        return Icons.account_balance;
-      default:
-        return Icons.place;
-    }
-  }
-
-  Color _bgForCategory(String category) {
-    switch (category) {
-      case 'Cafe':
-        return const Color(0xFF8D6E63);
-      case 'Store':
-        return const Color(0xFF43A047);
-      case 'Restaurant':
-        return const Color(0xFFE53935);
-      case 'Admin':
-        return const Color(0xFF1E88E5);
-      default:
-        return const Color(0xFF616161);
-    }
-  }
-
-
-
-
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Consumer<FavoriteProvider>(
-          builder: (context, favoriteProvider, child) {
-            final bool isFav = favoriteProvider.isFavorite(facility.id);
-
-            return Container(
-              padding: const EdgeInsets.all(24),
-              height: 250,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              facility.engName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              facility.korName,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isFav ? Icons.star : Icons.star_border,
-                          color: isFav ? Colors.red : Colors.grey,
-                          size: 28,
-                        ),
-                        onPressed: () {
-                          favoriteProvider.toggleFavorite(facility.id);
-                        },
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.knuRed.withAlpha(26),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          facility.category,
-                          style: const TextStyle(
-                            color: AppColors.knuRed,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 30),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline,
-                        color: AppColors.knuRed,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          facility.engDesc,
-                          style: const TextStyle(fontSize: 15),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-
-                        if (facility.category == 'Restaurant') {
-                          Navigator.of(this.context).push(
-                            MaterialPageRoute(
-                              builder: (_) => CafeteriaScreen(
-                                initialFacilityId: facility.id,
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // TODO: Add directions/navigation later
-                      },
-                      icon: Icon(
-                        facility.category == 'Restaurant'
-                            ? Icons.restaurant_menu
-                            : Icons.directions,
-                      ),
-                      label: Text(
-                        facility.category == 'Restaurant'
-                            ? 'View Menu'
-                            : 'Get Directions',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.knuRed,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      // ✅ 바텀시트 내려서 닫히면 마커 원래 크기로
-      _resetSelectedMarkerSize();
-    });
+      backgroundColor: Colors.transparent,
+      builder: (context) => FacilityBottomSheet(facility: facility),
+    ).whenComplete(() => _resetSelectedMarkerSize());
   }
 }
 
+// 카테고리별 마커 아이콘 위젯
 class _MarkerIcon extends StatelessWidget {
-  final IconData icon;
-  final Color backgroundColor;
-
-  const _MarkerIcon({
-    Key? key,
-    required this.icon,
-    required this.backgroundColor,
-  }) : super(key: key);
+  final String category;
+  const _MarkerIcon({required this.category});
 
   @override
   Widget build(BuildContext context) {
+    IconData icon;
+    Color color;
+    switch (category) {
+      case 'Cafe': icon = Icons.coffee; color = const Color(0xFF8D6E63); break;
+      case 'Store': icon = Icons.local_convenience_store; color = const Color(0xFF43A047); break;
+      case 'Restaurant': icon = Icons.restaurant; color = const Color(0xFFE53935); break;
+      case 'Admin': icon = Icons.account_balance; color = const Color(0xFF1E88E5); break;
+      default: icon = Icons.place; color = AppColors.knuRed;
+    }
     return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Icon(
-        icon,
-        color: Colors.white,
-        size: 30,
-      ),
+      width: 48, height: 48,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))]),
+      child: Icon(icon, color: Colors.white, size: 28),
     );
   }
 }

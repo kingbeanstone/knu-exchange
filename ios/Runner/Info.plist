@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+    <string>지도에서 내 위치를 확인하기 위해 위치 권한이 필요합니다.</string>
 </dict>
 </plist>
