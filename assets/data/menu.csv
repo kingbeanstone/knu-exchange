@@ -18,7 +18,11 @@ cheomseong_dorm_cafeteria,2026-02-14,breakfast,Dorm Breakfast Sample 6
 cheomseong_dorm_cafeteria,2026-02-14,lunch,Dorm Lunch Sample 6
 cheomseong_dorm_cafeteria,2026-02-14,dinner,Dorm Dinner Sample 6
 cheomseong_dorm_cafeteria,2026-02-15,breakfast,식당운영없음
-cheomseong_dorm_cafeteria,2026-02-15,lunch,짜장밥 계란국 유린기 오이생채 배추김치
+cheomseong_dorm_cafeteria,2026-02-15,lunch,"짜장밥
+계란국
+유린기
+오이생채
+배추김치"
 cheomseong_dorm_cafeteria,2026-02-15,dinner,백미밥 들깨미역국 함박스테이크 땅콩조림 된장고추지 배추김치
 welfare_bldg_cafeteria,2026-02-09,lunch,Welfare Lunch Sample 1
 information_center_cafeteria,2026-02-09,lunch,Info Center Lunch Sample 1
@@ -40,3 +44,6 @@ welfare_bldg_cafeteria,2026-02-13,lunch,Welfare Lunch Sample 5
 information_center_cafeteria,2026-02-13,lunch,Info Center Lunch Sample 5
 engineering_bldg_cafeteria,2026-02-13,lunch,Engineering Lunch Sample 5
 global_plaza_cafeteria,2026-02-13,lunch,Global Plaza Lunch Sample 5
+kyungdaria_cafeteria,2026-02-17,Burger,"Chicken cheese burger(2,700)
+Chicken burger(2,500)"
+kyungdaria_cafeteria,2026-02-17,Risotto,Whole shrimp cheese risotto

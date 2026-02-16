@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:csv/csv.dart';
 
 class CafeteriaScreen extends StatefulWidget {
   final String? initialFacilityId;
@@ -18,18 +19,23 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     'breakfast': 'Breakfast',
     'lunch': 'Lunch',
     'dinner': 'Dinner',
+    'burger': 'Burger',
+    'risotto': 'Risotto',
   };
 
   static const Map<String, int> _mealOrder = {
     'breakfast': 0,
     'lunch': 1,
     'dinner': 2,
+    'burger': 3,
+    'risotto': 4,
   };
   static const Map<String, String> _studentFacilityDisplay = {
     'welfare_bldg_cafeteria': 'Welfare Bldg',
     'information_center_cafeteria': 'Information Center',
     'engineering_bldg_cafeteria': 'Engineering Bldg.',
     'global_plaza_cafeteria': 'Global Plaza Cafeteria',
+    'kyungdaria_cafeteria': 'Kyungdaria',
   };
 
   // 날짜 선택 (기본: 오늘)
@@ -61,40 +67,51 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
   // CSV 스키마: facility,date,meal,menu
   Future<List<Map<String, String>>> loadMenu() async {
     final raw = await rootBundle.loadString('assets/data/menu.csv');
-    final lines = raw.split('\n');
+    final normalizedRaw = raw.replaceAll('\r\n', '\n'); // ✅ 윈도우 줄바꿈 정리
+
+    // ✅ 진짜 CSV 파싱 (따옴표/쉼표/줄바꿈 지원)
+    final rows = const CsvToListConverter(
+      shouldParseNumbers: false,
+      eol: '\n',
+    ).convert(normalizedRaw); // ✅ raw -> normalizedRaw
 
     final List<Map<String, String>> menuList = [];
 
+    if (rows.isEmpty) return menuList;
+
     // 0번째 줄은 헤더라고 가정
-    for (int i = 1; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isEmpty) continue;
+    for (int i = 1; i < rows.length; i++) {
+      final row = rows[i];
 
-      final row = line.split(',');
-      if (row.length >= 4) {
-        final facility = row[0].trim().toLowerCase();
-        final date = row[1].trim();
-        final meal = row[2].trim().toLowerCase();
+      // 빈 줄/깨진 줄 방지
+      if (row.isEmpty) continue;
+      if (row.length < 4) continue;
 
-        // 메뉴 텍스트에 쉼표가 들어갈 수 있어 4번째 컬럼 이후는 다시 합칩니다.
-        final joinedMenu = row.sublist(3).join(',').trim();
-        final cleanedMenu = (joinedMenu.startsWith('"') &&
-                joinedMenu.endsWith('"') &&
-                joinedMenu.length >= 2)
-            ? joinedMenu.substring(1, joinedMenu.length - 1)
-            : joinedMenu;
+      final facility = row[0].toString().trim().toLowerCase();
+      final date = row[1].toString().trim();
+      final meal = row[2].toString().trim().toLowerCase();
 
-        menuList.add({
-          'facility': facility,
-          'date': date,
-          'meal': meal,
-          'menu': cleanedMenu,
-        });
-      }
+      // menu는 4번째 컬럼부터 끝까지 합치기 (메뉴에 쉼표가 있을 수 있음)
+      final menu = row
+          .sublist(3)
+          .map((e) => e.toString())
+          .join(',')
+          .trim()
+          .replaceAll('\r', ''); // ✅ 남아있는 CR 제거
+
+      if (facility.isEmpty || date.isEmpty || meal.isEmpty) continue;
+
+      menuList.add({
+        'facility': facility,
+        'date': date,
+        'meal': meal,
+        'menu': menu, // ✅ 줄바꿈(\n)이 그대로 들어올 수 있음
+      });
     }
 
     return menuList;
   }
+
 
   String _toIsoDate(DateTime d) {
     final yyyy = d.year.toString().padLeft(4, '0');
@@ -218,7 +235,11 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Card(
               child: ListTile(
-                title: Text(item['menu'] ?? ''),
+                title: Text(
+                  (item['menu'] ?? '').replaceAll('\r', ''),
+                  maxLines: null,
+                  softWrap: true,
+                ),
               ),
             ),
           ),
