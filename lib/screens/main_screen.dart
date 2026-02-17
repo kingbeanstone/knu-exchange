@@ -44,12 +44,12 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: const Color(0xFFDD1829), // KNU Red
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: '홈'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: '식당'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
-          BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+              icon: Icon(Icons.restaurant_menu), label: 'Cafeteria'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
+          BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Bookmark'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
         ],
       ),
     );
