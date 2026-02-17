@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'login_screen.dart'; // 로그인 화면으로 이동하기 위해 필요
+import 'privacy_policy_screen.dart';
+import 'contact_screen.dart';
+
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -59,12 +62,31 @@ class SettingsScreen extends StatelessWidget {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.privacy_tip),
+            title: const Text('Privacy Policy'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+          ),
+
+          ListTile(
             leading: const Icon(Icons.contact_support),
             title: const Text('Contact Us'),
             onTap: () {
-              // 문의하기 (이메일 등)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ContactScreen(),
+                ),
+              );
             },
           ),
+
         ],
       ),
     );
