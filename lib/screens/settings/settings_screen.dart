@@ -74,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.contact_support),
             title: const Text('Contact Us'),
@@ -87,7 +87,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-
+          const Divider(),
         ],
       ),
     );
