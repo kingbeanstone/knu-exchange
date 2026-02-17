@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/facility.dart';
-import '../../utils/app_colors.dart';
+import '../../../models/facility.dart';
+import '../../../utils/app_colors.dart';
 
 class FacilityBottomSheet extends StatelessWidget {
   final Facility facility;

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../utils/app_colors.dart';
 import '../../models/facility.dart';
 import '../../services/map_service.dart';
-import '../../widgets/category_filter.dart';
-import '../../widgets/facility_bottom_sheet.dart';
+import '../../widgets/home/category_filter.dart';
+import '../../widgets/home/facility_bottom_sheet.dart';
+import '../../widgets/home/map_controls.dart';
+import '../../widgets/home/marker_icon.dart';
+import '../../widgets/home/admin_coords_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,29 +22,21 @@ class _HomeScreenState extends State<HomeScreen> {
   final MapService _mapService = MapService();
   String _selectedCategory = 'All';
 
-  // 어드민 모드 로직 복구
   bool _adminMode = false;
   int _titleTapCount = 0;
   NMarker? _selectedMarker;
+
+  // 현재 위치 추적 모드 상태 관리
+  NLocationTrackingMode _currentTrackingMode = NLocationTrackingMode.none;
+
+  static const _knuCenter = NLatLng(35.8899, 128.6105);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
-          onTap: () {
-            _titleTapCount++;
-            if (_titleTapCount >= 5) {
-              setState(() => _adminMode = !_adminMode);
-              _titleTapCount = 0;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            }
-          },
+          onTap: _handleAdminTap,
           child: const Text('KNU Campus Map'),
         ),
         backgroundColor: AppColors.knuRed,
@@ -53,11 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           NaverMap(
             options: const NaverMapViewOptions(
-              initialCameraPosition: NCameraPosition(
-                target: NLatLng(35.8899, 128.6105),
-                zoom: 15,
-              ),
-              locationButtonEnable: true,
+              initialCameraPosition: NCameraPosition(target: _knuCenter, zoom: 15),
+              // 기본 버튼은 끄고 커스텀 버튼을 사용합니다.
+              locationButtonEnable: false,
               consumeSymbolTapEvents: false,
             ),
             onMapReady: (controller) async {
@@ -82,51 +74,78 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
+
+          Positioned(
+            bottom: 24,
+            right: 16,
+            child: MapControls(
+              onResetToKnu: _resetToKnu,
+              onToggleLocation: _toggleLocationMode,
+              currentMode: _currentTrackingMode,
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  // 내 위치 모드 토글 로직 (Follow <-> Face)
+  Future<void> _toggleLocationMode() async {
+    final status = await Permission.location.status;
+    if (!status.isGranted) {
+      await Permission.location.request();
+      return;
+    }
+
+    setState(() {
+      // none이나 다른 모드일 때는 follow로 시작, 이후에는 follow와 face를 교체
+      if (_currentTrackingMode == NLocationTrackingMode.follow) {
+        _currentTrackingMode = NLocationTrackingMode.face;
+      } else {
+        _currentTrackingMode = NLocationTrackingMode.follow;
+      }
+    });
+
+    _mapController.setLocationTrackingMode(_currentTrackingMode);
+  }
+
+  void _handleAdminTap() {
+    _titleTapCount++;
+    if (_titleTapCount >= 5) {
+      setState(() => _adminMode = !_adminMode);
+      _titleTapCount = 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  void _showAdminCoords(NLatLng latLng) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => AdminCoordsSheet(latLng: latLng),
+    );
+  }
+
+  void _resetToKnu() {
+    setState(() => _currentTrackingMode = NLocationTrackingMode.none);
+    _mapController.setLocationTrackingMode(NLocationTrackingMode.none);
+    _mapController.updateCamera(
+      NCameraUpdate.withParams(target: _knuCenter, zoom: 15)
+        ..setAnimation(animation: NCameraAnimation.easing, duration: const Duration(milliseconds: 500)),
     );
   }
 
   Future<void> _initializeLocation() async {
     final status = await Permission.location.request();
     if (status.isGranted) {
-      _mapController.setLocationTrackingMode(NLocationTrackingMode.follow);
+      // 초기에는 위치 점만 표시하고 추적은 하지 않음
+      _mapController.setLocationTrackingMode(NLocationTrackingMode.none);
     }
-  }
-
-  // 어드민 좌표 복사 바텀시트
-  void _showAdminCoords(NLatLng latLng) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Selected Coordinates', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Text('lat: ${latLng.latitude}'),
-            Text('lng: ${latLng.longitude}'),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: '${latLng.latitude}, ${latLng.longitude}'));
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Copy to Clipboard'),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.knuRed, foregroundColor: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _updateMarkers() async {
@@ -140,9 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
         caption: NOverlayCaption(text: f.engName),
       );
 
-      // 위젯 마커 로직 복구
       final iconImage = await NOverlayImage.fromWidget(
-        widget: _MarkerIcon(category: f.category),
+        widget: MarkerIcon(category: f.category),
         context: context,
         size: const Size(60, 60),
       );
@@ -150,18 +168,13 @@ class _HomeScreenState extends State<HomeScreen> {
       marker.setSize(const Size(36, 36));
 
       marker.setOnTapListener((_) {
-        // 선택 시 마커 크기 키우고 카메라 이동
         _resetSelectedMarkerSize();
         marker.setSize(const Size(50, 50));
         _selectedMarker = marker;
-
         _mapController.updateCamera(
-            NCameraUpdate.withParams(
-              target: NLatLng(f.latitude, f.longitude),
-              zoom: 16,
-            )..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250))
+          NCameraUpdate.withParams(target: NLatLng(f.latitude, f.longitude), zoom: 16)
+            ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250)),
         );
-
         _showFacilityDetail(f);
       });
       _mapController.addOverlay(marker);
@@ -181,29 +194,5 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => FacilityBottomSheet(facility: facility),
     ).whenComplete(() => _resetSelectedMarkerSize());
-  }
-}
-
-// 카테고리별 마커 아이콘 위젯
-class _MarkerIcon extends StatelessWidget {
-  final String category;
-  const _MarkerIcon({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    IconData icon;
-    Color color;
-    switch (category) {
-      case 'Cafe': icon = Icons.coffee; color = const Color(0xFF8D6E63); break;
-      case 'Store': icon = Icons.local_convenience_store; color = const Color(0xFF43A047); break;
-      case 'Restaurant': icon = Icons.restaurant; color = const Color(0xFFE53935); break;
-      case 'Admin': icon = Icons.account_balance; color = const Color(0xFF1E88E5); break;
-      default: icon = Icons.place; color = AppColors.knuRed;
-    }
-    return Container(
-      width: 48, height: 48,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4))]),
-      child: Icon(icon, color: Colors.white, size: 28),
-    );
   }
 }
