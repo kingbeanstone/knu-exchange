@@ -51,7 +51,8 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (val) {
                 // 알림 끄기/켜기
               },
-              activeColor: knuRed,
+              activeTrackColor: knuRed.withAlpha(80),
+              activeThumbColor: knuRed,
             ),
           ),
           const Divider(),
