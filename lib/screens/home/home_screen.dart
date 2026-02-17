@@ -242,19 +242,19 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       marker.setIcon(overlayIcon);
-      marker.setSize(const Size(36, 36)); // 지도 위 실제 표시 크기
+      marker.setSize(const Size(28, 28)); // 지도 위 실제 표시 크기
 
       marker.setOnTapListener((marker) {
 
         // 🔹 현재 마커 크게 만들기
-        marker.setSize(const Size(50, 50));
+        marker.setSize(const Size(42, 42));
         _selectedMarker = marker;
 
         // 🔹 지도 확대 + 이동
         _mapController.updateCamera(
           NCameraUpdate.withParams(
             target: NLatLng(facility.latitude, facility.longitude),
-            zoom: 16, // 원하는 확대 수준
+            zoom: 17, // 원하는 확대 수준
           )
           ..setAnimation(
             animation: NCameraAnimation.linear,
@@ -272,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _resetSelectedMarkerSize() {
     if (_selectedMarker != null) {
-      _selectedMarker!.setSize(const Size(36, 36)); // 기본 크기
+      _selectedMarker!.setSize(const Size(28, 28)); // 기본 크기
       _selectedMarker = null;
     }
   }
