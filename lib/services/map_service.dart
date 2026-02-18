@@ -210,13 +210,13 @@ class MapService {
         category: 'Restaurant',
       ),
       Facility(
-        id: 'kyungdaria_restaurant',
+        id: 'kyungdaria_cafeteria',
         korName: '경대리아',
         engName: 'Kyungdaria',
         latitude: 35.8914831,
         longitude: 128.6127566,
         korDesc: '경북대 도서관 휴게실에 있는 식당입니다.',
-        engDesc: 'A restaurant in the KNU library lounge.',
+        engDesc: 'Cafeteria in the KNU library lounge.',
         category: 'Restaurant',
       ),
     ];

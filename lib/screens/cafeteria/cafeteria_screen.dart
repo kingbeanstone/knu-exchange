@@ -21,6 +21,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     'welfare_bldg_cafeteria': 'Welfare Bldg',
     'information_center_cafeteria': 'Information Center',
     'engineering_bldg_cafeteria': 'Engineering Bldg.',
+    'kyungdaria_cafeteria': 'Kyungdaria'
   };
 
   @override
