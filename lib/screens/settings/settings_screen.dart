@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'profile_edit_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'contact_screen.dart';
+
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -34,6 +37,25 @@ class SettingsScreen extends StatelessWidget {
           _buildMenuTile(Icons.notifications_outlined, 'Notifications', 'On'),
 
           const Divider(),
+          // 약관/문의
+          _buildMenuTile(
+            Icons.privacy_tip_outlined,
+            'Privacy Policy',
+            '',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+            ),
+          ),
+          _buildMenuTile(
+            Icons.mail_outline,
+            'Contact Us',
+            '',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ContactScreen()),
+            ),
+          ),
 
           // 로그인 상태일 때만 회원 탈퇴 버튼 표시
           if (authProvider.isAuthenticated)
@@ -97,17 +119,42 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, String trailing) {
+  Widget _buildMenuTile(
+      IconData icon,
+      String title,
+      String trailing, {
+        VoidCallback? onTap,
+      }) {
+    final hasTrailingText = trailing.trim().isNotEmpty;
+
     return Container(
       color: Colors.white,
       child: ListTile(
         leading: Icon(icon, color: Colors.grey),
         title: Text(title),
-        trailing: Text(trailing, style: const TextStyle(color: Colors.grey)),
-        onTap: () {},
+
+        // trailing 텍스트가 있으면 텍스트(+ 필요시 화살표),
+        // trailing 텍스트가 없으면 이동 가능할 때만 화살표 표시
+        trailing: hasTrailingText
+            ? Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(trailing, style: const TextStyle(color: Colors.grey)),
+            if (onTap != null) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            ],
+          ],
+        )
+            : (onTap != null
+            ? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey)
+            : null),
+
+        onTap: onTap, // ✅ 여기로 전달
       ),
     );
   }
+
 
   // 계정 삭제 확인 다이얼로그
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
