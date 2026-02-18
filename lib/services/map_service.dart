@@ -158,6 +158,16 @@ class MapService {
         engDesc: 'Convenience store near Jinri Dorm.',
         category: 'Store',
       ),
+      Facility(
+        id: 'bookstore_welfare_bldg',
+        korName: '복지관 서점',
+        engName: 'Bookstore Welfare Bldg',
+        latitude: 35.8889341,
+        longitude: 128.6146760,
+        korDesc: '복지관 서점입니다.',
+        engDesc: 'Bookstore near Welfare Bldg.',
+        category: 'Store',
+      ),
       // 식당 (Restaurant)
       Facility(
         id: 'welfare_bldg_cafeteria',
