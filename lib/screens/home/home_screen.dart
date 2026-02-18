@@ -165,14 +165,14 @@ class _HomeScreenState extends State<HomeScreen> {
         size: const Size(60, 60),
       );
       marker.setIcon(iconImage);
-      marker.setSize(const Size(36, 36));
+      marker.setSize(const Size(28, 28));
 
       marker.setOnTapListener((_) {
         _resetSelectedMarkerSize();
-        marker.setSize(const Size(50, 50));
+        marker.setSize(const Size(44, 44));
         _selectedMarker = marker;
         _mapController.updateCamera(
-          NCameraUpdate.withParams(target: NLatLng(f.latitude, f.longitude), zoom: 16)
+          NCameraUpdate.withParams(target: NLatLng(f.latitude, f.longitude))
             ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250)),
         );
         _showFacilityDetail(f);
@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _resetSelectedMarkerSize() {
     if (_selectedMarker != null) {
-      _selectedMarker!.setSize(const Size(36, 36));
+      _selectedMarker!.setSize(const Size(28, 28));
       _selectedMarker = null;
     }
   }
