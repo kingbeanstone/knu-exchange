@@ -56,6 +56,7 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute(builder: (context) => const ContactScreen()),
             ),
           ),
+          const Divider(),
 
           // 로그인 상태일 때만 회원 탈퇴 버튼 표시
           if (authProvider.isAuthenticated)
