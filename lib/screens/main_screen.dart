@@ -6,7 +6,6 @@ import 'package:knu_ex/screens/notice/notice_screen.dart';
 import 'home/home_screen.dart';
 import 'cafeteria/cafeteria_screen.dart';
 import 'community/community_screen.dart';
-import 'favorite/favorite_screen.dart';
 import 'settings/settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
