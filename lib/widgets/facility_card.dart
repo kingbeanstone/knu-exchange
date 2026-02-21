@@ -4,7 +4,7 @@ import '../models/facility.dart';
 import '../utils/app_colors.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/auth_provider.dart';
-import '../screens/settings/login_screen.dart';
+import '../screens/auth/login_screen.dart';
 
 class FacilityCard extends StatelessWidget {
   final Facility facility;

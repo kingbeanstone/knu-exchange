@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/comment.dart';
-import '../../utils/app_colors.dart';
+import '../../../models/comment.dart';
+import '../../../utils/app_colors.dart';
 
 class CommentItem extends StatelessWidget {
   final Comment comment;

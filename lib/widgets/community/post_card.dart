@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../models/post.dart';
-import '../../utils/app_colors.dart';
-import '../../screens/community/post_detail_screen.dart';
+import '../../../models/post.dart';
+import '../../../utils/app_colors.dart';
+import '../../../screens/community/post_detail_screen.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
