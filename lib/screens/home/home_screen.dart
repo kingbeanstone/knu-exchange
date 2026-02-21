@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import '../../utils/app_colors.dart'; // 경로 확인 필요
-import 'package:knu_ex/models/facility.dart';
-// import '/models/facility.dart';   // 경로 확인 필요
+import 'package:permission_handler/permission_handler.dart';
+import '../../utils/app_colors.dart';
+import '../../models/facility.dart';
+import '../../services/map_service.dart';
+import '../../widgets/home/category_filter.dart';
+import '../../widgets/home/facility_bottom_sheet.dart';
+import '../../widgets/home/map_controls.dart';
+import '../../widgets/home/campus_map_view.dart';
+import '../../widgets/home/admin_coords_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,141 +18,128 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late NaverMapController _mapController;
+  NaverMapController? _mapController;
+  final MapService _mapService = MapService();
+  String _selectedCategory = 'All';
 
-  // 교환학생을 위한 필수 장소 데이터 예시
-  // 실제로는 MapService 등을 통해 가져오는 것이 좋습니다.
-  final List<Map<String, dynamic>> _essentialPlaces = [
-    {
-      'id': 'global_plaza',
-      'korName': '글로벌플라자 (국제교류처)',
-      'engName': 'Global Plaza (OIA)',
-      'position': const NLatLng(35.8899, 128.6105),
-      'desc': 'Office of International Affairs is located here.',
-    },
-    {
-      'id': 'dorm_cheomseong',
-      'korName': '첨성관 기숙사',
-      'engName': 'Cheomseong-gwan Dorm',
-      'position': const NLatLng(35.8864, 128.6145),
-      'desc': 'Main dormitory for international students.',
-    },
-    {
-      'id': 'it_4',
-      'korName': 'IT융복합관',
-      'engName': 'IT Convergence Building',
-      'position': const NLatLng(35.8888, 128.6103),
-      'desc': 'Major building for Electronics and Mobile Engineering.',
-    },
-  ];
+  // 관리자 모드 관련 상태
+  bool _adminMode = false;
+  int _titleTapCount = 0;
+
+  static const _knuCenter = NLatLng(35.8899, 128.6105);
 
   @override
   Widget build(BuildContext context) {
+    final filteredFacilities = _mapService.getFacilitiesByCategory(_selectedCategory);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KNU Campus Map'),
-        backgroundColor: AppColors.knuRed, // app_colors.dart의 색상 사용
-        foregroundColor: Colors.white,
-      ),
-      body: NaverMap(
-        options: const NaverMapViewOptions(
-          initialCameraPosition: NCameraPosition(
-            target: NLatLng(35.8899, 128.6105),
-            zoom: 15,
-          ),
-          locationButtonEnable: true,
+        title: GestureDetector(
+          onTap: _handleAdminTap,
+          child: const Text('KNU Campus Map'),
         ),
-        onMapReady: (controller) {
-          _mapController = controller;
-          _addEssentialMarkers(); // 마커 추가 함수 호출
-        },
+        backgroundColor: AppColors.knuRed,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          // 분리된 지도 뷰 위젯
+          CampusMapView(
+            initialPosition: _knuCenter,
+            facilities: filteredFacilities,
+            onMapReady: (controller) {
+              _mapController = controller;
+              _initializeLocation();
+            },
+            onFacilitySelected: _showFacilityDetail,
+            onMapLongTap: (latLng) {
+              if (_adminMode) _showAdminCoords(latLng);
+            },
+          ),
+
+          // 카테고리 필터 영역
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: CategoryFilter(
+              selectedCategory: _selectedCategory,
+              onCategorySelected: (category) {
+                setState(() => _selectedCategory = category);
+              },
+            ),
+          ),
+
+          // 지도 컨트롤 버튼 영역
+          Positioned(
+            bottom: 24,
+            right: 16,
+            child: MapControls(
+              onResetToKnu: _resetToKnu,
+              onMyLocation: _moveToMyLocation,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // 여러 개의 마커를 한꺼번에 추가하는 함수
-  void _addEssentialMarkers() {
-    for (var place in _essentialPlaces) {
-      final marker = NMarker(
-        id: place['id'],
-        position: place['position'],
-        caption: NOverlayCaption(text: place['engName']), // 영어 이름을 캡션으로
-      );
+  // --- 비즈니스 로직 ---
 
-      // 마커 클릭 시 상세 정보창(Modal Bottom Sheet) 띄우기
-      marker.setOnTapListener((marker) {
-        _showPlaceDetail(place);
-      });
-
-      _mapController.addOverlay(marker);
+  Future<void> _initializeLocation() async {
+    final status = await Permission.location.request();
+    if (status.isGranted && _mapController != null) {
+      _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     }
   }
 
-  // 하단 상세 정보창 구현
-  void _showPlaceDetail(Map<String, dynamic> place) {
+  void _resetToKnu() {
+    if (_mapController == null) return;
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
+    _mapController!.updateCamera(
+      NCameraUpdate.withParams(target: _knuCenter, zoom: 15)
+        ..setAnimation(animation: NCameraAnimation.easing, duration: const Duration(milliseconds: 500)),
+    );
+  }
+
+  // [버그 수정] 내 위치로 이동 로직 강화
+  void _moveToMyLocation() {
+    if (_mapController == null) return;
+
+    // 현재 모드가 무엇이든 간에, none으로 세팅 후 다시 follow를 걸어줌으로써
+    // 카메라가 강제로 내 위치를 추적하도록 Jump를 유도합니다.
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
+  }
+
+  void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          height: 250,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          place['engName'],
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          place['korName'],
-                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const Divider(height: 30),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.info_outline, color: AppColors.knuRed, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(place['desc'], style: const TextStyle(fontSize: 16))),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // 길찾기나 더 자세한 페이지로 이동하는 로직 추가 가능
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.knuRed,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Get Directions'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      backgroundColor: Colors.transparent,
+      builder: (context) => FacilityBottomSheet(facility: facility),
     );
+  }
+
+  void _showAdminCoords(NLatLng latLng) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => AdminCoordsSheet(latLng: latLng),
+    );
+  }
+
+  void _handleAdminTap() {
+    _titleTapCount++;
+    if (_titleTapCount >= 5) {
+      setState(() => _adminMode = !_adminMode);
+      _titleTapCount = 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:knu_ex/screens/notice/notice_screen.dart';
 
 // [중요] 각 탭의 화면들을 폴더 구조에 맞춰 import 합니다.
 // 만약 빨간 줄이 뜨면 파일 위치가 실제와 다른 것이니 경로를 수정해야 합니다.
@@ -20,11 +21,12 @@ class _MainScreenState extends State<MainScreen> {
 
   // 탭별 화면 리스트
   final List<Widget> _screens = [
-    const HomeScreen(),      // 0: 홈 (지도)
+    const HomeScreen(), // 0: 홈 (지도)
     const CafeteriaScreen(), // 1: 식당
     const CommunityScreen(), // 2: 커뮤니티
-    const FavoriteScreen(),  // 3: 즐겨찾기
-    const SettingsScreen(),  // 4: 설정
+    // const FavoriteScreen(), // 3: 즐겨찾기
+    const NoticeScreen(), // 3: 즐겨찾기
+    const SettingsScreen(), // 4: 설정
   ];
 
   void _onItemTapped(int index) {
@@ -45,9 +47,11 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.map), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: '식당'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant_menu), label: '식당'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
-          BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
+          // BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: '공지사항'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
         ],
       ),

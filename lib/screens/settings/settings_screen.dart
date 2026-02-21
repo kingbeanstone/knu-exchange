@@ -1,53 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../admin/admin_dashboard_screen.dart';
+import '../../utils/app_colors.dart';
+import '../../widgets/settings/settings_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: const Color(0xFFDD1829),
+        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
-          const SizedBox(height: 10),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language'),
-            subtitle: const Text('English / Korean'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // 언어 변경 기능
-            },
+          // 1. 프로필 섹션
+          const SettingsSectionHeader(title: 'Profile'),
+          SettingsGroupCard(
+            child: authProvider.isAuthenticated
+                ? SettingsProfileContent(auth: authProvider)
+                : const SettingsLoginPrompt(),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            trailing: Switch(
-              value: true,
-              onChanged: (val) {
-                // 알림 끄기/켜기
-              },
-              activeColor: const Color(0xFFDD1829),
+
+          const SizedBox(height: 24),
+
+          // 2. 관리자 섹션
+          if (authProvider.isAdmin) ...[
+            const SettingsSectionHeader(title: 'Management'),
+            SettingsGroupCard(
+              child: SettingsMenuTile(
+                icon: Icons.admin_panel_settings_rounded,
+                iconColor: Colors.blueAccent,
+                title: 'Admin Dashboard',
+                trailing: 'Manage',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // 3. 일반 설정 섹션
+          const SettingsSectionHeader(title: 'Preferences'),
+          SettingsGroupCard(
+            child: Column(
+              children: [
+                SettingsMenuTile(icon: Icons.language, title: 'Language', trailing: 'English', onTap: () {}),
+                const SettingsDivider(),
+                SettingsMenuTile(icon: Icons.notifications_none_rounded, title: 'Notifications', trailing: 'On', onTap: () {}),
+              ],
             ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App Version'),
-            trailing: const Text('1.0.0', style: TextStyle(color: Colors.grey)),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.contact_support),
-            title: const Text('Contact Us'),
-            onTap: () {
-              // 문의하기 (이메일 등)
+
+          const SizedBox(height: 32),
+
+          // 4. 계정 관리
+          if (authProvider.isAuthenticated)
+            Center(
+              child: TextButton(
+                onPressed: () => _showDeleteAccountDialog(context, authProvider),
+                child: Text(
+                  'Delete Account',
+                  style: TextStyle(color: Colors.red.shade300, fontSize: 13),
+                ),
+              ),
+            ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Account'),
+        content: const Text('Are you sure you want to delete your account?\nAll your profile information will be permanently removed.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await auth.deleteAccount();
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account has been deleted.')));
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
             },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

@@ -1,36 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 import 'screens/main_screen.dart';
+import 'providers/favorite_provider.dart';
+import 'providers/community_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/like_provider.dart';
+import 'providers/comment_provider.dart';
+import 'providers/menu_provider.dart';
+import 'providers/notice_provider.dart';
+import 'providers/report_provider.dart'; // ReportProvider 추가
 
 void main() async {
-  // 1. 위젯 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
 
-  // 2. 깃허브 가이드 방식의 초기화
   await FlutterNaverMap().init(
-    clientId: '8px8q0aopz', // 사용자님의 Client ID
+    clientId: '8px8q0aopz',
     onAuthFailed: (ex) {
-      // 상세 에러 분기 처리 (README 방식)
-      switch (ex.runtimeType) {
-        case NQuotaExceededException:
-          print("********* [인증오류] 사용량 초과 (한도 확인 필요) *********");
-          break;
-        case NUnauthorizedClientException:
-          print("********* [인증오류] 인증 실패 (패키지명: com.knu.knu7 확인) *********");
-          break;
-        case NClientUnspecifiedException:
-          print("********* [인증오류] 클라이언트 ID 미지정 *********");
-          break;
-        case NAnotherAuthFailedException:
-          print("********* [인증오류] 기타 인증 실패: $ex *********");
-          break;
-        default:
-          print("********* [인증오류] 알 수 없는 에러: $ex *********");
-      }
+      debugPrint("Naver Map Auth Failed: $ex");
     },
   );
 
-  runApp(const KnuExApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // 1. AuthProvider를 최상단에 배치하여 다른 프로바이더들이 참조할 수 있게 합니다.
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // 2. FavoriteProvider를 ProxyProvider로 변경하여 AuthProvider의 유저 정보를 감시합니다.
+        ChangeNotifierProxyProvider<AuthProvider, FavoriteProvider>(
+          create: (_) => FavoriteProvider(),
+          update: (_, auth, favorite) {
+            // AuthProvider의 user.uid가 변경될 때마다 FavoriteProvider 내부 상태를 업데이트합니다.
+            return favorite!..updateUserId(auth.user?.uid);
+          },
+        ),
+
+        // 3. 나머지 프로바이더들 등록
+        ChangeNotifierProvider(create: (_) => CommunityProvider()),
+        ChangeNotifierProvider(create: (_) => LikeProvider()),
+        ChangeNotifierProvider(create: (_) => CommentProvider()),
+        ChangeNotifierProvider(create: (_) => MenuProvider()),
+        ChangeNotifierProvider(create: (_) => NoticeProvider()),
+        ChangeNotifierProvider(create: (_) => ReportProvider()),
+      ],
+      child: const KnuExApp(),
+    ),
+  );
 }
 
 class KnuExApp extends StatelessWidget {
@@ -42,7 +61,6 @@ class KnuExApp extends StatelessWidget {
       title: 'KNU Exchange',
       theme: ThemeData(
         useMaterial3: true,
-        // 경북대 느낌이 물씬 나는 레드 컬러 테마!
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFDD1829)),
       ),
       home: const MainScreen(),
