@@ -6,7 +6,6 @@ import 'package:knu_ex/screens/notice/notice_screen.dart';
 import 'home/home_screen.dart';
 import 'cafeteria/cafeteria_screen.dart';
 import 'community/community_screen.dart';
-import 'favorite/favorite_screen.dart';
 import 'settings/settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -46,13 +45,13 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: const Color(0xFFDD1829), // KNU Red
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: '홈'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: '식당'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
+              icon: Icon(Icons.restaurant_menu), label: 'Cafeteria'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
           // BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: '공지사항'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notice'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
         ],
       ),
     );

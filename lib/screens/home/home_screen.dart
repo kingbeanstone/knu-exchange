@@ -107,11 +107,60 @@ class _HomeScreenState extends State<HomeScreen> {
   void _moveToMyLocation() {
     if (_mapController == null) return;
 
-    // 현재 모드가 무엇이든 간에, none으로 세팅 후 다시 follow를 걸어줌으로써
-    // 카메라가 강제로 내 위치를 추적하도록 Jump를 유도합니다.
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
+void _updateMarkers() async {
+  await _mapController.clearOverlays();
+  final facilities =
+      _mapService.getFacilitiesByCategory(_selectedCategory);
+
+  for (var f in facilities) {
+    final marker = NMarker(
+      id: f.id,
+      position: NLatLng(f.latitude, f.longitude),
+      caption: NOverlayCaption(text: f.engName),
+    );
+
+    final iconImage = await NOverlayImage.fromWidget(
+      widget: MarkerIcon(category: f.category),
+      context: context,
+      size: const Size(60, 60),
+    );
+
+    marker.setIcon(iconImage);
+    marker.setSize(const Size(28, 28));
+
+    marker.setOnTapListener((_) {
+      _resetSelectedMarkerSize();
+      marker.setSize(const Size(44, 44));
+      _selectedMarker = marker;
+
+      _mapController.updateCamera(
+        NCameraUpdate.withParams(
+          target: NLatLng(f.latitude, f.longitude),
+        )..setAnimation(
+            animation: NCameraAnimation.linear,
+            duration: const Duration(milliseconds: 250),
+          ),
+      );
+
+      _showFacilityDetail(f);
+    });
+
+    _mapController.addOverlay(marker);
   }
+}
+
+void _resetSelectedMarkerSize() {
+  if (_selectedMarker != null) {
+    _selectedMarker!.setSize(const Size(28, 28));
+    _selectedMarker = null;
+  }
+}
+
+/// ✅ 내 위치 버튼용 (testing5 코드 분리)
+void _moveToMyLocation() {
+  _mapController?.setLocationTrackingMode(NLocationTrackingMode.none);
+  _mapController?.setLocationTrackingMode(NLocationTrackingMode.follow);
+}
 
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
