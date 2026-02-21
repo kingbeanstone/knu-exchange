@@ -10,7 +10,7 @@ class AuthService {
 
   Stream<User?> get user => _auth.authStateChanges();
 
-  // [신규] 특정 사용자의 Firestore 상세 프로필(isAdmin 포함) 정보를 가져옵니다.
+  // [추가] 특정 사용자의 Firestore 상세 프로필(isAdmin 포함) 정보를 가져옵니다.
   Future<Map<String, dynamic>?> getUserProfile(String uid) async {
     try {
       final doc = await _db
@@ -41,7 +41,6 @@ class AuthService {
     final docSnapshot = await userDoc.get();
 
     if (!docSnapshot.exists) {
-      // 신규 가입 시 관리자 여부는 기본적으로 false로 설정
       await userDoc.set({
         'uid': user.uid,
         'email': user.email,
@@ -49,7 +48,7 @@ class AuthService {
         'photoUrl': user.photoURL,
         'createdAt': FieldValue.serverTimestamp(),
         'isExchangeStudent': false,
-        'isAdmin': false,
+        'isAdmin': false, // 초기 가입 시에는 항상 일반 유저
         'loginType': 'password',
       });
 
@@ -59,7 +58,6 @@ class AuthService {
     }
   }
 
-  // 이메일 회원가입
   Future<UserCredential> signUp(String email, String password, {required String nickname}) async {
     final UserCredential credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -72,7 +70,6 @@ class AuthService {
     return credential;
   }
 
-  // 이메일 로그인
   Future<UserCredential> signIn(String email, String password) async {
     final credential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -84,12 +81,10 @@ class AuthService {
     return credential;
   }
 
-  // 로그아웃
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  // 닉네임 수정
   Future<void> updateNickname(String newNickname) async {
     final User? user = _auth.currentUser;
     if (user == null) return;
@@ -98,7 +93,6 @@ class AuthService {
     await user.reload();
   }
 
-  // 계정 삭제
   Future<void> deleteAccount() async {
     final User? user = _auth.currentUser;
     if (user == null) return;

@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
-import '../../widgets/report_dialog.dart'; // 신고 다이얼로그 추가
+import '../../widgets/report_dialog.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -70,29 +70,24 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 신고 다이얼로그 호출 함수
   void _showReportDialog() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')));
       return;
     }
-
     showDialog(
       context: context,
-      builder: (context) => ReportDialog(
-        targetId: _currentPost.id,
-        targetType: 'post',
-      ),
+      builder: (context) => ReportDialog(targetId: _currentPost.id, targetType: 'post'),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final bool isMyPost = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
+
+    // [수정] 본인의 글이거나 관리자(isAdmin)인 경우 삭제 권한 부여
+    final bool canDelete = auth.isAuthenticated && (auth.user?.uid == _currentPost.authorId || auth.isAdmin);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -102,11 +97,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // 내 글이면 삭제, 남의 글이면 신고 아이콘 표시
-          if (isMyPost)
+          // [수정] 권한이 있으면 삭제 아이콘, 없으면 신고 아이콘 노출
+          if (canDelete)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _confirmDelete,
+              tooltip: 'Delete post',
             )
           else
             IconButton(
