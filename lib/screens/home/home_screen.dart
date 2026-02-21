@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final MapService _mapService = MapService();
   String _selectedCategory = 'All';
 
-  // 임시 관리자 모드 상태 (추후 정식 관리자 로직으로 교체 예정)
+  // 관리자 모드 관련 상태
   bool _adminMode = false;
   int _titleTapCount = 0;
 
@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // 지도 레이어 (리팩토링됨)
+          // 분리된 지도 뷰 위젯
           CampusMapView(
             initialPosition: _knuCenter,
             facilities: filteredFacilities,
@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
-          // 카테고리 필터
+          // 카테고리 필터 영역
           Positioned(
             top: 10,
             left: 0,
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 지도 컨트롤
+          // 지도 컨트롤 버튼 영역
           Positioned(
             bottom: 24,
             right: 16,
@@ -85,7 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 위치 권한 초기화
+  // --- 비즈니스 로직 ---
+
   Future<void> _initializeLocation() async {
     final status = await Permission.location.request();
     if (status.isGranted && _mapController != null) {
@@ -93,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 학교 중심으로 카메라 리셋
   void _resetToKnu() {
     if (_mapController == null) return;
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
@@ -103,13 +103,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 사용자 현재 위치 추적
+  // [버그 수정] 내 위치로 이동 로직 강화
   void _moveToMyLocation() {
     if (_mapController == null) return;
+
+    // 현재 모드가 무엇이든 간에, none으로 세팅 후 다시 follow를 걸어줌으로써
+    // 카메라가 강제로 내 위치를 추적하도록 Jump를 유도합니다.
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
 
-  // 시설 상세 정보 바텀시트
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
       context: context,
@@ -118,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // [임시] 관리자용 좌표 확인 시트
   void _showAdminCoords(NLatLng latLng) {
     showModalBottomSheet(
       context: context,
@@ -127,7 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // [임시] 관리자 모드 활성화 (5번 터치)
   void _handleAdminTap() {
     _titleTapCount++;
     if (_titleTapCount >= 5) {

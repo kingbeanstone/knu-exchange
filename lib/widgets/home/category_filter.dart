@@ -14,9 +14,9 @@ class CategoryFilter extends StatelessWidget {
   // 이전의 풍부한 아이콘 구성을 다시 가져왔습니다.
   final List<Map<String, dynamic>> _categories = [
     {'label': 'All', 'icon': Icons.map, 'value': 'All'},
+    {'label': 'Cafeteria', 'icon': Icons.restaurant, 'value': 'Restaurant'},
     {'label': 'Cafe', 'icon': Icons.coffee, 'value': 'Cafe'},
     {'label': 'Store', 'icon': Icons.local_convenience_store, 'value': 'Store'},
-    {'label': 'Cafeteria', 'icon': Icons.restaurant, 'value': 'Restaurant'},
     {'label': 'Office', 'icon': Icons.account_balance, 'value': 'Admin'},
   ];
 

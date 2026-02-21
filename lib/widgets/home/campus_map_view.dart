@@ -30,7 +30,7 @@ class _CampusMapViewState extends State<CampusMapView> {
   @override
   void didUpdateWidget(CampusMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 시설 데이터가 변경되면 마커를 새로 그립니다.
+    // 표시할 시설 데이터가 변경되면 마커를 갱신합니다.
     if (oldWidget.facilities != widget.facilities && _controller != null) {
       _updateMarkers();
     }
@@ -49,7 +49,7 @@ class _CampusMapViewState extends State<CampusMapView> {
         caption: NOverlayCaption(text: f.engName),
       );
 
-      // 커스텀 위젯 아이콘 생성
+      // 커스텀 위젯을 마커 아이콘으로 변환
       final iconImage = await NOverlayImage.fromWidget(
         widget: MarkerIcon(category: f.category),
         context: context,
@@ -59,6 +59,7 @@ class _CampusMapViewState extends State<CampusMapView> {
       marker.setIcon(iconImage);
       marker.setSize(const Size(36, 36));
 
+      // 마커 클릭 시 동작
       marker.setOnTapListener((_) {
         _handleMarkerTap(marker, f);
       });
@@ -68,12 +69,12 @@ class _CampusMapViewState extends State<CampusMapView> {
   }
 
   void _handleMarkerTap(NMarker marker, Facility facility) {
-    // 이전 선택된 마커 크기 원복
+    // 이전 선택 마커 크기 초기화
     if (_selectedMarker != null) {
       _selectedMarker!.setSize(const Size(36, 36));
     }
 
-    // 선택된 마커 강조
+    // 새 마커 강조 및 저장
     marker.setSize(const Size(50, 50));
     _selectedMarker = marker;
 
@@ -85,7 +86,7 @@ class _CampusMapViewState extends State<CampusMapView> {
       )..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250)),
     );
 
-    // 부모 위젯(HomeScreen)에 선택 알림
+    // HomeScreen으로 선택된 시설 전달
     widget.onFacilitySelected(facility);
   }
 
