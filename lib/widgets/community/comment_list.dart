@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/comment_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../utils/app_colors.dart';
-import './comment_item.dart';
+import '../../../providers/comment_provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../utils/app_colors.dart';
+import 'comment_item.dart';
 
 class CommentList extends StatelessWidget {
   final String postId;

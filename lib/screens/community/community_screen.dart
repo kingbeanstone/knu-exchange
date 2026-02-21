@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
-import '../../widgets/post_card.dart'; // 새로 만든 PostCard 임포트
+import '../../widgets/community/post_card.dart';
+import '../../widgets/community/community_category_filter.dart'; // [추가] 신규 위젯 임포트
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -34,7 +35,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       body: Column(
         children: [
-          _buildCategoryBar(),
+          // [수정] 분리된 카테고리 필터 위젯 적용
+          CommunityCategoryFilter(
+            selectedCategory: _selectedCategory,
+            onCategorySelected: (category) {
+              setState(() => _selectedCategory = category);
+            },
+          ),
+          const Divider(height: 1), // 시각적 구분을 위한 구분선
           Expanded(
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -45,7 +53,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
               child: ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: filteredPosts.length,
-                // 분리된 PostCard 위젯 사용
                 itemBuilder: (context, index) => PostCard(post: filteredPosts[index]),
               ),
             ),
@@ -61,39 +68,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
         },
         backgroundColor: AppColors.knuRed,
         child: const Icon(Icons.edit, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildCategoryBar() {
-    return Container(
-      color: Colors.white,
-      height: 60,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        children: [
-          _categoryChip('All', null),
-          _categoryChip('Question', PostCategory.question),
-          _categoryChip('Tip', PostCategory.tip),
-          _categoryChip('Market', PostCategory.market),
-          _categoryChip('Free', PostCategory.free),
-        ],
-      ),
-    );
-  }
-
-  Widget _categoryChip(String label, PostCategory? category) {
-    final isSelected = _selectedCategory == category;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (selected) => setState(() => _selectedCategory = category),
-        selectedColor: AppColors.knuRed,
-        labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-        showCheckmark: false,
       ),
     );
   }

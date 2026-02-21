@@ -5,8 +5,8 @@ import '../../providers/community_provider.dart';
 import '../../providers/comment_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/comment_section.dart';
-import '../../widgets/post_action_bar.dart';
+import '../../widgets/community/comment_section.dart';
+import '../../widgets/community/post_action_bar.dart';
 import '../../widgets/report_dialog.dart'; // 신고 다이얼로그 추가
 
 class PostDetailScreen extends StatefulWidget {

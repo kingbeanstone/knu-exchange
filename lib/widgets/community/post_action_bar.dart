@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/post.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/like_provider.dart';
-import '../../utils/app_colors.dart';
-import '../../screens/settings/login_screen.dart';
+import '../../../models/post.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/like_provider.dart';
+import '../../../utils/app_colors.dart';
+import '../../../screens/settings/login_screen.dart';
 
 class PostActionBar extends StatefulWidget {
   final Post post;
