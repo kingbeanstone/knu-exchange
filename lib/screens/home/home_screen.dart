@@ -26,9 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _titleTapCount = 0;
   NMarker? _selectedMarker;
 
-  // 현재 위치 추적 모드 상태 관리
-  NLocationTrackingMode _currentTrackingMode = NLocationTrackingMode.none;
-
   static const _knuCenter = NLatLng(35.8899, 128.6105);
 
   @override
@@ -48,8 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
           NaverMap(
             options: const NaverMapViewOptions(
               initialCameraPosition: NCameraPosition(target: _knuCenter, zoom: 15),
-              // 기본 버튼은 끄고 커스텀 버튼을 사용합니다.
-              locationButtonEnable: false,
+              locationButtonEnable: false, // 커스텀 버튼 사용을 위해 비활성
               consumeSymbolTapEvents: false,
             ),
             onMapReady: (controller) async {
@@ -80,8 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 16,
             child: MapControls(
               onResetToKnu: _resetToKnu,
-              onToggleLocation: _toggleLocationMode,
-              currentMode: _currentTrackingMode,
+              onMyLocation: _moveToMyLocation, // 수정된 함수 연결
             ),
           ),
         ],
@@ -89,24 +84,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 내 위치 모드 토글 로직 (Follow <-> Face)
-  Future<void> _toggleLocationMode() async {
+  // 내 위치로 이동 및 Follow 모드 고정 로직
+  Future<void> _moveToMyLocation() async {
     final status = await Permission.location.status;
     if (!status.isGranted) {
       await Permission.location.request();
       return;
     }
 
-    setState(() {
-      // none이나 다른 모드일 때는 follow로 시작, 이후에는 follow와 face를 교체
-      if (_currentTrackingMode == NLocationTrackingMode.follow) {
-        _currentTrackingMode = NLocationTrackingMode.face;
-      } else {
-        _currentTrackingMode = NLocationTrackingMode.follow;
-      }
-    });
-
-    _mapController.setLocationTrackingMode(_currentTrackingMode);
+    // [수정] setLocationTrackingMode는 void를 반환하므로 await를 제거합니다.
+    // 모드를 강제로 재설정하여 현재 위치로 카메라를 즉시 이동시킵니다.
+    // 이미 follow 모드인 경우에도 다시 snap 하도록 하기 위해 none 후 follow를 호출합니다.
+    _mapController.setLocationTrackingMode(NLocationTrackingMode.none);
+    _mapController.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
 
   void _handleAdminTap() {
@@ -132,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _resetToKnu() {
-    setState(() => _currentTrackingMode = NLocationTrackingMode.none);
+    // 학교 중심으로 돌아갈 때는 위치 추적 해제
     _mapController.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController.updateCamera(
       NCameraUpdate.withParams(target: _knuCenter, zoom: 15)
@@ -143,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeLocation() async {
     final status = await Permission.location.request();
     if (status.isGranted) {
-      // 초기에는 위치 점만 표시하고 추적은 하지 않음
       _mapController.setLocationTrackingMode(NLocationTrackingMode.none);
     }
   }

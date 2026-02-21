@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../../utils/app_colors.dart';
 
 class MapControls extends StatelessWidget {
   final VoidCallback onResetToKnu;
-  final VoidCallback onToggleLocation;
-  final NLocationTrackingMode currentMode;
+  final VoidCallback onMyLocation; // 이름 변경: 토글에서 내 위치 이동으로
 
   const MapControls({
     super.key,
     required this.onResetToKnu,
-    required this.onToggleLocation,
-    required this.currentMode,
+    required this.onMyLocation,
   });
 
   @override
@@ -30,31 +27,17 @@ class MapControls extends StatelessWidget {
           child: const Icon(Icons.school),
         ),
         const SizedBox(height: 12),
-        // 커스텀 내 위치 버튼 (Follow와 Face 모드만 토글)
+        // 내 위치 이동 버튼 (항상 Follow 모드로 작동)
         FloatingActionButton.small(
-          heroTag: 'location_toggle_btn',
-          onPressed: onToggleLocation,
+          heroTag: 'location_move_btn',
+          onPressed: onMyLocation,
           backgroundColor: Colors.white,
-          foregroundColor: currentMode == NLocationTrackingMode.none
-              ? Colors.grey
-              : AppColors.knuRed,
+          foregroundColor: AppColors.knuRed,
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: Icon(_getIconForMode()),
+          child: const Icon(Icons.my_location), // 고정 아이콘 사용
         ),
       ],
     );
-  }
-
-  // 현재 모드에 따른 아이콘 변경
-  IconData _getIconForMode() {
-    switch (currentMode) {
-      case NLocationTrackingMode.follow:
-        return Icons.navigation; // 화살표
-      case NLocationTrackingMode.face:
-        return Icons.explore; // 나침반/부채꼴 느낌
-      default:
-        return Icons.my_location; // 기본 위치 아이콘
-    }
   }
 }
