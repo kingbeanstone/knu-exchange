@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/comment_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/app_colors.dart';
-import '../../../screens/settings/login_screen.dart';
+import '../../screens/auth/login_screen.dart';
 
 class CommentInput extends StatefulWidget {
   final String postId;

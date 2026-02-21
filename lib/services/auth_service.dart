@@ -10,6 +10,24 @@ class AuthService {
 
   Stream<User?> get user => _auth.authStateChanges();
 
+  // [신규] 특정 사용자의 Firestore 상세 프로필(isAdmin 포함) 정보를 가져옵니다.
+  Future<Map<String, dynamic>?> getUserProfile(String uid) async {
+    try {
+      final doc = await _db
+          .collection('artifacts')
+          .doc(_currentAppId)
+          .collection('users')
+          .doc(uid)
+          .collection('profile')
+          .doc('info')
+          .get();
+      return doc.data();
+    } catch (e) {
+      debugPrint("사용자 프로필 로드 에러: $e");
+      return null;
+    }
+  }
+
   // 사용자 Firestore 프로필 생성 및 업데이트 공통 로직
   Future<void> _updateUserProfile(User user, {String? nickname}) async {
     final userDoc = _db
@@ -23,6 +41,7 @@ class AuthService {
     final docSnapshot = await userDoc.get();
 
     if (!docSnapshot.exists) {
+      // 신규 가입 시 관리자 여부는 기본적으로 false로 설정
       await userDoc.set({
         'uid': user.uid,
         'email': user.email,
@@ -30,6 +49,7 @@ class AuthService {
         'photoUrl': user.photoURL,
         'createdAt': FieldValue.serverTimestamp(),
         'isExchangeStudent': false,
+        'isAdmin': false,
         'loginType': 'password',
       });
 
@@ -63,8 +83,6 @@ class AuthService {
     }
     return credential;
   }
-
-  // [삭제] 구글 및 애플 로그인 메서드가 제거되었습니다.
 
   // 로그아웃
   Future<void> signOut() async {

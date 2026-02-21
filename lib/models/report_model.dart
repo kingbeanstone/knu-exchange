@@ -17,6 +17,18 @@ class Report {
     required this.createdAt,
   });
 
+  // [수정] Firestore 데이터를 Report 객체로 변환하는 생성자 추가
+  factory Report.fromFirestore(String id, Map<String, dynamic> data) {
+    return Report(
+      id: id,
+      targetId: data['targetId'] ?? '',
+      targetType: data['targetType'] ?? 'post',
+      reporterId: data['reporterId'] ?? '',
+      reason: data['reason'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'targetId': targetId,

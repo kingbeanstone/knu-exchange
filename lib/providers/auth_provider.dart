@@ -5,18 +5,35 @@ import '../services/auth_service.dart';
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   User? _user;
+  bool _isAdmin = false; // [추가] 관리자 상태 변수
   bool _isLoading = false;
 
   User? get user => _user;
   bool get isAuthenticated => _user != null;
+  bool get isAdmin => _isAdmin; // [추가] 관리자 게터
   bool get isLoading => _isLoading;
 
   AuthProvider() {
     _user = FirebaseAuth.instance.currentUser;
+    // 초기 사용자 존재 시 권한 체크
+    if (_user != null) _checkAdminStatus(_user!.uid);
+
     _authService.user.listen((User? newUser) {
       _user = newUser;
-      notifyListeners();
+      if (newUser != null) {
+        _checkAdminStatus(newUser.uid);
+      } else {
+        _isAdmin = false;
+        notifyListeners();
+      }
     });
+  }
+
+  // [신규] 사용자의 관리자 권한 정보를 확인합니다.
+  Future<void> _checkAdminStatus(String uid) async {
+    final profile = await _authService.getUserProfile(uid);
+    _isAdmin = profile?['isAdmin'] ?? false;
+    notifyListeners();
   }
 
   void _setLoading(bool value) {
@@ -32,6 +49,10 @@ class AuthProvider with ChangeNotifier {
       if (credential.user != null) {
         await credential.user!.reload();
         final refreshedUser = FirebaseAuth.instance.currentUser;
+
+        // 권한 체크 즉시 실행
+        await _checkAdminStatus(credential.user!.uid);
+
         if (refreshedUser != null && !refreshedUser.emailVerified) {
           throw FirebaseAuthException(code: 'email-not-verified');
         }
@@ -55,19 +76,18 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // [삭제] 소셜 로그인(Google, Apple) 메서드들이 제거되었습니다.
-
   // 로그아웃
   Future<void> logout() async {
     _setLoading(true);
     try {
       await _authService.signOut();
+      _isAdmin = false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // 닉네임 수정 및 계정 삭제
+  // 닉네임 수정
   Future<void> updateNickname(String newNickname) async {
     _setLoading(true);
     try {
@@ -78,11 +98,13 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // 계정 삭제
   Future<void> deleteAccount() async {
     _setLoading(true);
     try {
       await _authService.deleteAccount();
       _user = null;
+      _isAdmin = false;
     } finally {
       _setLoading(false);
     }
