@@ -103,64 +103,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // [버그 수정] 내 위치로 이동 로직 강화
   void _moveToMyLocation() {
     if (_mapController == null) return;
 
-void _updateMarkers() async {
-  await _mapController.clearOverlays();
-  final facilities =
-      _mapService.getFacilitiesByCategory(_selectedCategory);
-
-  for (var f in facilities) {
-    final marker = NMarker(
-      id: f.id,
-      position: NLatLng(f.latitude, f.longitude),
-      caption: NOverlayCaption(text: f.engName),
-    );
-
-    final iconImage = await NOverlayImage.fromWidget(
-      widget: MarkerIcon(category: f.category),
-      context: context,
-      size: const Size(60, 60),
-    );
-
-    marker.setIcon(iconImage);
-    marker.setSize(const Size(28, 28));
-
-    marker.setOnTapListener((_) {
-      _resetSelectedMarkerSize();
-      marker.setSize(const Size(44, 44));
-      _selectedMarker = marker;
-
-      _mapController.updateCamera(
-        NCameraUpdate.withParams(
-          target: NLatLng(f.latitude, f.longitude),
-        )..setAnimation(
-            animation: NCameraAnimation.linear,
-            duration: const Duration(milliseconds: 250),
-          ),
-      );
-
-      _showFacilityDetail(f);
-    });
-
-    _mapController.addOverlay(marker);
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
+    _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
-}
-
-void _resetSelectedMarkerSize() {
-  if (_selectedMarker != null) {
-    _selectedMarker!.setSize(const Size(28, 28));
-    _selectedMarker = null;
-  }
-}
-
-/// ✅ 내 위치 버튼용 (testing5 코드 분리)
-void _moveToMyLocation() {
-  _mapController?.setLocationTrackingMode(NLocationTrackingMode.none);
-  _mapController?.setLocationTrackingMode(NLocationTrackingMode.follow);
-}
 
   void _showFacilityDetail(Facility facility) {
     showModalBottomSheet(
