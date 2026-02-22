@@ -21,6 +21,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
     'welfare_bldg_cafeteria': 'Welfare Bldg',
     'information_center_cafeteria': 'Information Center',
     'engineering_bldg_cafeteria': 'Engineering Bldg.',
+    'kyungdaria_cafeteria': 'Kyungdaria'
   };
 
   @override
@@ -90,7 +91,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: DropdownButtonFormField<String>(
-            value: _selectedStudentFacility,
+            initialValue: _selectedStudentFacility,
             decoration: const InputDecoration(labelText: 'Select Cafeteria', border: OutlineInputBorder()),
             items: _studentFacilities.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (val) => setState(() => _selectedStudentFacility = val!),
