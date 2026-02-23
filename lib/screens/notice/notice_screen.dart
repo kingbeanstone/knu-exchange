@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
+import 'notice_detail_screen.dart';
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({super.key});
@@ -42,7 +43,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
             : ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: noticeProvider.notices.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final notice = noticeProvider.notices[index];
             return Card(
@@ -51,29 +52,48 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Colors.grey[200]!),
               ),
-              child: ExpansionTile(
-                title: Text(
-                  notice.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NoticeDetailScreen(notice: notice),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.campaign, color: AppColors.knuRed),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notice.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              notice.date,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
                   ),
                 ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    notice.date, // 필드명 수정: createdAt -> date
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ),
-                childrenPadding: const EdgeInsets.all(16),
-                expandedAlignment: Alignment.topLeft,
-                children: [
-                  Text(
-                    notice.content,
-                    style: const TextStyle(fontSize: 14, height: 1.6),
-                  ),
-                ],
               ),
             );
           },
@@ -90,7 +110,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
           child: Column(
             children: [
               Icon(Icons.notifications_none, size: 60, color: Colors.grey),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text('등록된 공지사항이 없습니다.', style: TextStyle(color: Colors.grey)),
             ],
           ),
