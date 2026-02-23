@@ -17,16 +17,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
-  // 탭별 화면 리스트
-  final List<Widget> _screens = [
-    const HomeScreen(), // 0: 홈 (지도)
-    const CafeteriaScreen(), // 1: 식당
-    const CommunityScreen(), // 2: 커뮤니티
-    // const FavoriteScreen(), // 3: 즐겨찾기
-    const NoticeScreen(), // 3: 즐겨찾기
-    const SettingsScreen(), // 4: 설정
-  ];
+  String? _initialCafeteriaId;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -34,22 +25,73 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  void goToCafeteria(String facilityId) {
+    setState(() {
+      _selectedIndex = 1; // 👈 Cafeteria 탭 index (확인 필요)
+      _initialCafeteriaId = facilityId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    Widget currentScreen;
+
+    switch (_selectedIndex) {
+      case 0:
+        currentScreen = HomeScreen(
+          onGoToCafeteria: goToCafeteria,
+        );
+        break;
+
+      case 1:
+        currentScreen = CafeteriaScreen(
+          initialFacilityId: _initialCafeteriaId,
+        );
+        break;
+
+      case 2:
+        currentScreen = CommunityScreen();
+        break;
+
+      case 3:
+        currentScreen = NoticeScreen();
+        break;
+
+      case 4:
+        currentScreen = SettingsScreen();
+        break;
+
+      default:
+        currentScreen = HomeScreen(
+          onGoToCafeteria: goToCafeteria,
+        );
+    }
+
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          HomeScreen(
+            onGoToCafeteria: goToCafeteria,
+          ),
+          CafeteriaScreen(
+            initialFacilityId: _initialCafeteriaId,
+          ),
+          CommunityScreen(),
+          NoticeScreen(),
+          SettingsScreen(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // 탭 4개 이상일 때 필수
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFFDD1829), // KNU Red
+        selectedItemColor: const Color(0xFFDD1829),
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: 'Cafeteria'),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Cafeteria'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
-          // BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
           BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notice'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
         ],

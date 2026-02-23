@@ -4,8 +4,15 @@ import '../../../utils/app_colors.dart';
 
 class FacilityBottomSheet extends StatelessWidget {
   final Facility facility;
+  final VoidCallback onMoreInfo;
+  final VoidCallback? onViewMenu;
 
-  const FacilityBottomSheet({super.key, required this.facility});
+  const FacilityBottomSheet({
+    super.key,
+    required this.facility,
+    required this.onMoreInfo,
+    this.onViewMenu,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,15 +67,30 @@ class FacilityBottomSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: onMoreInfo,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.knuRed,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: const Text('Close'),
+              child: const Text('More Info'),
             ),
           ),
+          if (onViewMenu != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: onViewMenu,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.knuRed,
+                  side: const BorderSide(color: AppColors.knuRed),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Text('View Menu'),
+              ),
+            ),
+          ],
         ],
       ),
     );
