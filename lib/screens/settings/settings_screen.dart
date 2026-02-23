@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/login_screen.dart';
-import 'profile_edit_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'contact_screen.dart';
 
@@ -68,31 +66,46 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
 
-          const Divider(),
-          // 약관/문의
-          _buildMenuTile(
-            Icons.privacy_tip_outlined,
-            'Privacy Policy',
-            '',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+          // 4. 지원 섹션
+          const SettingsSectionHeader(title: 'Support'),
+          SettingsGroupCard(
+            child: Column(
+              children: [
+                SettingsMenuTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  trailing: '',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                SettingsMenuTile(
+                  icon: Icons.mail_outline,
+                  title: 'Contact Us',
+                  trailing: '',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ContactScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          _buildMenuTile(
-            Icons.mail_outline,
-            'Contact Us',
-            '',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ContactScreen()),
-            ),
-          ),
-          const Divider(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // 4. 계정 관리
+          // 5. 계정 관리
           if (authProvider.isAuthenticated)
             Center(
               child: TextButton(
@@ -109,86 +122,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileTile(BuildContext context, AuthProvider auth) {
-    return Container(
-      color: Colors.white,
-      child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFDD1829),
-          child: Icon(Icons.person, color: Colors.white),
-        ),
-        title: Text(auth.user?.displayName ?? auth.user?.email?.split('@')[0] ?? 'User'),
-        subtitle: Text(auth.user?.email ?? ''),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.grey),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileEditScreen()),
-              ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              onPressed: () => auth.logout(),
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFDD1829))),
-              child: const Text('Logout', style: TextStyle(color: Color(0xFFDD1829))),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginTile(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      child: ListTile(
-        leading: const Icon(Icons.login, color: Color(0xFFDD1829)),
-        title: const Text('Login / Sign Up'),
-        subtitle: const Text('Log in to save your favorites'),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
-      ),
-    );
-  }
-
-  Widget _buildMenuTile(
-      IconData icon,
-      String title,
-      String trailing, {
-        VoidCallback? onTap,
-      }) {
-    final hasTrailingText = trailing.trim().isNotEmpty;
-
-    return Container(
-      color: Colors.white,
-      child: ListTile(
-        leading: Icon(icon, color: Colors.grey),
-        title: Text(title),
-
-        // trailing 텍스트가 있으면 텍스트(+ 필요시 화살표),
-        // trailing 텍스트가 없으면 이동 가능할 때만 화살표 표시
-        trailing: hasTrailingText
-            ? Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(trailing, style: const TextStyle(color: Colors.grey)),
-            if (onTap != null) ...[
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ],
-        )
-            : (onTap != null
-            ? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey)
-            : null),
-
-        onTap: onTap, // ✅ 여기로 전달
-      ),
-    );
-  }
 
 
   // 계정 삭제 확인 다이얼로그
