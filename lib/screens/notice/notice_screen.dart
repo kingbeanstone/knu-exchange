@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
-import 'notice_detail_screen.dart';
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({super.key});
@@ -52,48 +51,29 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(color: Colors.grey[200]!),
               ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => NoticeDetailScreen(notice: notice),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.campaign, color: AppColors.knuRed),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              notice.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              notice.date,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
-                    ],
+              child: ExpansionTile(
+                title: Text(
+                  notice.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    notice.date, // 필드명 수정: createdAt -> date
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+                childrenPadding: const EdgeInsets.all(16),
+                expandedAlignment: Alignment.topLeft,
+                children: [
+                  Text(
+                    notice.content,
+                    style: const TextStyle(fontSize: 14, height: 1.6),
+                  ),
+                ],
               ),
             );
           },
