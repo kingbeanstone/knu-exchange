@@ -10,7 +10,6 @@ import '../../widgets/home/map_controls.dart';
 import '../../widgets/home/campus_map_view.dart';
 import '../../widgets/home/admin_coords_sheet.dart';
 import 'facility_detail_screen.dart';
-import '../cafeteria/cafeteria_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(String facilityId) onGoToCafeteria;

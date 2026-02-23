@@ -34,39 +34,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Widget currentScreen;
-
-    switch (_selectedIndex) {
-      case 0:
-        currentScreen = HomeScreen(
-          onGoToCafeteria: goToCafeteria,
-        );
-        break;
-
-      case 1:
-        currentScreen = CafeteriaScreen(
-          initialFacilityId: _initialCafeteriaId,
-        );
-        break;
-
-      case 2:
-        currentScreen = CommunityScreen();
-        break;
-
-      case 3:
-        currentScreen = NoticeScreen();
-        break;
-
-      case 4:
-        currentScreen = SettingsScreen();
-        break;
-
-      default:
-        currentScreen = HomeScreen(
-          onGoToCafeteria: goToCafeteria,
-        );
-    }
-
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
