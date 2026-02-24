@@ -20,12 +20,19 @@ class CampusMapView extends StatefulWidget {
   });
 
   @override
-  State<CampusMapView> createState() => _CampusMapViewState();
+  State<CampusMapView> createState() => CampusMapViewState();
 }
 
-class _CampusMapViewState extends State<CampusMapView> {
+class CampusMapViewState extends State<CampusMapView> {
   NaverMapController? _controller;
   NMarker? _selectedMarker;
+
+  void clearSelectedMarker() {
+    if (_selectedMarker != null) {
+      _selectedMarker!.setSize(const Size(28, 28)); // 기본 크기(네가 쓰던 값)
+      _selectedMarker = null;
+    }
+  }
 
   @override
   void didUpdateWidget(CampusMapView oldWidget) {
@@ -50,17 +57,19 @@ class _CampusMapViewState extends State<CampusMapView> {
       );
 
       // 커스텀 위젯을 마커 아이콘으로 변환
+      if (!mounted) return;
+
       final iconImage = await NOverlayImage.fromWidget(
         widget: MarkerIcon(category: f.category),
         context: context,
-        size: const Size(60, 60),
+        size: const Size(28, 28),
       );
 
-      marker.setIcon(iconImage);
-      marker.setSize(const Size(36, 36));
+      if (!mounted) return;
 
-      // 마커 클릭 시 동작
-      marker.setOnTapListener((_) {
+      marker.setIcon(iconImage);
+
+      marker.setOnTapListener((overlay) {
         _handleMarkerTap(marker, f);
       });
 
@@ -71,18 +80,17 @@ class _CampusMapViewState extends State<CampusMapView> {
   void _handleMarkerTap(NMarker marker, Facility facility) {
     // 이전 선택 마커 크기 초기화
     if (_selectedMarker != null) {
-      _selectedMarker!.setSize(const Size(36, 36));
+      _selectedMarker!.setSize(const Size(28, 28));
     }
 
     // 새 마커 강조 및 저장
-    marker.setSize(const Size(50, 50));
+    marker.setSize(const Size(40, 40));
     _selectedMarker = marker;
 
     // 카메라 이동
     _controller!.updateCamera(
       NCameraUpdate.withParams(
         target: NLatLng(facility.latitude, facility.longitude),
-        zoom: 16,
       )..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250)),
     );
 
@@ -106,6 +114,12 @@ class _CampusMapViewState extends State<CampusMapView> {
       onMapLongTapped: (point, latLng) {
         if (widget.onMapLongTap != null) {
           widget.onMapLongTap!(latLng);
+        }
+      },
+      onMapTapped: (point, latLng) {
+        if (_selectedMarker != null) {
+          _selectedMarker!.setSize(const Size(28, 28));
+          _selectedMarker = null;
         }
       },
     );

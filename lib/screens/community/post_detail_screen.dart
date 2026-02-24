@@ -29,17 +29,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _initData() async {
-    final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
-    final commentProvider = Provider.of<CommentProvider>(context, listen: false);
+    _currentPost = widget.post;
 
-    await Future.wait([
-      communityProvider.getPostDetail(widget.post.id).then((p) {
-        if (p != null && mounted) setState(() => _currentPost = p);
-      }),
-      commentProvider.loadComments(widget.post.id),
-    ]);
+    await context.read<CommentProvider>()
+        .loadComments(widget.post.id);
 
-    if (mounted) setState(() => _isFetching = false);
+    if (mounted) {
+      setState(() => _isFetching = false);
+    }
   }
 
   void _confirmDelete() {
@@ -54,7 +51,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await Provider.of<CommunityProvider>(context, listen: false).removePost(_currentPost.id);
+                await Provider.of<CommunityProvider>(context, listen: false)
+                    .deletePost(widget.post.id);
                 if (mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted.')));

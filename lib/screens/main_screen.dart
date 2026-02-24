@@ -6,8 +6,9 @@ import 'package:knu_ex/screens/notice/notice_screen.dart';
 import 'home/home_screen.dart';
 import 'cafeteria/cafeteria_screen.dart';
 import 'community/community_screen.dart';
-import 'favorite/favorite_screen.dart';
 import 'settings/settings_screen.dart';
+import '../../providers/notice_provider.dart';
+import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,41 +19,55 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
-  // 탭별 화면 리스트
-  final List<Widget> _screens = [
-    const HomeScreen(), // 0: 홈 (지도)
-    const CafeteriaScreen(), // 1: 식당
-    const CommunityScreen(), // 2: 커뮤니티
-    // const FavoriteScreen(), // 3: 즐겨찾기
-    const NoticeScreen(), // 3: 즐겨찾기
-    const SettingsScreen(), // 4: 설정
-  ];
+  String? _initialCafeteriaId;
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+
+    // 🔥 Notice 탭 index가 3이라 가정
+    if (index == 3) {
+      context.read<NoticeProvider>().refreshNotices();
+    }
+  }
+
+  void goToCafeteria(String facilityId) {
+    setState(() {
+      _selectedIndex = 1; // 👈 Cafeteria 탭 index (확인 필요)
+      _initialCafeteriaId = facilityId;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          HomeScreen(
+            onGoToCafeteria: goToCafeteria,
+          ),
+          CafeteriaScreen(
+            initialFacilityId: _initialCafeteriaId,
+          ),
+          CommunityScreen(),
+          NoticeScreen(),
+          SettingsScreen(),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // 탭 4개 이상일 때 필수
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFFDD1829), // KNU Red
+        selectedItemColor: const Color(0xFFDD1829),
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: '홈'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu), label: '식당'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: '커뮤니티'),
-          // BottomNavigationBarItem(icon: Icon(Icons.star), label: '즐겨찾기'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: '공지사항'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Cafeteria'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notice'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Setting'),
         ],
       ),
     );

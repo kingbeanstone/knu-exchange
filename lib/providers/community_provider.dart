@@ -1,54 +1,70 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 
 class CommunityProvider with ChangeNotifier {
   final CommunityService _service = CommunityService();
+
   List<Post> _posts = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
+
+  StreamSubscription<List<Post>>? _postsSubscription;
 
   List<Post> get posts => _posts;
   bool get isLoading => _isLoading;
 
   CommunityProvider() {
-    fetchPosts();
+    _startListening();
   }
 
-  Future<void> fetchPosts() async {
+  /// 🔥 Firestore 실시간 구독 시작
+  void _startListening() {
     _isLoading = true;
     notifyListeners();
-    try {
-      _posts = await _service.getPosts();
-    } catch (e) {
-      debugPrint("Fetch error: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+
+    _postsSubscription?.cancel();
+
+    _postsSubscription = _service.streamPosts().listen(
+          (posts) {
+        _posts = posts;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint("Community stream error: $error");
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
   }
 
-  Future<Post?> getPostDetail(String postId) async {
-    return await _service.getPost(postId);
+  /// 🔄 당겨서 새로고침 시 구독 재시작
+  Future<void> fetchPosts() async {
+    _startListening();
   }
 
-  Future<void> createPost(String title, String content, PostCategory category) async {
-    try {
-      await _service.addPost(title, content, category);
-      await fetchPosts();
-    } catch (e) {
-      debugPrint("Create Post Error: $e");
-      rethrow;
-    }
+  /// ➕ 게시글 추가
+  Future<void> addPost(Post post) async {
+    await _service.addPost(post);
+    // Stream이 자동으로 업데이트함
   }
 
-  // [추가] 게시글 삭제 프로바이더 로직
-  Future<void> removePost(String postId) async {
-    try {
-      await _service.deletePost(postId);
-      await fetchPosts(); // 삭제 후 목록 새로고침
-    } catch (e) {
-      debugPrint("Delete Post Error: $e");
-      rethrow;
-    }
+  /// ❌ 게시글 삭제
+  Future<void> deletePost(String postId) async {
+    await _service.deletePost(postId);
+    // Stream이 자동 반영
+  }
+
+  /// ❤️ 좋아요 토글
+  Future<void> toggleLike(String postId, String userId) async {
+    await _service.toggleLike(postId, userId);
+    // Stream 자동 반영
+  }
+
+  @override
+  void dispose() {
+    _postsSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -9,15 +9,22 @@ import '../../widgets/home/facility_bottom_sheet.dart';
 import '../../widgets/home/map_controls.dart';
 import '../../widgets/home/campus_map_view.dart';
 import '../../widgets/home/admin_coords_sheet.dart';
+import 'facility_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final void Function(String facilityId) onGoToCafeteria;
+
+  const HomeScreen({
+    super.key,
+    required this.onGoToCafeteria,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<CampusMapViewState> _mapKey = GlobalKey<CampusMapViewState>();
   NaverMapController? _mapController;
   final MapService _mapService = MapService();
   String _selectedCategory = 'All';
@@ -46,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // 분리된 지도 뷰 위젯
           CampusMapView(
+            key: _mapKey,
             initialPosition: _knuCenter,
             facilities: filteredFacilities,
             onMapReady: (controller) {
@@ -103,22 +111,41 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // [버그 수정] 내 위치로 이동 로직 강화
   void _moveToMyLocation() {
     if (_mapController == null) return;
 
-    // 현재 모드가 무엇이든 간에, none으로 세팅 후 다시 follow를 걸어줌으로써
-    // 카메라가 강제로 내 위치를 추적하도록 Jump를 유도합니다.
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
 
-  void _showFacilityDetail(Facility facility) {
-    showModalBottomSheet(
+  Future<void> _showFacilityDetail(Facility facility) async {
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => FacilityBottomSheet(facility: facility),
-    );
+      builder: (sheetContext) {
+        final bool isCafeteria = facility.category == 'Restaurant';
+
+        return FacilityBottomSheet(
+          facility: facility,
+          onMoreInfo: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => FacilityDetailScreen(facility: facility),
+              ),
+            );
+          },
+          onViewMenu: isCafeteria
+              ? () {
+            Navigator.pop(sheetContext);
+            widget.onGoToCafeteria(facility.id);
+          }
+              : null,
+        );
+      },
+    ).whenComplete(() {
+      _mapKey.currentState?.clearSelectedMarker(); // ✅ 바텀시트 닫히는 순간 마커 원복
+    });
   }
 
   void _showAdminCoords(NLatLng latLng) {

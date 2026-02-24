@@ -26,6 +26,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.dispose();
   }
 
+  PostCategory _toCategory(String value) {
+    switch (value) {
+      case 'question':
+        return PostCategory.question;
+      case 'tip':
+        return PostCategory.tip;
+      case 'market':
+        return PostCategory.market;
+      case 'free':
+      default:
+        return PostCategory.free;
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -37,10 +51,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       // 수정된 로직: 인자에서 'authorName'을 제거합니다.
       // 서비스(CommunityService)가 현재 로그인된 사용자의 닉네임을 직접 처리합니다.
-      await communityProvider.createPost(
-        _titleController.text.trim(),
-        _contentController.text.trim(),
-        _selectedCategory,
+      await communityProvider.addPost(
+        Post(
+          id: '', // Firestore에서 자동 생성되므로 빈값 OK
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
+
+          // ✅ 필수: 화면 표시용(닉네임 또는 이메일)
+          author: 'Anonymous',
+
+          // ✅ 필수: 권한 확인용 UID (지금 모르겠으면 임시로 빈 문자열)
+          authorId: '',
+
+          // ✅ 필수: 닉네임 필드 (지금 모르겠으면 author랑 동일하게)
+          authorName: 'Anonymous',
+
+          createdAt: DateTime.now(),
+
+          // ✅ 중요: enum이어야 함
+          category: _selectedCategory, // _selectedCategory 타입이 PostCategory여야 함!
+        ),
       );
 
       if (mounted) Navigator.pop(context);
