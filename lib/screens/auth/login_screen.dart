@@ -26,12 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _fillDebugInfo() {
-    setState(() {
-      _emailController.text = "wlsgudwns112@naver.com";
-      _passwordController.text = "123456";
-    });
-  }
+  // 디버그용 자동 채우기 함수 제거 완료
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -42,11 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-
-      // [수정] Navigator.pop(context)를 제거합니다.
-      // 이제 AuthWrapper가 AuthProvider의 상태 변화를 감지하여
-      // 자동으로 MainScreen으로 화면을 교체합니다.
-
+      // AuthWrapper가 상태 변화를 감지하여 자동으로 화면을 전환합니다.
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        // 로그인 화면이 최상단 화면이므로 뒤로가기 버튼 비활성화
         automaticallyImplyLeading: false,
       ),
       body: Center(
@@ -82,10 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 emailController: _emailController,
                 passwordController: _passwordController,
                 isLoading: authProvider.isLoading,
-                onFillDebug: _fillDebugInfo,
-                onSubmit: _submit,
+                onSubmit: _submit, // onFillDebug 파라미터 제거
               ),
-
               const SizedBox(height: 24),
               _buildSignUpLink(),
               const SizedBox(height: 40),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // kDebugMode 사용을 위해 필수
 import '../../utils/app_colors.dart';
 
 class LoginForm extends StatelessWidget {
@@ -7,7 +6,6 @@ class LoginForm extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isLoading;
-  final VoidCallback onFillDebug; // 디버그 버튼 클릭 시 호출될 콜백
   final VoidCallback onSubmit;
 
   const LoginForm({
@@ -16,7 +14,6 @@ class LoginForm extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.isLoading,
-    required this.onFillDebug,
     required this.onSubmit,
   });
 
@@ -26,23 +23,7 @@ class LoginForm extends StatelessWidget {
       key: formKey,
       child: Column(
         children: [
-          // [추가] 디버그 모드에서만 보이는 자동 입력 버튼
-          if (kDebugMode)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: OutlinedButton.icon(
-                onPressed: onFillDebug,
-                icon: const Icon(Icons.bug_report, size: 18),
-                label: const Text('Debug: Fill Test Account'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange,
-                  side: const BorderSide(color: Colors.orange),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ),
+          // 디버그용 자동 입력 버튼 영역 제거 완료
 
           TextFormField(
             controller: emailController,
@@ -52,7 +33,7 @@ class LoginForm extends StatelessWidget {
               prefixIcon: const Icon(Icons.email_outlined),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            validator: (v) => (v?.isEmpty ?? true) ? '이메일을 입력해주세요.' : null,
+            validator: (v) => (v?.isEmpty ?? true) ? 'Please enter your email.' : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -63,7 +44,7 @@ class LoginForm extends StatelessWidget {
               prefixIcon: const Icon(Icons.lock_outline),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            validator: (v) => (v?.isEmpty ?? true) ? '비밀번호를 입력해주세요.' : null,
+            validator: (v) => (v?.isEmpty ?? true) ? 'Please enter your password.' : null,
           ),
           const SizedBox(height: 24),
           SizedBox(
