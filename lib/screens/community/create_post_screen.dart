@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart'; // [추가] 사용자 정보를 가져오기 위해 필요
 import '../../models/post.dart';
 import '../../utils/app_colors.dart';
 
@@ -31,7 +32,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     setState(() => _isSubmitting = true);
 
+    // [수정] 사용자 정보를 가져오기 위해 AuthProvider 참조
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
+
+    final currentUser = authProvider.user;
+    // 닉네임이 없을 경우를 대비해 이메일이나 기본값 설정
+    final String displayName = currentUser?.displayName ?? currentUser?.email?.split('@')[0] ?? 'User';
 
     try {
       await communityProvider.addPost(
@@ -39,9 +46,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           id: '',
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
-          author: _isAnonymous ? 'Anonymous' : 'User',
-          authorId: '',
-          authorName: _isAnonymous ? 'Anonymous' : 'Real Name',
+          // [수정] 익명이 아닐 경우 실제 사용자의 닉네임과 UID를 저장
+          author: _isAnonymous ? 'Anonymous' : displayName,
+          authorId: currentUser?.uid ?? '',
+          authorName: _isAnonymous ? 'Anonymous' : displayName,
           createdAt: DateTime.now(),
           category: _selectedCategory,
           isAnonymous: _isAnonymous,
@@ -127,7 +135,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // 익명 게시 체크박스 오타 수정 완료
                 CheckboxListTile(
                   title: const Text(
                     "Post Anonymously",
@@ -139,8 +146,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     setState(() => _isAnonymous = val ?? false);
                   },
                   contentPadding: EdgeInsets.zero,
-                  // controlType -> controlAffinity로 수정
-                  // ListTileControlType -> ListTileControlAffinity로 수정
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
 
