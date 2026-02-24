@@ -7,8 +7,6 @@ import 'home/home_screen.dart';
 import 'cafeteria/cafeteria_screen.dart';
 import 'community/community_screen.dart';
 import 'settings/settings_screen.dart';
-import '../../providers/notice_provider.dart';
-import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
