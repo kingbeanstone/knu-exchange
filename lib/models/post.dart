@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// [수정] hot 카테고리 추가
 enum PostCategory { hot, question, tip, market, free }
 
 class Post {
@@ -15,6 +14,7 @@ class Post {
   final int likes;
   final int comments;
   final bool isAnonymous;
+  final List<String> imageUrls; // [추가] 이미지 URL 리스트
 
   Post({
     required this.id,
@@ -28,9 +28,9 @@ class Post {
     this.likes = 0,
     this.comments = 0,
     this.isAnonymous = false,
+    this.imageUrls = const [], // [추가] 기본값 빈 리스트
   });
 
-  // [수정] hot 레이블 추가
   String get categoryLabel {
     switch (category) {
       case PostCategory.hot: return 'Hot';
@@ -57,6 +57,25 @@ class Post {
       likes: data['likes'] ?? 0,
       comments: data['comments'] ?? 0,
       isAnonymous: data['isAnonymous'] ?? false,
+      // [추가] 리스트 타입 캐스팅 처리
+      imageUrls: List<String>.from(data['imageUrls'] ?? []),
     );
+  }
+
+  // [참고] Firestore 저장 시 Map 변환 로직은 CommunityService에서 직접 수행하거나 여기에 작성 가능
+  Map<String, dynamic> toFirestore() {
+    return {
+      'title': title,
+      'content': content,
+      'author': author,
+      'authorId': authorId,
+      'authorName': authorName,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'category': category.toString(),
+      'likes': likes,
+      'comments': comments,
+      'isAnonymous': isAnonymous,
+      'imageUrls': imageUrls, // [추가]
+    };
   }
 }

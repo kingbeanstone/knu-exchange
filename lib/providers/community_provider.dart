@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post.dart';
@@ -9,7 +10,7 @@ class CommunityProvider with ChangeNotifier {
   List<Post> _posts = [];
   List<Post> _searchResults = [];
   String _searchQuery = "";
-  PostCategory? _currentCategory; // [추가] 현재 선택된 카테고리 상태
+  PostCategory? _currentCategory;
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -20,7 +21,7 @@ class CommunityProvider with ChangeNotifier {
   List<Post> get posts => _posts;
   List<Post> get searchResults => _searchResults;
   String get searchQuery => _searchQuery;
-  PostCategory? get currentCategory => _currentCategory; // [추가]
+  PostCategory? get currentCategory => _currentCategory;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isSearching => _isSearching;
@@ -30,13 +31,11 @@ class CommunityProvider with ChangeNotifier {
     fetchPosts(isRefresh: true);
   }
 
-  // [추가] 카테고리 변경 시 호출되는 메서드
   void setCategory(PostCategory? category) {
     _currentCategory = category;
     fetchPosts(isRefresh: true);
   }
 
-  /// 🔄 데이터 가져오기 (새로고침 또는 초기 로드)
   Future<void> fetchPosts({bool isRefresh = false}) async {
     if (_isSearching && !isRefresh) return;
 
@@ -54,7 +53,6 @@ class CommunityProvider with ChangeNotifier {
     }
 
     try {
-      // [수정] Hot 카테고리일 경우 좋아요순 정렬 요청
       final snapshot = await _service.getPostsQuery(
         limit: 10,
         startAfter: _lastDocument,
@@ -82,7 +80,52 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  /// 🔍 검색 실행
+  // [수정] 이미지와 함께 게시글 추가하는 통합 로직
+  Future<void> addPost(Post post, {List<File>? images}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. ID 선점
+      final docRef = _service.getNewPostRef();
+      final postId = docRef.id;
+
+      // 2. 이미지 업로드 (있는 경우)
+      List<String> uploadedUrls = [];
+      if (images != null && images.isNotEmpty) {
+        uploadedUrls = await _service.uploadPostImages(postId, images);
+      }
+
+      // 3. 최종 데이터 객체 생성
+      final postWithImages = Post(
+        id: postId,
+        title: post.title,
+        content: post.content,
+        author: post.author,
+        authorId: post.authorId,
+        authorName: post.authorName,
+        createdAt: post.createdAt,
+        category: post.category,
+        isAnonymous: post.isAnonymous,
+        likes: post.likes,
+        comments: post.comments,
+        imageUrls: uploadedUrls,
+      );
+
+      // 4. Firestore 저장
+      await _service.addPostWithId(postWithImages);
+
+      // 목록 새로고침
+      await fetchPosts(isRefresh: true);
+    } catch (e) {
+      debugPrint("Add post with images error: $e");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> performSearch(String query) async {
     if (query.isEmpty) {
       clearSearch();
@@ -105,18 +148,12 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  /// ❌ 검색 초기화
   void clearSearch() {
     if (!_isSearching) return;
     _isSearching = false;
     _searchQuery = "";
     _searchResults = [];
     notifyListeners();
-  }
-
-  Future<void> addPost(Post post) async {
-    await _service.addPost(post);
-    fetchPosts(isRefresh: true);
   }
 
   Future<void> deletePost(String postId) async {

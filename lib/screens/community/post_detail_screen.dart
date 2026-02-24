@@ -9,6 +9,7 @@ import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
 import '../../widgets/community/post_detail_header.dart';
 import '../../widgets/community/post_detail_content.dart';
+import '../../widgets/community/comment_input.dart'; // [추가] 누락된 임포트 확인
 import '../../widgets/report_dialog.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -114,12 +115,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 분리된 헤더 위젯 사용
                   PostDetailHeader(post: _currentPost),
                   const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
-                  // 분리된 본문 위젯 사용
-                  PostDetailContent(content: _currentPost.content),
-                  // [수정] Container는 const 생성자가 없으므로 키워드 제거
+                  // [수정] 이미지 리스트 전달
+                  PostDetailContent(
+                    content: _currentPost.content,
+                    imageUrls: _currentPost.imageUrls,
+                  ),
                   Container(height: 8, color: AppColors.lightGrey),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
