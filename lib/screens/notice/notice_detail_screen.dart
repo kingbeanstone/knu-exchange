@@ -56,7 +56,7 @@ class NoticeDetailScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white, // 배경 흰색으로 통일
       appBar: AppBar(
         title: const Text('Notice'),
         backgroundColor: AppColors.knuRed,
@@ -71,10 +71,7 @@ class NoticeDetailScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
-
-                final data =
-                snapshot.data!.data() as Map<String, dynamic>?;
-
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
                 if (data == null) return const SizedBox();
 
                 return PopupMenuButton<String>(
@@ -95,14 +92,8 @@ class NoticeDetailScreen extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
                 );
               },
@@ -118,7 +109,6 @@ class NoticeDetailScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text('Notice not found.'));
           }
@@ -132,20 +122,17 @@ class NoticeDetailScreen extends StatelessWidget {
                 Text(
                   data['title'] ?? '',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 25, // 폰트 크기 키움
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   _formatDate(data['createdAt'] as Timestamp),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
-                const SizedBox(height: 16),
-                const Divider(),
+                const SizedBox(height: 8), // 선을 위로 올리기 위해 간격 줄임
+                const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
                 const SizedBox(height: 16),
                 _markdownWithExactNewlines(data['content'] ?? ''),
               ],
@@ -155,16 +142,15 @@ class NoticeDetailScreen extends StatelessWidget {
       ),
     );
   }
-  Widget _markdownWithExactNewlines(String text) {
-    // Windows 줄바꿈(\r\n)도 처리
-    final lines = text.replaceAll('\r\n', '\n').split('\n');
 
+  Widget _markdownWithExactNewlines(String text) {
+    final lines = text.replaceAll('\r\n', '\n').split('\n');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final line in lines) ...[
           if (line.trim().isEmpty)
-            const SizedBox(height: 24) // ✅ 빈 줄(엔터) 1개당 간격
+            const SizedBox(height: 24)
           else
             MarkdownBody(
               data: line,

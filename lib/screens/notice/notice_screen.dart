@@ -14,14 +14,6 @@ class NoticeScreen extends StatefulWidget {
 }
 
 class _NoticeScreenState extends State<NoticeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // 화면 로드 시 공지사항 가져오기 (메서드명 수정: refreshNotices)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-    });
-  }
-
   String _formatDate(DateTime date) {
     return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
   }
@@ -29,106 +21,75 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NoticeProvider>();
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Notice'),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (context.watch<AuthProvider>().isAdmin)
+          if (auth.isAdmin)
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateNoticeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const CreateNoticeScreen()),
                 );
               },
             ),
         ],
       ),
-      body: Column(
-        children: [
-          const Divider(height: 1),
-          Expanded(
-            child: provider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : provider.notices.isEmpty
-                ? const Center(child: Text("No notices yet."))
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.notices.length,
-              itemBuilder: (context, index) {
-                final notice = provider.notices[index];
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const textStyle = TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        );
-
-                        final maxWidth = constraints.maxWidth - 50; // 🔥 점 3개 공간 확보
-
-                        final textPainter = TextPainter(
-                          text: TextSpan(text: notice.title, style: textStyle),
-                          maxLines: 1,
-                          textDirection: TextDirection.ltr,
-                        )..layout(maxWidth: maxWidth);
-
-                        if (!textPainter.didExceedMaxLines) {
-                          return Text(
-                            notice.title,
-                            maxLines: 1,
-                            style: textStyle,
-                          );
-                        }
-
-                        int endIndex = notice.title.length;
-                        String truncated = notice.title;
-
-                        while (endIndex > 0) {
-                          endIndex--;
-                          truncated = notice.title.substring(0, endIndex) + "...";
-
-                          textPainter.text = TextSpan(text: truncated, style: textStyle);
-                          textPainter.layout(maxWidth: maxWidth);
-
-                          if (!textPainter.didExceedMaxLines) break;
-                        }
-
-                        return Text(
-                          truncated,
-                          maxLines: 1,
-                          style: textStyle,
-                        );
-                      },
-                    ),
-                    subtitle:
-                    Text(_formatDate(notice.createdAt)),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NoticeDetailScreen(
-                            noticeId: notice.id,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : provider.notices.isEmpty
+          ? const Center(child: Text("No notices yet."))
+          : ListView.separated(
+        padding: EdgeInsets.zero,
+        itemCount: provider.notices.length,
+        // 1. 구분선 설정: 더 진하게, 양 끝까지 닿도록 수정
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          thickness: 1,      // 선 두께를 1로 강화
+          indent: 0,         // 왼쪽 여백 제거 (화면 끝까지)
+          endIndent: 0,      // 오른쪽 여백 제거 (화면 끝까지)
+          color: Colors.grey[300], // 색상을 조금 더 진하게 변경
+        ),
+        itemBuilder: (context, index) {
+          final notice = provider.notices[index];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            // 2. 제목 설정: 한 줄로 고정하고 넘치면 ... 처리
+            title: Text(
+              notice.title,
+              maxLines: 1, // 무조건 한 줄로 고정
+              overflow: TextOverflow.ellipsis, // 길면 마지막에 ... 표시
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
-          ),
-        ],
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _formatDate(notice.createdAt),
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              ),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NoticeDetailScreen(noticeId: notice.id),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
