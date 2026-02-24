@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/notice.dart';
 import '../../utils/app_colors.dart';
 
 class EditNoticeScreen extends StatefulWidget {
-  final Notice notice;
+  final String noticeId;
+  final String initialTitle;
+  final String initialContent;
 
-  const EditNoticeScreen({super.key, required this.notice});
+  const EditNoticeScreen({
+    super.key,
+    required this.noticeId,
+    required this.initialTitle,
+    required this.initialContent,
+  });
 
   @override
   State<EditNoticeScreen> createState() => _EditNoticeScreenState();
@@ -20,8 +26,10 @@ class _EditNoticeScreenState extends State<EditNoticeScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.notice.title);
-    _contentController = TextEditingController(text: widget.notice.content);
+    _titleController =
+        TextEditingController(text: widget.initialTitle);
+    _contentController =
+        TextEditingController(text: widget.initialContent);
   }
 
   @override
@@ -31,7 +39,7 @@ class _EditNoticeScreenState extends State<EditNoticeScreen> {
     super.dispose();
   }
 
-  Future<void> _save() async {
+  Future<void> save() async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
 
@@ -41,7 +49,7 @@ class _EditNoticeScreenState extends State<EditNoticeScreen> {
 
     await FirebaseFirestore.instance
         .collection('notices')
-        .doc(widget.notice.id)
+        .doc(widget.noticeId)
         .update({
       'title': title,
       'content': content,
@@ -86,7 +94,7 @@ class _EditNoticeScreenState extends State<EditNoticeScreen> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _isSaving ? null : _save,
+              onPressed: _isSaving ? null : save,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.knuRed,
                 foregroundColor: Colors.white,

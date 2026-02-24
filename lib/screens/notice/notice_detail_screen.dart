@@ -1,88 +1,28 @@
 import 'package:flutter/material.dart';
-import '../../models/notice.dart';
-import '../../utils/app_colors.dart';
-import 'edit_notice_screen.dart';
-import '../../providers/auth_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:provider/provider.dart';
+
+import '../../utils/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import 'edit_notice_screen.dart';
 
 class NoticeDetailScreen extends StatelessWidget {
-  final Notice notice;
+  final String noticeId;
+  String _preserveLineBreaks(String text) {
+    return text.replaceAll('\n', '\n\n');
+  }
 
   const NoticeDetailScreen({
     super.key,
-    required this.notice,
+    required this.noticeId,
   });
 
-  String _formatDate(DateTime date) {
+  String _formatDate(Timestamp timestamp) {
+    final date = timestamp.toDate();
     return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notice'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          if (context.watch<AuthProvider>().isAdmin)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditNoticeScreen(notice: notice),
-                    ),
-                  );
-                } else if (value == 'delete') {
-                  _deleteNotice(context);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'edit',
-                  child: Text('Edit'),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete'),
-                ),
-              ],
-            ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            Text(
-              notice.title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _formatDate(notice.createdAt),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            MarkdownBody(
-              data: notice.content,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
   Future<void> _deleteNotice(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -105,11 +45,140 @@ class NoticeDetailScreen extends StatelessWidget {
     if (confirm == true) {
       await FirebaseFirestore.instance
           .collection('notices')
-          .doc(notice.id)
+          .doc(noticeId)
           .delete();
 
-      if (!context.mounted) return;
-      Navigator.pop(context);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('Notice'),
+        backgroundColor: AppColors.knuRed,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          if (auth.isAdmin)
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('notices')
+                  .doc(noticeId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox();
+
+                final data =
+                snapshot.data!.data() as Map<String, dynamic>?;
+
+                if (data == null) return const SizedBox();
+
+                return PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditNoticeScreen(
+                            noticeId: noticeId,
+                            initialTitle: data['title'] ?? '',
+                            initialContent: data['content'] ?? '',
+                          ),
+                        ),
+                      );
+                    } else if (value == 'delete') {
+                      _deleteNotice(context);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('notices')
+            .doc(noticeId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Notice not found.'));
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              children: [
+                Text(
+                  data['title'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatDate(data['createdAt'] as Timestamp),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                _markdownWithExactNewlines(data['content'] ?? ''),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+  Widget _markdownWithExactNewlines(String text) {
+    // Windows 줄바꿈(\r\n)도 처리
+    final lines = text.replaceAll('\r\n', '\n').split('\n');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final line in lines) ...[
+          if (line.trim().isEmpty)
+            const SizedBox(height: 24) // ✅ 빈 줄(엔터) 1개당 간격
+          else
+            MarkdownBody(
+              data: line,
+              softLineBreak: true,
+              styleSheet: MarkdownStyleSheet(
+                p: const TextStyle(fontSize: 16, height: 1.6),
+                strong: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+        ],
+      ],
+    );
   }
 }

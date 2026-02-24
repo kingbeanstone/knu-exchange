@@ -29,8 +29,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NoticeProvider>();
-    final auth = context.watch<AuthProvider>();
-    print("isAdmin: ${auth.isAdmin}");
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -70,10 +68,48 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    title: Text(
-                      notice.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold),
+                    title: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const textStyle = TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        );
+
+                        final maxWidth = constraints.maxWidth - 50; // 🔥 점 3개 공간 확보
+
+                        final textPainter = TextPainter(
+                          text: TextSpan(text: notice.title, style: textStyle),
+                          maxLines: 1,
+                          textDirection: TextDirection.ltr,
+                        )..layout(maxWidth: maxWidth);
+
+                        if (!textPainter.didExceedMaxLines) {
+                          return Text(
+                            notice.title,
+                            maxLines: 1,
+                            style: textStyle,
+                          );
+                        }
+
+                        int endIndex = notice.title.length;
+                        String truncated = notice.title;
+
+                        while (endIndex > 0) {
+                          endIndex--;
+                          truncated = notice.title.substring(0, endIndex) + "...";
+
+                          textPainter.text = TextSpan(text: truncated, style: textStyle);
+                          textPainter.layout(maxWidth: maxWidth);
+
+                          if (!textPainter.didExceedMaxLines) break;
+                        }
+
+                        return Text(
+                          truncated,
+                          maxLines: 1,
+                          style: textStyle,
+                        );
+                      },
                     ),
                     subtitle:
                     Text(_formatDate(notice.createdAt)),
@@ -82,7 +118,8 @@ class _NoticeScreenState extends State<NoticeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => NoticeDetailScreen(
-                              notice: notice),
+                            noticeId: notice.id,
+                          ),
                         ),
                       );
                     },
