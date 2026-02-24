@@ -16,6 +16,7 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
+  bool _isAnonymous = false; // [추가] 익명 체크 상태
 
   Future<void> _submitComment() async {
     if (_isSubmitting) return;
@@ -34,11 +35,13 @@ class _CommentInputState extends State<CommentInput> {
     setState(() => _isSubmitting = true);
 
     try {
+      // [수정] 익명 여부 파라미터 추가
       await commentProvider.addComment(
         widget.postId,
         auth.user?.displayName ?? "User",
         auth.user!.uid,
         content,
+        isAnonymous: _isAnonymous,
       );
       _commentController.clear();
       if (mounted) FocusScope.of(context).unfocus();
@@ -82,37 +85,61 @@ class _CommentInputState extends State<CommentInput> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: _commentController,
-                  enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
-                    hintText: "Add a comment...",
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 10),
+            // [추가] 익명 체크박스 영역
+            Row(
+              children: [
+                SizedBox(
+                  height: 30,
+                  width: 30,
+                  child: Checkbox(
+                    value: _isAnonymous,
+                    activeColor: AppColors.knuRed,
+                    onChanged: (val) => setState(() => _isAnonymous = val ?? false),
                   ),
-                  maxLines: null,
                 ),
-              ),
+                const Text(
+                  "Comment Anonymously",
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            _isSubmitting
-                ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : IconButton(
-              onPressed: _submitComment,
-              icon: const Icon(Icons.send_rounded, color: AppColors.knuRed),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _commentController,
+                      enabled: !_isSubmitting,
+                      decoration: const InputDecoration(
+                        hintText: "Add a comment...",
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                      ),
+                      maxLines: null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _isSubmitting
+                    ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : IconButton(
+                  onPressed: _submitComment,
+                  icon: const Icon(Icons.send_rounded, color: AppColors.knuRed),
+                ),
+              ],
             ),
           ],
         ),

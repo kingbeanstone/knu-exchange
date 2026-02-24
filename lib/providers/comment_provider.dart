@@ -26,19 +26,26 @@ class CommentProvider with ChangeNotifier {
     }
   }
 
-  // 댓글 추가 (성공 시 로컬 리스트에 추가하여 즉시 반영)
-  Future<void> addComment(String postId, String author, String authorId, String content) async {
+  // 댓글 추가 (익명 여부 파라미터 추가 및 로직 강화)
+  Future<void> addComment(
+      String postId,
+      String author,
+      String authorId,
+      String content,
+      {bool isAnonymous = false} // [추가] 익명 여부
+      ) async {
     final newComment = Comment(
-      id: '', // Firestore에서 자동 생성
+      id: '',
       author: author,
       authorId: authorId,
       content: content,
       createdAt: DateTime.now(),
+      isAnonymous: isAnonymous,
     );
 
     try {
+      // 서비스에서 익명 번호 부여 로직을 처리하도록 수정됨
       await _service.addComment(postId, newComment);
-      // 작성 후 목록 다시 불러오기
       await loadComments(postId);
     } catch (e) {
       debugPrint("Comment add error: $e");
@@ -46,11 +53,10 @@ class CommentProvider with ChangeNotifier {
     }
   }
 
-  // [추가] 댓글 삭제
+  // 댓글 삭제
   Future<void> removeComment(String postId, String commentId) async {
     try {
       await _service.deleteComment(postId, commentId);
-      // 삭제 후 목록 새로고침
       await loadComments(postId);
     } catch (e) {
       debugPrint("Comment delete error: $e");
