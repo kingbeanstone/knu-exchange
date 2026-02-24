@@ -5,6 +5,7 @@ import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
+import '../../widgets/community/community_search_bar.dart'; // [추가] 검색바 임포트
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -21,7 +22,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
-    // 스크롤 리스너 추가하여 바닥 감지
     _scrollController.addListener(_onScroll);
   }
 
@@ -33,7 +33,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _onScroll() {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    // 검색 중이 아닐 때만 무한 스크롤 작동
+    if (!provider.isSearching && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
         provider.fetchPosts();
       }
@@ -44,9 +45,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
 
-    final filteredPosts = _selectedCategory == null
-        ? communityProvider.posts
-        : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
+    // 검색 중이면 검색 결과를, 아니면 필터링된 게시글 목록을 사용합니다.
+    final List<Post> displayPosts;
+    if (communityProvider.isSearching) {
+      displayPosts = _selectedCategory == null
+          ? communityProvider.searchResults
+          : communityProvider.searchResults.where((p) => p.category == _selectedCategory).toList();
+    } else {
+      displayPosts = _selectedCategory == null
+          ? communityProvider.posts
+          : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -58,6 +67,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       body: Column(
         children: [
+          // [추가] 검색바 배치
+          CommunitySearchBar(
+            onSearch: (query) => communityProvider.performSearch(query),
+            onClear: () => communityProvider.clearSearch(),
+          ),
+
           CommunityCategoryFilter(
             selectedCategory: _selectedCategory,
             onCategorySelected: (category) {
@@ -65,20 +80,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
             },
           ),
           const Divider(height: 1),
+
           Expanded(
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : filteredPosts.isEmpty
-                ? _buildEmptyState()
+                : displayPosts.isEmpty
+                ? _buildEmptyState(communityProvider.isSearching)
                 : RefreshIndicator(
               onRefresh: () => communityProvider.fetchPosts(isRefresh: true),
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(12),
-                itemCount: filteredPosts.length + (communityProvider.hasMore ? 1 : 0),
+                // 검색 중이 아닐 때만 하단 로딩 바 노출
+                itemCount: displayPosts.length + (!communityProvider.isSearching && communityProvider.hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
-                  if (index < filteredPosts.length) {
-                    return PostCard(post: filteredPosts[index]);
+                  if (index < displayPosts.length) {
+                    return PostCard(post: displayPosts[index]);
                   } else {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
@@ -104,17 +121,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isSearching) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.speaker_notes_off, size: 60, color: Colors.grey[300]),
+          Icon(
+              isSearching ? Icons.search_off : Icons.speaker_notes_off,
+              size: 60,
+              color: Colors.grey[300]
+          ),
           const SizedBox(height: 16),
-          const Text(
-            'No posts yet.\nBe the first to share!',
+          Text(
+            isSearching
+                ? 'No matching results found.'
+                : 'No posts yet.\nBe the first to share!',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: const TextStyle(color: Colors.grey),
           ),
         ],
       ),
