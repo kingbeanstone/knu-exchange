@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
+import '../../widgets/community/post_detail_header.dart';
+import '../../widgets/community/post_detail_content.dart';
 import '../../widgets/report_dialog.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -30,10 +32,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _initData() async {
     _currentPost = widget.post;
-
-    await context.read<CommentProvider>()
-        .loadComments(widget.post.id);
-
+    await context.read<CommentProvider>().loadComments(widget.post.id);
     if (mounted) {
       setState(() => _isFetching = false);
     }
@@ -71,7 +70,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   void _showReportDialog() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login is required to report.')));
       return;
     }
     showDialog(
@@ -83,30 +82,26 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-
-    // [수정] 본인의 글이거나 관리자(isAdmin)인 경우 삭제 권한 부여
     final bool canDelete = auth.isAuthenticated && (auth.user?.uid == _currentPost.authorId || auth.isAdmin);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Post Detail'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
+        title: const Text('Post'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
+        centerTitle: true,
         actions: [
-          // [수정] 권한이 있으면 삭제 아이콘, 없으면 신고 아이콘 노출
           if (canDelete)
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Icons.delete_outline, color: Colors.grey),
               onPressed: _confirmDelete,
-              tooltip: 'Delete post',
             )
           else
             IconButton(
-              icon: const Icon(Icons.report_problem_outlined),
+              icon: const Icon(Icons.report_problem_outlined, color: Colors.grey),
               onPressed: _showReportDialog,
-              tooltip: 'Report this post',
             ),
         ],
       ),
@@ -116,17 +111,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
-                  const Divider(height: 40),
-                  SelectionArea(
-                      child: Text(_currentPost.content, style: const TextStyle(fontSize: 16, height: 1.7))
+                  // 분리된 헤더 위젯 사용
+                  PostDetailHeader(post: _currentPost),
+                  const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
+                  // 분리된 본문 위젯 사용
+                  PostDetailContent(content: _currentPost.content),
+                  // [수정] Container는 const 생성자가 없으므로 키워드 제거
+                  Container(height: 8, color: AppColors.lightGrey),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: CommentSection(postId: _currentPost.id),
                   ),
-                  const SizedBox(height: 40),
-                  CommentSection(postId: _currentPost.id),
                 ],
               ),
             ),
@@ -135,30 +133,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         ],
       ),
       bottomNavigationBar: PostActionBar(post: _currentPost),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: AppColors.knuRed.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(_currentPost.categoryLabel.toUpperCase(), style: const TextStyle(color: AppColors.knuRed, fontSize: 11, fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 16),
-        Text(_currentPost.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.3)),
-        const SizedBox(height: 20),
-        Row(children: [
-          const CircleAvatar(backgroundColor: AppColors.lightGrey, child: Icon(Icons.person, color: Colors.grey)),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_currentPost.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text('${_currentPost.createdAt.year}.${_currentPost.createdAt.month}.${_currentPost.createdAt.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ]),
-        ]),
-      ],
     );
   }
 }
