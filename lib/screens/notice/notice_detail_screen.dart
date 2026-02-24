@@ -10,6 +10,10 @@ class NoticeDetailScreen extends StatelessWidget {
     required this.notice,
   });
 
+  String _formatDate(DateTime date) {
+    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,7 +32,7 @@ class NoticeDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            notice.date,
+            _formatDate(notice.createdAt),
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 16),

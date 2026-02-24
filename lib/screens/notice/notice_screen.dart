@@ -17,90 +17,48 @@ class _NoticeScreenState extends State<NoticeScreen> {
     super.initState();
     // 화면 로드 시 공지사항 가져오기 (메서드명 수정: refreshNotices)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NoticeProvider>().refreshNotices();
     });
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
   }
 
   @override
   Widget build(BuildContext context) {
-    final noticeProvider = context.watch<NoticeProvider>();
+    final provider = context.watch<NoticeProvider>();
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Notice'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: RefreshIndicator(
-        // 새로고침 시 호출 (메서드명 수정)
-        onRefresh: () => noticeProvider.refreshNotices(),
-        child: noticeProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : noticeProvider.notices.isEmpty
-            ? _buildEmptyState()
-            : ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: noticeProvider.notices.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final notice = noticeProvider.notices[index];
-            return Material(
-              color: Colors.white,
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => NoticeDetailScreen(notice: notice),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        notice.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        notice.date,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final notices = provider.notices;
+
+    if (notices.isEmpty) {
+      return const Center(child: Text("No notices yet."));
+    }
+
+    return ListView.builder(
+      itemCount: notices.length,
+      itemBuilder: (context, index) {
+        final notice = notices[index];
+
+        return ListTile(
+          title: Text(
+            notice.title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(_formatDate(notice.createdAt)),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => NoticeDetailScreen(notice: notice),
               ),
             );
           },
-        ),
-      ),
+        );
+      },
     );
   }
 

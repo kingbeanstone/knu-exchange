@@ -1,28 +1,47 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/notice.dart';
 import '../services/notice_service.dart';
 
-class NoticeProvider with ChangeNotifier {
+class NoticeProvider extends ChangeNotifier {
   final NoticeService _service = NoticeService();
 
   List<Notice> _notices = [];
   bool _isLoading = false;
 
+  StreamSubscription<List<Notice>>? _subscription;
+
   List<Notice> get notices => _notices;
   bool get isLoading => _isLoading;
 
-  // 공지사항 새로고침
-  Future<void> refreshNotices() async {
+  NoticeProvider() {
+    _startListening();
+  }
+
+  /// 🔥 Firestore 실시간 구독 시작
+  void _startListening() {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      _notices = await _service.fetchRemoteNotices();
-    } catch (e) {
-      debugPrint("공지사항 업데이트 오류: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    _subscription?.cancel();
+
+    _subscription = _service.streamNotices().listen(
+          (notices) {
+        _notices = notices;
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (error) {
+        debugPrint("Notice stream error: $error");
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }
