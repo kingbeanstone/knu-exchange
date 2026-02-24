@@ -12,6 +12,7 @@ import 'providers/comment_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/notice_provider.dart';
 import 'providers/report_provider.dart'; // ReportProvider 추가
+import './widgets/auth/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,7 +64,7 @@ class KnuExApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFDD1829)),
       ),
-      home: const MainScreen(),
+      home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -42,10 +42,16 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      if (mounted) Navigator.pop(context);
+
+      // [수정] Navigator.pop(context)를 제거합니다.
+      // 이제 AuthWrapper가 AuthProvider의 상태 변화를 감지하여
+      // 자동으로 MainScreen으로 화면을 교체합니다.
+
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Login Failed')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Login Failed'))
+        );
       }
     }
   }
@@ -56,7 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(elevation: 0, backgroundColor: Colors.white, foregroundColor: Colors.black),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        // 로그인 화면이 최상단 화면이므로 뒤로가기 버튼 비활성화
+        automaticallyImplyLeading: false,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -74,8 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSubmit: _submit,
               ),
 
-              // [삭제] 소셜 로그인 섹션이 완전히 제거되었습니다.
-
               const SizedBox(height: 24),
               _buildSignUpLink(),
               const SizedBox(height: 40),
@@ -92,8 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const Text("Don't have an account?"),
         TextButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen())),
-          child: const Text('Sign Up', style: TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold)),
+          onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SignUpScreen())
+          ),
+          child: const Text(
+              'Sign Up',
+              style: TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold)
+          ),
         ),
       ],
     );

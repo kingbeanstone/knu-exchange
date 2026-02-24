@@ -5,17 +5,26 @@ import '../services/auth_service.dart';
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   User? _user;
-  bool _isAdmin = false; // [추가] 관리자 상태 변수
+  bool _isAdmin = false;
   bool _isLoading = false;
+  bool _isInitialLoading = true; // [추가] 초기 인증 확인 상태
 
   User? get user => _user;
   bool get isAuthenticated => _user != null;
-  bool get isAdmin => _isAdmin; // [추가] 관리자 여부 Getter
+  bool get isAdmin => _isAdmin;
   bool get isLoading => _isLoading;
+  bool get isInitialLoading => _isInitialLoading; // [추가] 게터
 
   AuthProvider() {
+    _initializeAuth();
+  }
+
+  // [수정] 초기 로그인 상태를 확인하고 스트림을 구독합니다.
+  void _initializeAuth() {
     _user = FirebaseAuth.instance.currentUser;
-    if (_user != null) _checkAdminStatus(_user!.uid);
+    if (_user != null) {
+      _checkAdminStatus(_user!.uid);
+    }
 
     _authService.user.listen((User? newUser) {
       _user = newUser;
@@ -23,12 +32,14 @@ class AuthProvider with ChangeNotifier {
         _checkAdminStatus(newUser.uid);
       } else {
         _isAdmin = false;
-        notifyListeners();
       }
+
+      // 초기 확인 완료 후 상태 변경
+      _isInitialLoading = false;
+      notifyListeners();
     });
   }
 
-  // [추가] 사용자의 관리자 권한 정보를 확인합니다.
   Future<void> _checkAdminStatus(String uid) async {
     final profile = await _authService.getUserProfile(uid);
     _isAdmin = profile?['isAdmin'] ?? false;
@@ -46,7 +57,7 @@ class AuthProvider with ChangeNotifier {
       final credential = await _authService.signIn(email, password);
       if (credential.user != null) {
         await credential.user!.reload();
-        await _checkAdminStatus(credential.user!.uid); // 로그인 즉시 관리자 체크
+        await _checkAdminStatus(credential.user!.uid);
 
         final refreshedUser = FirebaseAuth.instance.currentUser;
         if (refreshedUser != null && !refreshedUser.emailVerified) {
