@@ -16,10 +16,10 @@ class CommunityCategoryFilter extends StatelessWidget {
   List<Map<String, dynamic>> get _items => [
     {'label': 'All', 'icon': Icons.apps, 'value': null},
     {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
+    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
     {'label': 'Tip', 'icon': Icons.lightbulb_outline, 'value': PostCategory.tip},
     {'label': 'Market', 'icon': Icons.shopping_cart_outlined, 'value': PostCategory.market},
-    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
   ];
 
   @override
