@@ -9,9 +9,6 @@ import 'edit_notice_screen.dart';
 
 class NoticeDetailScreen extends StatelessWidget {
   final String noticeId;
-  String _preserveLineBreaks(String text) {
-    return text.replaceAll('\n', '\n\n');
-  }
 
   const NoticeDetailScreen({
     super.key,
