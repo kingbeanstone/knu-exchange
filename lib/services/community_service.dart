@@ -8,9 +8,23 @@ class CommunityService {
   CollectionReference get _postsRef =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts');
 
-  // 페이징 처리를 위한 메서드
-  Future<QuerySnapshot> getPostsQuery({int limit = 10, DocumentSnapshot? startAfter}) async {
-    Query query = _postsRef.orderBy('createdAt', descending: true).limit(limit);
+  // [수정] 정렬 기준(sortByLikes) 파라미터 추가
+  Future<QuerySnapshot> getPostsQuery({
+    int limit = 10,
+    DocumentSnapshot? startAfter,
+    bool sortByLikes = false,
+  }) async {
+    // 기본 정렬: 최신순, Hot 선택 시: 좋아요순
+    Query query = _postsRef;
+
+    if (sortByLikes) {
+      // 좋아요가 많은 순으로 먼저 정렬하고, 같으면 최신순으로 정렬
+      query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
+    } else {
+      query = query.orderBy('createdAt', descending: true);
+    }
+
+    query = query.limit(limit);
 
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
@@ -19,15 +33,12 @@ class CommunityService {
     return await query.get();
   }
 
-  // [추가] 검색 쿼리 (방식 A: 제목 시작 단어 검색)
   Future<List<Post>> searchPosts(String queryText) async {
-    // Firestore에서 특정 문자열로 시작하는 데이터를 찾는 쿼리
-    // 예: 'apple' 검색 시 'apple' <= x < 'apple\uf8ff' 범위의 데이터를 찾음
     final snapshot = await _postsRef
         .orderBy('title')
         .startAt([queryText])
         .endAt([queryText + '\uf8ff'])
-        .limit(20) // 검색 결과는 상위 20개만 우선 노출
+        .limit(20)
         .get();
 
     return snapshot.docs.map((doc) {
@@ -35,7 +46,6 @@ class CommunityService {
     }).toList();
   }
 
-  // 실시간 스트림 (상단 20개)
   Stream<List<Post>> streamPosts() {
     return _postsRef
         .orderBy('createdAt', descending: true)

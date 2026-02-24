@@ -5,7 +5,7 @@ import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
-import '../../widgets/community/community_search_bar.dart'; // [추가] 검색바 임포트
+import '../../widgets/community/community_search_bar.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -16,7 +16,6 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  PostCategory? _selectedCategory;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -33,7 +32,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _onScroll() {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
-    // 검색 중이 아닐 때만 무한 스크롤 작동
     if (!provider.isSearching && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
         provider.fetchPosts();
@@ -45,16 +43,24 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
 
-    // 검색 중이면 검색 결과를, 아니면 필터링된 게시글 목록을 사용합니다.
+    // [수정] 로컬 변수가 아닌 Provider의 currentCategory를 사용합니다.
+    final selectedCategory = communityProvider.currentCategory;
+
     final List<Post> displayPosts;
     if (communityProvider.isSearching) {
-      displayPosts = _selectedCategory == null
+      displayPosts = selectedCategory == null
           ? communityProvider.searchResults
-          : communityProvider.searchResults.where((p) => p.category == _selectedCategory).toList();
+          : communityProvider.searchResults.where((p) => p.category == selectedCategory).toList();
     } else {
-      displayPosts = _selectedCategory == null
-          ? communityProvider.posts
-          : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
+      // Hot 카테고리일 때는 이미 서버에서 필터링 및 정렬되어 오므로 전체 posts를 사용하고,
+      // 일반 카테고리일 때만 클라이언트 사이드 필터링을 수행합니다.
+      if (selectedCategory == PostCategory.hot) {
+        displayPosts = communityProvider.posts;
+      } else {
+        displayPosts = selectedCategory == null
+            ? communityProvider.posts
+            : communityProvider.posts.where((p) => p.category == selectedCategory).toList();
+      }
     }
 
     return Scaffold(
@@ -67,16 +73,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       body: Column(
         children: [
-          // [추가] 검색바 배치
           CommunitySearchBar(
             onSearch: (query) => communityProvider.performSearch(query),
             onClear: () => communityProvider.clearSearch(),
           ),
 
           CommunityCategoryFilter(
-            selectedCategory: _selectedCategory,
+            selectedCategory: selectedCategory,
             onCategorySelected: (category) {
-              setState(() => _selectedCategory = category);
+              // [수정] Provider의 카테고리 설정 메서드 호출 (서버 데이터 재요청 포함)
+              communityProvider.setCategory(category);
             },
           ),
           const Divider(height: 1),
@@ -91,7 +97,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(12),
-                // 검색 중이 아닐 때만 하단 로딩 바 노출
                 itemCount: displayPosts.length + (!communityProvider.isSearching && communityProvider.hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index < displayPosts.length) {

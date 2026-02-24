@@ -12,9 +12,10 @@ class CommunityCategoryFilter extends StatelessWidget {
     required this.onCategorySelected,
   });
 
-  // 카테고리별 라벨, 아이콘, 벨류 정의
-  final List<Map<String, dynamic>> _items = const [
+  // [수정] Hot 카테고리 항목 추가 (아이콘: local_fire_department)
+  List<Map<String, dynamic>> get _items => [
     {'label': 'All', 'icon': Icons.apps, 'value': null},
+    {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
     {'label': 'Tip', 'icon': Icons.lightbulb_outline, 'value': PostCategory.tip},
     {'label': 'Market', 'icon': Icons.shopping_cart_outlined, 'value': PostCategory.market},
@@ -34,6 +35,9 @@ class CommunityCategoryFilter extends StatelessWidget {
           final item = _items[index];
           final isSelected = selectedCategory == item['value'];
 
+          // Hot 카테고리인 경우 별도의 강조 색상 사용 고려 가능
+          final Color themeColor = item['value'] == PostCategory.hot ? Colors.orange : AppColors.knuRed;
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -41,12 +45,12 @@ class CommunityCategoryFilter extends StatelessWidget {
               avatar: Icon(
                 item['icon'],
                 size: 16,
-                color: isSelected ? Colors.white : AppColors.knuRed,
+                color: isSelected ? Colors.white : themeColor,
               ),
               label: Text(item['label']),
               selected: isSelected,
               onSelected: (_) => onCategorySelected(item['value']),
-              selectedColor: AppColors.knuRed,
+              selectedColor: themeColor,
               backgroundColor: Colors.white,
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
@@ -56,7 +60,7 @@ class CommunityCategoryFilter extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? AppColors.knuRed : Colors.grey.shade300,
+                  color: isSelected ? themeColor : Colors.grey.shade300,
                 ),
               ),
               elevation: 0,

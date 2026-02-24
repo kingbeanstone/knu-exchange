@@ -7,17 +7,20 @@ class CommunityProvider with ChangeNotifier {
   final CommunityService _service = CommunityService();
 
   List<Post> _posts = [];
-  List<Post> _searchResults = []; // 검색 결과 리스트
-  String _searchQuery = "";      // 현재 검색어
+  List<Post> _searchResults = [];
+  String _searchQuery = "";
+  PostCategory? _currentCategory; // [추가] 현재 선택된 카테고리 상태
+
   bool _isLoading = false;
   bool _isLoadingMore = false;
-  bool _isSearching = false;     // 검색 모드 활성화 여부
+  bool _isSearching = false;
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
 
   List<Post> get posts => _posts;
   List<Post> get searchResults => _searchResults;
   String get searchQuery => _searchQuery;
+  PostCategory? get currentCategory => _currentCategory; // [추가]
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get isSearching => _isSearching;
@@ -27,9 +30,14 @@ class CommunityProvider with ChangeNotifier {
     fetchPosts(isRefresh: true);
   }
 
+  // [추가] 카테고리 변경 시 호출되는 메서드
+  void setCategory(PostCategory? category) {
+    _currentCategory = category;
+    fetchPosts(isRefresh: true);
+  }
+
   /// 🔄 데이터 가져오기 (새로고침 또는 초기 로드)
   Future<void> fetchPosts({bool isRefresh = false}) async {
-    // 검색 중일 때 새로고침이 아니라면 일반 페이징 로드를 차단합니다.
     if (_isSearching && !isRefresh) return;
 
     if (isRefresh) {
@@ -37,8 +45,7 @@ class CommunityProvider with ChangeNotifier {
       _hasMore = true;
       _lastDocument = null;
       _posts = [];
-      _isSearching = false; // 새로고침 시 검색 모드 강제 해제
-      _searchQuery = "";
+      if (!_isSearching) _searchQuery = "";
       notifyListeners();
     } else {
       if (!_hasMore || _isLoadingMore) return;
@@ -47,9 +54,11 @@ class CommunityProvider with ChangeNotifier {
     }
 
     try {
+      // [수정] Hot 카테고리일 경우 좋아요순 정렬 요청
       final snapshot = await _service.getPostsQuery(
         limit: 10,
         startAfter: _lastDocument,
+        sortByLikes: _currentCategory == PostCategory.hot,
       );
 
       if (snapshot.docs.length < 10) {
@@ -73,7 +82,7 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  /// 🔍 검색 실행 (제목 기반 시작 단어 검색)
+  /// 🔍 검색 실행
   Future<void> performSearch(String query) async {
     if (query.isEmpty) {
       clearSearch();
@@ -96,14 +105,13 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  /// ❌ 검색 초기화 및 원래 목록 복귀
+  /// ❌ 검색 초기화
   void clearSearch() {
-    if (!_isSearching) return; // 이미 검색 중이 아니면 실행 안 함
-
+    if (!_isSearching) return;
     _isSearching = false;
     _searchQuery = "";
     _searchResults = [];
-    notifyListeners(); // 상태 변경 알림 -> UI가 자동으로 _posts 리스트를 보여줌
+    notifyListeners();
   }
 
   Future<void> addPost(Post post) async {
@@ -125,7 +133,6 @@ class CommunityProvider with ChangeNotifier {
   Future<void> toggleLike(String postId, String userId) async {
     try {
       await _service.toggleLike(postId, userId);
-      // 참고: 실시간 스트림이 아니므로 필요시 로컬 상태를 수동으로 업데이트하는 로직을 추가할 수 있습니다.
     } catch (e) {
       debugPrint("Toggle like error: $e");
     }

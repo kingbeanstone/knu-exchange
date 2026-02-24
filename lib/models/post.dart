@@ -1,19 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum PostCategory { question, tip, market, free }
+// [수정] hot 카테고리 추가
+enum PostCategory { hot, question, tip, market, free }
 
 class Post {
   final String id;
   final String title;
   final String content;
-  final String author;     // 화면 표시용
-  final String authorId;   // 고유 UID
+  final String author;
+  final String authorId;
   final String authorName;
   final DateTime createdAt;
   final PostCategory category;
   final int likes;
   final int comments;
-  final bool isAnonymous;  // [추가] 익명 여부 플래그
+  final bool isAnonymous;
 
   Post({
     required this.id,
@@ -26,11 +27,13 @@ class Post {
     required this.category,
     this.likes = 0,
     this.comments = 0,
-    this.isAnonymous = false, // [추가] 기본값은 false
+    this.isAnonymous = false,
   });
 
+  // [수정] hot 레이블 추가
   String get categoryLabel {
     switch (category) {
+      case PostCategory.hot: return 'Hot';
       case PostCategory.question: return 'Question';
       case PostCategory.tip: return 'Tip';
       case PostCategory.market: return 'Market';
@@ -53,7 +56,7 @@ class Post {
       ),
       likes: data['likes'] ?? 0,
       comments: data['comments'] ?? 0,
-      isAnonymous: data['isAnonymous'] ?? false, // [추가] 저장된 값 로드
+      isAnonymous: data['isAnonymous'] ?? false,
     );
   }
 }
