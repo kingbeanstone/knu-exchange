@@ -20,24 +20,30 @@ class CampusMapView extends StatefulWidget {
   });
 
   @override
-  State<CampusMapView> createState() => CampusMapViewState();
+  CampusMapViewState createState() => CampusMapViewState();
 }
 
 class CampusMapViewState extends State<CampusMapView> {
   NaverMapController? _controller;
   NMarker? _selectedMarker;
 
+  final Set<NMarker> _markers = {};
+  final Map<String, Facility> _facilityMap = {};
+
+  final double _captionZoomThreshold = 16.0;
+  bool _isCaptionVisible = false;
+
+  // 🔥 HomeScreen에서 호출하는 함수
   void clearSelectedMarker() {
     if (_selectedMarker != null) {
-      _selectedMarker!.setSize(const Size(28, 28)); // 기본 크기(네가 쓰던 값)
+      _selectedMarker!.setSize(const Size(28, 28));
       _selectedMarker = null;
     }
   }
 
   @override
-  void didUpdateWidget(CampusMapView oldWidget) {
+  void didUpdateWidget(covariant CampusMapView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 표시할 시설 데이터가 변경되면 마커를 갱신합니다.
     if (oldWidget.facilities != widget.facilities && _controller != null) {
       _updateMarkers();
     }
@@ -47,17 +53,18 @@ class CampusMapViewState extends State<CampusMapView> {
     if (_controller == null) return;
 
     await _controller!.clearOverlays();
+    _markers.clear();
+    _facilityMap.clear();
     _selectedMarker = null;
 
     for (var f in widget.facilities) {
       final marker = NMarker(
         id: f.id,
         position: NLatLng(f.latitude, f.longitude),
-        caption: NOverlayCaption(text: f.engName),
       );
 
-      // 커스텀 위젯을 마커 아이콘으로 변환
-      if (!mounted) return;
+      marker.setIsHideCollidedCaptions(true);
+      _facilityMap[f.id] = f;
 
       final iconImage = await NOverlayImage.fromWidget(
         widget: MarkerIcon(category: f.category),
@@ -73,28 +80,51 @@ class CampusMapViewState extends State<CampusMapView> {
         _handleMarkerTap(marker, f);
       });
 
+      _markers.add(marker);
       _controller!.addOverlay(marker);
+    }
+
+    final cameraPosition = await _controller!.getCameraPosition();
+    _updateCaptionByZoom(cameraPosition.zoom);
+  }
+
+  void _updateCaptionByZoom(double zoom) {
+    final shouldShow = zoom >= _captionZoomThreshold;
+
+    if (_isCaptionVisible == shouldShow) return;
+    _isCaptionVisible = shouldShow;
+
+    for (var marker in _markers) {
+      final facility = _facilityMap[marker.info.id];
+      if (facility == null) continue;
+
+      if (shouldShow) {
+        marker.setCaption(
+          NOverlayCaption(text: facility.engName),
+        );
+      } else {
+        marker.setCaption(null);
+      }
     }
   }
 
   void _handleMarkerTap(NMarker marker, Facility facility) {
-    // 이전 선택 마커 크기 초기화
     if (_selectedMarker != null) {
       _selectedMarker!.setSize(const Size(28, 28));
     }
 
-    // 새 마커 강조 및 저장
     marker.setSize(const Size(40, 40));
     _selectedMarker = marker;
 
-    // 카메라 이동
-    _controller!.updateCamera(
+    _controller?.updateCamera(
       NCameraUpdate.withParams(
         target: NLatLng(facility.latitude, facility.longitude),
-      )..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 250)),
+      )..setAnimation(
+        animation: NCameraAnimation.linear,
+        duration: const Duration(milliseconds: 250),
+      ),
     );
 
-    // HomeScreen으로 선택된 시설 전달
     widget.onFacilitySelected(facility);
   }
 
@@ -102,25 +132,27 @@ class CampusMapViewState extends State<CampusMapView> {
   Widget build(BuildContext context) {
     return NaverMap(
       options: NaverMapViewOptions(
-        initialCameraPosition: NCameraPosition(target: widget.initialPosition, zoom: 15),
+        initialCameraPosition: NCameraPosition(
+          target: widget.initialPosition,
+          zoom: 15,
+        ),
         locationButtonEnable: false,
-        consumeSymbolTapEvents: false,
       ),
       onMapReady: (controller) {
         _controller = controller;
         widget.onMapReady(controller);
         _updateMarkers();
       },
-      onMapLongTapped: (point, latLng) {
-        if (widget.onMapLongTap != null) {
-          widget.onMapLongTap!(latLng);
-        }
+      onCameraIdle: () async {
+        if (_controller == null) return;
+        final cameraPosition = await _controller!.getCameraPosition();
+        _updateCaptionByZoom(cameraPosition.zoom);
       },
       onMapTapped: (point, latLng) {
-        if (_selectedMarker != null) {
-          _selectedMarker!.setSize(const Size(28, 28));
-          _selectedMarker = null;
-        }
+        clearSelectedMarker();
+      },
+      onMapLongTapped: (point, latLng) {
+        widget.onMapLongTap?.call(latLng);
       },
     );
   }

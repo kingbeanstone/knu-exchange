@@ -11,6 +11,7 @@ import '../../widgets/home/campus_map_view.dart';
 import '../../widgets/home/admin_coords_sheet.dart';
 import 'facility_detail_screen.dart';
 
+
 class HomeScreen extends StatefulWidget {
   final void Function(String facilityId) onGoToCafeteria;
 
@@ -24,12 +25,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final GlobalKey<CampusMapViewState> _mapKey = GlobalKey<CampusMapViewState>();
+  final GlobalKey<CampusMapViewState> _mapKey =
+  GlobalKey<CampusMapViewState>();
+
   NaverMapController? _mapController;
   final MapService _mapService = MapService();
+
   String _selectedCategory = 'All';
 
-  // 관리자 모드 관련 상태
   bool _adminMode = false;
   int _titleTapCount = 0;
 
@@ -37,7 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredFacilities = _mapService.getFacilitiesByCategory(_selectedCategory);
+    final filteredFacilities =
+    _mapService.getFacilitiesByCategory(_selectedCategory);
 
     return Scaffold(
       appBar: AppBar(
@@ -97,16 +101,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _resetToKnu() {
     if (_mapController == null) return;
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.updateCamera(
       NCameraUpdate.withParams(target: _knuCenter, zoom: 15)
-        ..setAnimation(animation: NCameraAnimation.easing, duration: const Duration(milliseconds: 500)),
+        ..setAnimation(
+            animation: NCameraAnimation.easing,
+            duration: const Duration(milliseconds: 500)),
     );
   }
 
   void _moveToMyLocation() {
     if (_mapController == null) return;
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
 
@@ -114,8 +118,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, // 내부 콘텐츠 크기에 맞게 조절되도록 설정
-      useSafeArea: true, // 시스템 세이프 에어리어를 고려하도록 설정
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (sheetContext) {
         final bool isCafeteria = facility.category == 'Restaurant';
 
@@ -125,7 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
             Navigator.pop(sheetContext);
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => FacilityDetailScreen(facility: facility),
+                builder: (_) =>
+                    FacilityDetailScreen(facility: facility),
               ),
             );
           },
@@ -146,7 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => AdminCoordsSheet(latLng: latLng),
     );
   }
@@ -156,12 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_titleTapCount >= 5) {
       setState(() => _adminMode = !_adminMode);
       _titleTapCount = 0;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
     }
   }
 }
