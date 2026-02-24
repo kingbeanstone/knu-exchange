@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Stack(
         children: [
-          // 분리된 지도 뷰 위젯
           CampusMapView(
             key: _mapKey,
             initialPosition: _knuCenter,
@@ -65,8 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
               if (_adminMode) _showAdminCoords(latLng);
             },
           ),
-
-          // 카테고리 필터 영역
           Positioned(
             top: 10,
             left: 0,
@@ -78,8 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ),
-
-          // 지도 컨트롤 버튼 영역
           Positioned(
             bottom: 24,
             right: 16,
@@ -92,8 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // --- 비즈니스 로직 ---
 
   Future<void> _initializeLocation() async {
     final status = await Permission.location.request();
@@ -113,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _moveToMyLocation() {
     if (_mapController == null) return;
-
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
   }
@@ -122,6 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true, // 내부 콘텐츠 크기에 맞게 조절되도록 설정
+      useSafeArea: true, // 시스템 세이프 에어리어를 고려하도록 설정
       builder: (sheetContext) {
         final bool isCafeteria = facility.category == 'Restaurant';
 
@@ -144,13 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ).whenComplete(() {
-      _mapKey.currentState?.clearSelectedMarker(); // ✅ 바텀시트 닫히는 순간 마커 원복
+      _mapKey.currentState?.clearSelectedMarker();
     });
   }
 
   void _showAdminCoords(NLatLng latLng) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => AdminCoordsSheet(latLng: latLng),
     );
