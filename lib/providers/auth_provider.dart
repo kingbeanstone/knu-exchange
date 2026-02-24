@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -26,10 +28,11 @@ class AuthProvider with ChangeNotifier {
       _checkAdminStatus(_user!.uid);
     }
 
-    _authService.user.listen((User? newUser) {
+    _authService.user.listen((User? newUser) async {
       _user = newUser;
-      if (newUser != null) {
-        _checkAdminStatus(newUser.uid);
+
+      if (_user != null) {
+        await _checkAdminStatus(_user!.uid);
       } else {
         _isAdmin = false;
       }
@@ -40,9 +43,23 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
+  // 🔥 Firestore에서 관리자 여부 확인
   Future<void> _checkAdminStatus(String uid) async {
-    final profile = await _authService.getUserProfile(uid);
-    _isAdmin = profile?['isAdmin'] ?? false;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc('knu-exchange-app')
+          .collection('users')
+          .doc(uid)
+          .collection('profile')
+          .doc('info')
+          .get();
+
+      _isAdmin = doc.data()?['isAdmin'] ?? false;
+    } catch (e) {
+      _isAdmin = false;
+    }
+
     notifyListeners();
   }
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
 import 'notice_detail_screen.dart';
+import 'create_notice_screen.dart';
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({super.key});
@@ -27,55 +29,70 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NoticeProvider>();
+    final auth = context.watch<AuthProvider>();
+    print("isAdmin: ${auth.isAdmin}");
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text('Notice'),
+        backgroundColor: AppColors.knuRed,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          if (context.watch<AuthProvider>().isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateNoticeScreen(),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          const Divider(height: 1),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.notices.isEmpty
+                ? const Center(child: Text("No notices yet."))
+                : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: provider.notices.length,
+              itemBuilder: (context, index) {
+                final notice = provider.notices[index];
 
-    if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final notices = provider.notices;
-
-    if (notices.isEmpty) {
-      return const Center(child: Text("No notices yet."));
-    }
-
-    return ListView.builder(
-      itemCount: notices.length,
-      itemBuilder: (context, index) {
-        final notice = notices[index];
-
-        return ListTile(
-          title: Text(
-            notice.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    title: Text(
+                      notice.title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold),
+                    ),
+                    subtitle:
+                    Text(_formatDate(notice.createdAt)),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NoticeDetailScreen(
+                              notice: notice),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-          subtitle: Text(_formatDate(notice.createdAt)),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => NoticeDetailScreen(notice: notice),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return ListView(
-      children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-        const Center(
-          child: Column(
-            children: [
-              Icon(Icons.notifications_none, size: 60, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('등록된 공지사항이 없습니다.', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
