@@ -7,8 +7,6 @@ import 'home/home_screen.dart';
 import 'cafeteria/cafeteria_screen.dart';
 import 'community/community_screen.dart';
 import 'settings/settings_screen.dart';
-import '../../providers/notice_provider.dart';
-import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -25,11 +23,6 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
-
-    // 🔥 Notice 탭 index가 3이라 가정
-    if (index == 3) {
-      context.read<NoticeProvider>().refreshNotices();
-    }
   }
 
   void goToCafeteria(String facilityId) {
