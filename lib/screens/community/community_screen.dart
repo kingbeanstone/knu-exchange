@@ -4,7 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../widgets/community/post_card.dart';
-import '../../widgets/community/community_category_filter.dart'; // [추가] 신규 위젯 임포트
+import '../../widgets/community/community_category_filter.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -16,6 +16,29 @@ class CommunityScreen extends StatefulWidget {
 
 class _CommunityScreenState extends State<CommunityScreen> {
   PostCategory? _selectedCategory;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 스크롤 리스너 추가하여 바닥 감지
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final provider = Provider.of<CommunityProvider>(context, listen: false);
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (provider.hasMore && !provider.isLoadingMore) {
+        provider.fetchPosts();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,25 +58,34 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       body: Column(
         children: [
-          // [수정] 분리된 카테고리 필터 위젯 적용
           CommunityCategoryFilter(
             selectedCategory: _selectedCategory,
             onCategorySelected: (category) {
               setState(() => _selectedCategory = category);
             },
           ),
-          const Divider(height: 1), // 시각적 구분을 위한 구분선
+          const Divider(height: 1),
           Expanded(
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filteredPosts.isEmpty
                 ? _buildEmptyState()
                 : RefreshIndicator(
-              onRefresh: communityProvider.fetchPosts,
+              onRefresh: () => communityProvider.fetchPosts(isRefresh: true),
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(12),
-                itemCount: filteredPosts.length,
-                itemBuilder: (context, index) => PostCard(post: filteredPosts[index]),
+                itemCount: filteredPosts.length + (communityProvider.hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index < filteredPosts.length) {
+                    return PostCard(post: filteredPosts[index]);
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                },
               ),
             ),
           ),

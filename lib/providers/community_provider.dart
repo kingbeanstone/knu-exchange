@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 
@@ -7,77 +7,74 @@ class CommunityProvider with ChangeNotifier {
   final CommunityService _service = CommunityService();
 
   List<Post> _posts = [];
-  bool _isLoading = true;
-
-  StreamSubscription<List<Post>>? _postsSubscription;
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
 
   List<Post> get posts => _posts;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => _hasMore;
 
   CommunityProvider() {
-    _startListening();
+    fetchPosts(isRefresh: true);
   }
 
-  /// Firestore 실시간 구독 시작
-  void _startListening() {
-    _isLoading = true;
-    notifyListeners();
+  /// 🔄 데이터 가져오기 (새로고침 또는 초기 로드)
+  Future<void> fetchPosts({bool isRefresh = false}) async {
+    if (isRefresh) {
+      _isLoading = true;
+      _hasMore = true;
+      _lastDocument = null;
+      _posts = [];
+      notifyListeners();
+    } else {
+      if (!_hasMore || _isLoadingMore) return;
+      _isLoadingMore = true;
+      notifyListeners();
+    }
 
-    _postsSubscription?.cancel();
+    try {
+      final snapshot = await _service.getPostsQuery(
+        limit: 10,
+        startAfter: _lastDocument,
+      );
 
-    _postsSubscription = _service.streamPosts().listen(
-          (posts) {
-        _posts = posts;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (error) {
-        debugPrint("Community stream error: $error");
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+      if (snapshot.docs.length < 10) {
+        _hasMore = false;
+      }
+
+      if (snapshot.docs.isNotEmpty) {
+        _lastDocument = snapshot.docs.last;
+        final newPosts = snapshot.docs.map((doc) {
+          return Post.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+        }).toList();
+
+        _posts.addAll(newPosts);
+      }
+    } catch (e) {
+      debugPrint("Fetch posts error: $e");
+    } finally {
+      _isLoading = false;
+      _isLoadingMore = false;
+      notifyListeners();
+    }
   }
 
-  /// 당겨서 새로고침
-  Future<void> fetchPosts() async {
-    _startListening();
-  }
-
-  /// 게시글 추가
-  /// [Post] 객체의 isAnonymous 값에 따라 서비스에서 처리됩니다.
   Future<void> addPost(Post post) async {
-    try {
-      await _service.addPost(post);
-    } catch (e) {
-      debugPrint("Add post error: $e");
-      rethrow;
-    }
+    await _service.addPost(post);
+    fetchPosts(isRefresh: true); // 작성 후 다시 로드
   }
 
-  /// 게시글 삭제
   Future<void> deletePost(String postId) async {
-    try {
-      await _service.deletePost(postId);
-    } catch (e) {
-      debugPrint("Delete post error: $e");
-      rethrow;
-    }
+    await _service.deletePost(postId);
+    _posts.removeWhere((p) => p.id == postId);
+    notifyListeners();
   }
 
-  /// 좋아요 토글
   Future<void> toggleLike(String postId, String userId) async {
-    try {
-      await _service.toggleLike(postId, userId);
-    } catch (e) {
-      debugPrint("Toggle like error: $e");
-      rethrow;
-    }
-  }
-
-  @override
-  void dispose() {
-    _postsSubscription?.cancel();
-    super.dispose();
+    await _service.toggleLike(postId, userId);
+    // 로컬 상태 업데이트 (필요 시)
   }
 }
