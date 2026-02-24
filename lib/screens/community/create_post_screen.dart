@@ -17,6 +17,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
   PostCategory _selectedCategory = PostCategory.free;
   bool _isSubmitting = false;
+  bool _isAnonymous = false;
 
   @override
   void dispose() {
@@ -38,11 +39,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           id: '',
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
-          author: 'Anonymous',
+          author: _isAnonymous ? 'Anonymous' : 'User',
           authorId: '',
-          authorName: 'Anonymous',
+          authorName: _isAnonymous ? 'Anonymous' : 'Real Name',
           createdAt: DateTime.now(),
           category: _selectedCategory,
+          isAnonymous: _isAnonymous,
         ),
       );
 
@@ -72,7 +74,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
         ],
       ),
-      // 키보드가 올라올 때 화면이 잘리는 것을 방지하기 위해 SingleChildScrollView 사용
       body: _isSubmitting
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -83,7 +84,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 카테고리 선택
                 DropdownButtonFormField<PostCategory>(
                   value: _selectedCategory,
                   decoration: const InputDecoration(
@@ -102,8 +102,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // 제목 입력
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
@@ -114,8 +112,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   validator: (v) => v!.isEmpty ? 'Please enter title' : null,
                 ),
                 const SizedBox(height: 20),
-
-                // 본문 입력 (Expanded를 제거하고 minLines를 설정하여 스크롤 뷰 내에서 정상 작동하게 함)
                 TextFormField(
                   controller: _contentController,
                   decoration: const InputDecoration(
@@ -124,14 +120,31 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(),
                   ),
-                  maxLines: null, // 내용에 따라 줄바꿈 무제한
-                  minLines: 12,   // 최소 높이 확보
+                  maxLines: null,
+                  minLines: 12,
                   textAlignVertical: TextAlignVertical.top,
                   validator: (v) => v!.isEmpty ? 'Please enter content' : null,
                 ),
+                const SizedBox(height: 12),
 
-                // 키보드에 가려지지 않도록 하단 여백 추가
-                const SizedBox(height: 100),
+                // 익명 게시 체크박스 오타 수정 완료
+                CheckboxListTile(
+                  title: const Text(
+                    "Post Anonymously",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  value: _isAnonymous,
+                  activeColor: AppColors.knuRed,
+                  onChanged: (val) {
+                    setState(() => _isAnonymous = val ?? false);
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  // controlType -> controlAffinity로 수정
+                  // ListTileControlType -> ListTileControlAffinity로 수정
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+
+                const SizedBox(height: 80),
               ],
             ),
           ),
