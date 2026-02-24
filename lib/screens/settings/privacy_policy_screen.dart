@@ -5,43 +5,40 @@ class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   static const String _privacyText = '''
-# **Privacy Policy**
+**KNU EXCHANGE Privacy Policy**
 
-**KNU Exchange Privacy Policy**
+Last updated: February 2026
 
-Last updated: February 15 2026
-
-Knuni (“the App”) respects your privacy and is committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
+KNU EXCHANGE (“the App”) is operated by M. We respect your privacy and are committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
 
 ---
 
 ## **1. Information We Collect**
 
-We may collect the following types of information:
+When you use KNU EXCHANGE, we may collect the following information:
 
 ### **a) Account Information**
 
-When you create an account or log in using Firebase Authentication, we may collect:
+When you create an account using email and password, we collect:
 
 - Email address
 - Unique user identifier (UID)
 
 ### **b) User-Generated Content**
 
-When using the App, we may collect:
+When using the App, we collect:
 
 - Posts
 - Comments
-- Other text content voluntarily submitted by users
+- Other content voluntarily submitted by users
 
 ### **c) Technical Information**
 
-We may automatically collect:
+We may automatically collect limited technical data necessary for the operation of the App, such as:
 
 - Device type
 - Operating system version
 - App version
-- Basic usage logs
 
 ---
 
@@ -49,62 +46,67 @@ We may automatically collect:
 
 We use collected information to:
 
-- Provide authentication and account management
-- Enable posting and commenting features
+- Provide account authentication and login functionality
+- Enable community features such as posting and commenting
 - Maintain and improve the App
 - Ensure security and prevent misuse
 
-We do not sell or rent your personal information to third parties.
+We do not sell, rent, or trade your personal information to third parties.
 
 ---
 
 ## **3. Data Storage and Security**
 
-- All user data is stored securely using Google Firebase services.
-- We implement reasonable security measures to protect your information.
-- Data is retained only as long as necessary to provide services.
+All user data is stored using Google Firebase services.
+
+Data may be processed on servers located outside your country.
+
+We take reasonable measures to protect your information from unauthorized access, loss, misuse, or alteration.
 
 ---
 
-## **4. Third-Party Services**
+## **4. Account Deletion**
 
-The App uses the following third-party services:
+Users may delete their account at any time through the App.
 
-- **Google Firebase (Authentication, Firestore, Analytics if enabled)**
+When an account is deleted:
+
+- The Firebase authentication account is permanently removed.
+- Associated user data stored in Firestore is deleted.
+
+---
+
+## **5. Children’s Privacy**
+
+The App is intended for users aged 13 and older.
+
+We do not knowingly collect personal information from children under 13.
+
+If you believe that a child under 13 has provided personal information, please contact us.
+
+---
+
+## **6. Third-Party Services**
+
+The App uses Google Firebase for authentication and data storage.
 
 These services may process data in accordance with their own privacy policies.
 
 ---
 
-## **5. User Rights**
-
-You may request to:
-
-- Access your personal data
-- Correct inaccurate information
-- Delete your account and associated data
-
-To make such requests, please contact us using the information below.
-
----
-
-## **6. Children’s Privacy**
-
-The App is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.
-
----
-
 ## **7. Changes to This Policy**
 
-We may update this Privacy Policy from time to time. Updates will be posted at this URL.
+We may update this Privacy Policy from time to time. Updates will be posted at this URL with a revised “Last updated” date.
 
 ---
 
-## **8. Contact Information**
+## **8. Contact Us**
 
-If you have questions regarding this Privacy Policy, please contact:
+If you have any questions about this Privacy Policy, please contact:
 
-Email: [TeamMillionM@gmail.com](mailto:TeamMillionM@gmail.com)
+Team M
+
+Email: TeamMillionM@gmail.com
 ''';
 
   @override
