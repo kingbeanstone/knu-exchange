@@ -4,17 +4,21 @@ import '../../utils/app_colors.dart';
 
 class CommunityCategoryFilter extends StatelessWidget {
   final PostCategory? selectedCategory;
+  final bool isMyPostsSelected;
   final Function(PostCategory?) onCategorySelected;
+  final Function(bool) onMyPostsSelected;
 
   const CommunityCategoryFilter({
     super.key,
     required this.selectedCategory,
+    required this.isMyPostsSelected,
     required this.onCategorySelected,
+    required this.onMyPostsSelected,
   });
 
-  // [수정] Hot 카테고리 항목 추가 (아이콘: local_fire_department)
   List<Map<String, dynamic>> get _items => [
-    {'label': 'All', 'icon': Icons.apps, 'value': null},
+    {'label': 'All', 'icon': Icons.apps, 'value': 'all'},
+    {'label': 'My Posts', 'icon': Icons.person_pin, 'value': 'mine'},
     {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
     {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
@@ -33,9 +37,16 @@ class CommunityCategoryFilter extends StatelessWidget {
         itemCount: _items.length,
         itemBuilder: (context, index) {
           final item = _items[index];
-          final isSelected = selectedCategory == item['value'];
 
-          // Hot 카테고리인 경우 별도의 강조 색상 사용 고려 가능
+          bool isSelected = false;
+          if (item['value'] == 'all') {
+            isSelected = selectedCategory == null && !isMyPostsSelected;
+          } else if (item['value'] == 'mine') {
+            isSelected = isMyPostsSelected;
+          } else {
+            isSelected = selectedCategory == item['value'] && !isMyPostsSelected;
+          }
+
           final Color themeColor = item['value'] == PostCategory.hot ? Colors.orange : AppColors.knuRed;
 
           return Padding(
@@ -49,7 +60,15 @@ class CommunityCategoryFilter extends StatelessWidget {
               ),
               label: Text(item['label']),
               selected: isSelected,
-              onSelected: (_) => onCategorySelected(item['value']),
+              onSelected: (_) {
+                if (item['value'] == 'all') {
+                  onCategorySelected(null);
+                } else if (item['value'] == 'mine') {
+                  onMyPostsSelected(true);
+                } else {
+                  onCategorySelected(item['value'] as PostCategory?);
+                }
+              },
               selectedColor: themeColor,
               backgroundColor: Colors.white,
               labelStyle: TextStyle(

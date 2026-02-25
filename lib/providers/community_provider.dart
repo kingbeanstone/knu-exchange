@@ -1,16 +1,19 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
+import 'community_action_mixin.dart'; // Mixin 파일 임포트
 
-class CommunityProvider with ChangeNotifier {
+/// 게시글 목록 조회 및 상태 관리를 담당하는 메인 프로바이더입니다.
+class CommunityProvider with ChangeNotifier, CommunityActionMixin {
   final CommunityService _service = CommunityService();
 
+  // 목록 관련 상태
   List<Post> _posts = [];
   List<Post> _searchResults = [];
   String _searchQuery = "";
   PostCategory? _currentCategory;
+  bool _isMyPostsOnly = false;
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -18,11 +21,15 @@ class CommunityProvider with ChangeNotifier {
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
 
+  // Getters
   List<Post> get posts => _posts;
   List<Post> get searchResults => _searchResults;
   String get searchQuery => _searchQuery;
   PostCategory? get currentCategory => _currentCategory;
-  bool get isLoading => _isLoading;
+  bool get isMyPostsOnly => _isMyPostsOnly;
+
+  // Mixin의 액션 로딩과 통합된 로딩 상태
+  bool get isLoading => _isLoading || isLoadingAction;
   bool get isLoadingMore => _isLoadingMore;
   bool get isSearching => _isSearching;
   bool get hasMore => _hasMore;
@@ -31,12 +38,22 @@ class CommunityProvider with ChangeNotifier {
     fetchPosts(isRefresh: true);
   }
 
+  // 카테고리 필터 설정
   void setCategory(PostCategory? category) {
     _currentCategory = category;
+    _isMyPostsOnly = false;
     fetchPosts(isRefresh: true);
   }
 
-  Future<void> fetchPosts({bool isRefresh = false}) async {
+  // '내 글만 보기' 필터 설정
+  void setMyPostsOnly(bool value, String? userId) {
+    _isMyPostsOnly = value;
+    _currentCategory = null;
+    fetchPosts(isRefresh: true, userId: userId);
+  }
+
+  // 데이터 조회 (Read)
+  Future<void> fetchPosts({bool isRefresh = false, String? userId}) async {
     if (_isSearching && !isRefresh) return;
 
     if (isRefresh) {
@@ -57,6 +74,7 @@ class CommunityProvider with ChangeNotifier {
         limit: 10,
         startAfter: _lastDocument,
         sortByLikes: _currentCategory == PostCategory.hot,
+        authorId: _isMyPostsOnly ? userId : null,
       );
 
       if (snapshot.docs.length < 10) {
@@ -80,98 +98,17 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  // 게시글 추가
-  Future<void> addPost(Post post, {List<File>? images}) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final docRef = _service.getNewPostRef();
-      final postId = docRef.id;
-
-      List<String> uploadedUrls = [];
-      if (images != null && images.isNotEmpty) {
-        uploadedUrls = await _service.uploadPostImages(postId, images);
-      }
-
-      final postWithImages = Post(
-        id: postId,
-        title: post.title,
-        content: post.content,
-        author: post.author,
-        authorId: post.authorId,
-        authorName: post.authorName,
-        createdAt: post.createdAt,
-        category: post.category,
-        isAnonymous: post.isAnonymous,
-        likes: post.likes,
-        comments: post.comments,
-        imageUrls: uploadedUrls,
-      );
-
-      await _service.addPostWithId(postWithImages);
-      await fetchPosts(isRefresh: true);
-    } catch (e) {
-      debugPrint("Add post error: $e");
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // [추가] 게시글 수정
-  Future<void> updatePost(Post post, {List<File>? newImages, required List<String> remainingUrls}) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      List<String> finalUrls = List.from(remainingUrls);
-
-      // 새 이미지가 있다면 업로드 후 추가
-      if (newImages != null && newImages.isNotEmpty) {
-        final uploadedNewUrls = await _service.uploadPostImages(post.id, newImages, prefix: "update");
-        finalUrls.addAll(uploadedNewUrls);
-      }
-
-      final updatedPost = Post(
-        id: post.id,
-        title: post.title,
-        content: post.content,
-        author: post.author,
-        authorId: post.authorId,
-        authorName: post.authorName,
-        createdAt: post.createdAt,
-        category: post.category,
-        isAnonymous: post.isAnonymous,
-        likes: post.likes,
-        comments: post.comments,
-        imageUrls: finalUrls,
-      );
-
-      await _service.updatePost(updatedPost);
-      await fetchPosts(isRefresh: true);
-    } catch (e) {
-      debugPrint("Update post error: $e");
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
+  // 검색 로직
   Future<void> performSearch(String query) async {
     if (query.isEmpty) {
       clearSearch();
       return;
     }
-
     _isSearching = true;
     _isLoading = true;
     _searchQuery = query;
     _searchResults = [];
     notifyListeners();
-
     try {
       _searchResults = await _service.searchPosts(query);
     } catch (e) {
@@ -190,22 +127,12 @@ class CommunityProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // 믹스인 메서드 오버라이드 (로컬 데이터 동기화용)
+  @override
   Future<void> deletePost(String postId) async {
-    try {
-      await _service.deletePost(postId);
-      _posts.removeWhere((p) => p.id == postId);
-      _searchResults.removeWhere((p) => p.id == postId);
-      notifyListeners();
-    } catch (e) {
-      debugPrint("Delete post error: $e");
-    }
-  }
-
-  Future<void> toggleLike(String postId, String userId) async {
-    try {
-      await _service.toggleLike(postId, userId);
-    } catch (e) {
-      debugPrint("Toggle like error: $e");
-    }
+    await super.deletePost(postId);
+    _posts.removeWhere((p) => p.id == postId);
+    _searchResults.removeWhere((p) => p.id == postId);
+    notifyListeners();
   }
 }

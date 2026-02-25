@@ -67,7 +67,6 @@ class _EditPostScreenState extends State<EditPostScreen> {
     try {
       final provider = Provider.of<CommunityProvider>(context, listen: false);
 
-      // 수정된 포스트 정보 생성 (ID와 작성자 정보는 유지)
       final editedPost = Post(
         id: widget.post.id,
         title: _titleController.text.trim(),
@@ -80,17 +79,19 @@ class _EditPostScreenState extends State<EditPostScreen> {
         isAnonymous: _isAnonymous,
         likes: widget.post.likes,
         comments: widget.post.comments,
-        imageUrls: [], // 프로바이더 내부에서 조합됨
+        imageUrls: const [],
       );
 
+      // [수정] updatePost 호출 시 onRefresh 파라미터를 필수값으로 전달합니다.
       await provider.updatePost(
         editedPost,
         newImages: _newImages,
         remainingUrls: _existingUrls,
+        onRefresh: () => provider.fetchPosts(isRefresh: true),
       );
 
       if (mounted) {
-        Navigator.pop(context); // 수정 화면 닫기
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Post updated successfully.")),
         );

@@ -11,17 +11,13 @@ class CommunityService {
   CollectionReference get _postsRef =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts');
 
-  // 새 게시글 문서 레퍼런스 생성 (ID 선점용)
   DocumentReference getNewPostRef() => _postsRef.doc();
 
-  // 이미지 업로드 로직 (수정 시에도 사용됨)
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     List<String> urls = [];
     for (int i = 0; i < images.length; i++) {
-      // 고유한 파일명을 위해 타임스탬프를 섞어서 업로드
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
-
       await ref.putFile(images[i]);
       final url = await ref.getDownloadURL();
       urls.add(url);
@@ -29,26 +25,35 @@ class CommunityService {
     return urls;
   }
 
-  // 게시물 조회 쿼리
+  // [수정] authorId 파라미터 추가하여 내가 쓴 글 필터링 지원
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
     bool sortByLikes = false,
+    String? authorId, // [추가]
   }) async {
     Query query = _postsRef;
+
+    // 내가 쓴 글 필터링이 있을 경우
+    if (authorId != null) {
+      query = query.where('authorId', isEqualTo: authorId);
+    }
+
     if (sortByLikes) {
       query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
     } else {
       query = query.orderBy('createdAt', descending: true);
     }
+
     query = query.limit(limit);
+
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
+
     return await query.get();
   }
 
-  // 제목 기반 검색
   Future<List<Post>> searchPosts(String queryText) async {
     final snapshot = await _postsRef
         .orderBy('title')
@@ -62,7 +67,6 @@ class CommunityService {
     }).toList();
   }
 
-  // 게시글 생성 (ID 선점 시)
   Future<void> addPostWithId(Post post) async {
     await _postsRef.doc(post.id).set({
       'title': post.title,
@@ -79,7 +83,6 @@ class CommunityService {
     });
   }
 
-  // [추가] 게시글 수정
   Future<void> updatePost(Post post) async {
     await _postsRef.doc(post.id).update({
       'title': post.title,
@@ -90,29 +93,10 @@ class CommunityService {
     });
   }
 
-  // 게시글 추가 (자동 ID)
-  Future<void> addPost(Post post) async {
-    await _postsRef.add({
-      'title': post.title,
-      'content': post.content,
-      'author': post.author,
-      'authorId': post.authorId,
-      'authorName': post.authorName,
-      'createdAt': Timestamp.fromDate(post.createdAt),
-      'category': post.category.toString(),
-      'likes': post.likes,
-      'comments': post.comments,
-      'isAnonymous': post.isAnonymous,
-      'imageUrls': post.imageUrls,
-    });
-  }
-
-  // 게시글 삭제
   Future<void> deletePost(String postId) async {
     await _postsRef.doc(postId).delete();
   }
 
-  // 좋아요 토글
   Future<void> toggleLike(String postId, String userId) async {
     final docRef = _postsRef.doc(postId);
     final doc = await docRef.get();

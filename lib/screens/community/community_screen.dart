@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_search_bar.dart';
@@ -32,9 +33,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _onScroll() {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
     if (!provider.isSearching && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
-        provider.fetchPosts();
+        provider.fetchPosts(userId: auth.user?.uid);
       }
     }
   }
@@ -42,9 +45,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
 
-    // [수정] 로컬 변수가 아닌 Provider의 currentCategory를 사용합니다.
     final selectedCategory = communityProvider.currentCategory;
+    final isMyPostsOnly = communityProvider.isMyPostsOnly;
 
     final List<Post> displayPosts;
     if (communityProvider.isSearching) {
@@ -52,15 +56,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ? communityProvider.searchResults
           : communityProvider.searchResults.where((p) => p.category == selectedCategory).toList();
     } else {
-      // Hot 카테고리일 때는 이미 서버에서 필터링 및 정렬되어 오므로 전체 posts를 사용하고,
-      // 일반 카테고리일 때만 클라이언트 사이드 필터링을 수행합니다.
-      if (selectedCategory == PostCategory.hot) {
-        displayPosts = communityProvider.posts;
-      } else {
-        displayPosts = selectedCategory == null
-            ? communityProvider.posts
-            : communityProvider.posts.where((p) => p.category == selectedCategory).toList();
-      }
+      displayPosts = communityProvider.posts;
     }
 
     return Scaffold(
@@ -80,9 +76,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
+            isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
-              // [수정] Provider의 카테고리 설정 메서드 호출 (서버 데이터 재요청 포함)
               communityProvider.setCategory(category);
+            },
+            onMyPostsSelected: (isActive) {
+              communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
           const Divider(height: 1),
@@ -91,9 +90,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : displayPosts.isEmpty
-                ? _buildEmptyState(communityProvider.isSearching)
+                ? _buildEmptyState(communityProvider.isSearching, isMyPostsOnly)
                 : RefreshIndicator(
-              onRefresh: () => communityProvider.fetchPosts(isRefresh: true),
+              onRefresh: () => communityProvider.fetchPosts(
+                isRefresh: true,
+                userId: auth.user?.uid,
+              ),
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(12),
@@ -126,23 +128,29 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildEmptyState(bool isSearching) {
+  Widget _buildEmptyState(bool isSearching, bool isMyPostsOnly) {
+    String message = isSearching
+        ? 'No matching results found.'
+        : 'No posts yet.\nBe the first to share!';
+
+    if (!isSearching && isMyPostsOnly) {
+      message = "You haven't written any posts yet.";
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-              isSearching ? Icons.search_off : Icons.speaker_notes_off,
+              isSearching ? Icons.search_off : (isMyPostsOnly ? Icons.person_off : Icons.speaker_notes_off),
               size: 60,
               color: Colors.grey[300]
           ),
           const SizedBox(height: 16),
           Text(
-            isSearching
-                ? 'No matching results found.'
-                : 'No posts yet.\nBe the first to share!',
+            message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey),
+            style: const TextStyle(color: Colors.grey, height: 1.5),
           ),
         ],
       ),

@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/post.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/community/post_image_picker.dart';
-import '../../widgets/community/post_form_fields.dart'; // [추가] 분리된 폼 필드 위젯
+import '../../widgets/community/post_form_fields.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -67,6 +67,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final String displayName = currentUser?.displayName ?? currentUser?.email?.split('@')[0] ?? 'User';
 
     try {
+      // [수정] onRefresh 파라미터를 추가하여 게시글 추가 후 목록을 새로고침하도록 합니다.
       await communityProvider.addPost(
         Post(
           id: '',
@@ -78,8 +79,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           createdAt: DateTime.now(),
           category: _selectedCategory,
           isAnonymous: _isAnonymous,
+          imageUrls: const [],
         ),
         images: _selectedImages,
+        onRefresh: () => communityProvider.fetchPosts(isRefresh: true),
       );
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -129,7 +132,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 분리된 입력 폼 필드 위젯
             PostFormFields(
               formKey: _formKey,
               selectedCategory: _selectedCategory,
@@ -142,12 +144,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onAnonymousChanged: (val) => setState(() => _isAnonymous = val),
             ),
             const SizedBox(height: 20),
-            // 이미지 피커 위젯 [수정됨]
+            // [수정] PostImagePicker의 변경된 파라미터(onRemoveExisting, onRemoveNew)를 적용합니다.
             PostImagePicker(
-              existingUrls: const [], // 새 게시글이므로 기존 URL은 빈 리스트
+              existingUrls: const [],
               selectedImages: _selectedImages,
               onPickImages: _pickImages,
-              onRemoveExisting: (index) {}, // 제거할 기존 이미지가 없음
+              onRemoveExisting: (_) {},
               onRemoveNew: (index) => setState(() => _selectedImages.removeAt(index)),
             ),
             const SizedBox(height: 40),
