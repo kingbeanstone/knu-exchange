@@ -80,23 +80,20 @@ class CommunityProvider with ChangeNotifier {
     }
   }
 
-  // [수정] 이미지와 함께 게시글 추가하는 통합 로직
+  // 게시글 추가
   Future<void> addPost(Post post, {List<File>? images}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // 1. ID 선점
       final docRef = _service.getNewPostRef();
       final postId = docRef.id;
 
-      // 2. 이미지 업로드 (있는 경우)
       List<String> uploadedUrls = [];
       if (images != null && images.isNotEmpty) {
         uploadedUrls = await _service.uploadPostImages(postId, images);
       }
 
-      // 3. 최종 데이터 객체 생성
       final postWithImages = Post(
         id: postId,
         title: post.title,
@@ -112,13 +109,50 @@ class CommunityProvider with ChangeNotifier {
         imageUrls: uploadedUrls,
       );
 
-      // 4. Firestore 저장
       await _service.addPostWithId(postWithImages);
-
-      // 목록 새로고침
       await fetchPosts(isRefresh: true);
     } catch (e) {
-      debugPrint("Add post with images error: $e");
+      debugPrint("Add post error: $e");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // [추가] 게시글 수정
+  Future<void> updatePost(Post post, {List<File>? newImages, required List<String> remainingUrls}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      List<String> finalUrls = List.from(remainingUrls);
+
+      // 새 이미지가 있다면 업로드 후 추가
+      if (newImages != null && newImages.isNotEmpty) {
+        final uploadedNewUrls = await _service.uploadPostImages(post.id, newImages, prefix: "update");
+        finalUrls.addAll(uploadedNewUrls);
+      }
+
+      final updatedPost = Post(
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        author: post.author,
+        authorId: post.authorId,
+        authorName: post.authorName,
+        createdAt: post.createdAt,
+        category: post.category,
+        isAnonymous: post.isAnonymous,
+        likes: post.likes,
+        comments: post.comments,
+        imageUrls: finalUrls,
+      );
+
+      await _service.updatePost(updatedPost);
+      await fetchPosts(isRefresh: true);
+    } catch (e) {
+      debugPrint("Update post error: $e");
       rethrow;
     } finally {
       _isLoading = false;

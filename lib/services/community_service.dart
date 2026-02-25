@@ -11,26 +11,25 @@ class CommunityService {
   CollectionReference get _postsRef =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts');
 
-  // [추가] 새 게시글 문서 레퍼런스 생성 (ID 선점용)
+  // 새 게시글 문서 레퍼런스 생성 (ID 선점용)
   DocumentReference getNewPostRef() => _postsRef.doc();
 
-  // [추가] 이미지 업로드 로직
-  Future<List<String>> uploadPostImages(String postId, List<File> images) async {
+  // 이미지 업로드 로직 (수정 시에도 사용됨)
+  Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     List<String> urls = [];
     for (int i = 0; i < images.length; i++) {
-      // 경로: artifacts/knu-exchange-app/posts/{postId}/img_{index}.jpg
-      final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/img_$i.jpg');
+      // 고유한 파일명을 위해 타임스탬프를 섞어서 업로드
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
 
-      // 파일 업로드
       await ref.putFile(images[i]);
-
-      // 다운로드 URL 획득
       final url = await ref.getDownloadURL();
       urls.add(url);
     }
     return urls;
   }
 
+  // 게시물 조회 쿼리
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
@@ -49,6 +48,7 @@ class CommunityService {
     return await query.get();
   }
 
+  // 제목 기반 검색
   Future<List<Post>> searchPosts(String queryText) async {
     final snapshot = await _postsRef
         .orderBy('title')
@@ -62,7 +62,7 @@ class CommunityService {
     }).toList();
   }
 
-  // [수정] 특정 ID를 가진 게시글 추가 (ID를 미리 알고 있을 때 사용)
+  // 게시글 생성 (ID 선점 시)
   Future<void> addPostWithId(Post post) async {
     await _postsRef.doc(post.id).set({
       'title': post.title,
@@ -79,7 +79,18 @@ class CommunityService {
     });
   }
 
-  // 기존 addPost는 호환성을 위해 유지 (ID 자동 생성)
+  // [추가] 게시글 수정
+  Future<void> updatePost(Post post) async {
+    await _postsRef.doc(post.id).update({
+      'title': post.title,
+      'content': post.content,
+      'category': post.category.toString(),
+      'isAnonymous': post.isAnonymous,
+      'imageUrls': post.imageUrls,
+    });
+  }
+
+  // 게시글 추가 (자동 ID)
   Future<void> addPost(Post post) async {
     await _postsRef.add({
       'title': post.title,
@@ -96,11 +107,12 @@ class CommunityService {
     });
   }
 
+  // 게시글 삭제
   Future<void> deletePost(String postId) async {
-    // 게시글 삭제 시 Storage 이미지들도 함께 정리하는 로직 권장
     await _postsRef.doc(postId).delete();
   }
 
+  // 좋아요 토글
   Future<void> toggleLike(String postId, String userId) async {
     final docRef = _postsRef.doc(postId);
     final doc = await docRef.get();

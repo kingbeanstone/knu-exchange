@@ -142,11 +142,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onAnonymousChanged: (val) => setState(() => _isAnonymous = val),
             ),
             const SizedBox(height: 20),
-            // 이미지 피커 위젯
+            // 이미지 피커 위젯 [수정됨]
             PostImagePicker(
+              existingUrls: const [], // 새 게시글이므로 기존 URL은 빈 리스트
               selectedImages: _selectedImages,
               onPickImages: _pickImages,
-              onRemoveImage: (index) => setState(() => _selectedImages.removeAt(index)),
+              onRemoveExisting: (index) {}, // 제거할 기존 이미지가 없음
+              onRemoveNew: (index) => setState(() => _selectedImages.removeAt(index)),
             ),
             const SizedBox(height: 40),
           ],

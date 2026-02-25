@@ -9,8 +9,9 @@ import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
 import '../../widgets/community/post_detail_header.dart';
 import '../../widgets/community/post_detail_content.dart';
-import '../../widgets/community/comment_input.dart'; // [추가] 누락된 임포트 확인
+import '../../widgets/community/comment_input.dart';
 import '../../widgets/report_dialog.dart';
+import 'edit_post_screen.dart'; // [추가] 수정 화면 임포트
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -37,6 +38,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (mounted) {
       setState(() => _isFetching = false);
     }
+  }
+
+  // [추가] 최신 포스트 정보를 프로바이더에서 찾아 업데이트 (수정 후 반영용)
+  void _syncPostData() {
+    final posts = context.read<CommunityProvider>().posts;
+    final updated = posts.firstWhere((p) => p.id == _currentPost.id, orElse: () => _currentPost);
+    setState(() {
+      _currentPost = updated;
+    });
   }
 
   void _confirmDelete() {
@@ -83,7 +93,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final bool canDelete = auth.isAuthenticated && (auth.user?.uid == _currentPost.authorId || auth.isAdmin);
+    // 작성자 본인인지 확인
+    final bool isAuthor = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
+    final bool canDelete = isAuthor || auth.isAdmin;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -94,6 +106,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          // [추가] 작성자 본인인 경우 수정 버튼 노출
+          if (isAuthor)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.grey),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditPostScreen(post: _currentPost)),
+                );
+                _syncPostData(); // 수정 후 돌아오면 데이터 동기화
+              },
+            ),
           if (canDelete)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.grey),
@@ -117,7 +141,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 children: [
                   PostDetailHeader(post: _currentPost),
                   const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
-                  // [수정] 이미지 리스트 전달
                   PostDetailContent(
                     content: _currentPost.content,
                     imageUrls: _currentPost.imageUrls,
