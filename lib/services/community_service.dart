@@ -25,21 +25,27 @@ class CommunityService {
     return urls;
   }
 
-  // [수정] authorId 파라미터 추가하여 내가 쓴 글 필터링 지원
+  // [수정] category 파라미터 추가하여 서버 측 필터링 강화
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
     bool sortByLikes = false,
-    String? authorId, // [추가]
+    String? authorId,
+    PostCategory? category, // [추가]
   }) async {
     Query query = _postsRef;
 
-    // 내가 쓴 글 필터링이 있을 경우
+    // 1. 내 글 필터링
     if (authorId != null) {
       query = query.where('authorId', isEqualTo: authorId);
     }
+    // 2. 카테고리 필터링 (Hot은 전체를 대상으로 좋아요순 정렬이므로 제외)
+    else if (category != null && category != PostCategory.hot) {
+      query = query.where('category', isEqualTo: category.toString());
+    }
 
-    if (sortByLikes) {
+    // 3. 정렬 및 페이징
+    if (sortByLikes || category == PostCategory.hot) {
       query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
     } else {
       query = query.orderBy('createdAt', descending: true);

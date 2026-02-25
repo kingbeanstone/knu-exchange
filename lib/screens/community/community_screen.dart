@@ -52,10 +52,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     final List<Post> displayPosts;
     if (communityProvider.isSearching) {
+      // 검색 결과는 클라이언트 사이드에서 카테고리 필터링 유지 (서버 검색은 전체 대상이므로)
       displayPosts = selectedCategory == null
           ? communityProvider.searchResults
           : communityProvider.searchResults.where((p) => p.category == selectedCategory).toList();
     } else {
+      // [수정] 일반 리스트는 이제 Provider(서버)에서 완벽하게 필터링되어 오므로 필터 로직 제거
       displayPosts = communityProvider.posts;
     }
 
