@@ -11,13 +11,21 @@ class CommunityService {
   CollectionReference get _postsRef =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts');
 
+  // 새 게시글 문서 레퍼런스 생성 (ID 선점용)
   DocumentReference getNewPostRef() => _postsRef.doc();
 
+  // [추가] 특정 ID로 게시글 문서 가져오기 (알림 이동 시 필요)
+  Future<DocumentSnapshot> getPostById(String postId) async {
+    return await _postsRef.doc(postId).get();
+  }
+
+  // 이미지 업로드 로직
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     List<String> urls = [];
     for (int i = 0; i < images.length; i++) {
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
+
       await ref.putFile(images[i]);
       final url = await ref.getDownloadURL();
       urls.add(url);
@@ -25,26 +33,22 @@ class CommunityService {
     return urls;
   }
 
-  // [수정] category 파라미터 추가하여 서버 측 필터링 강화
+  // 게시물 조회 쿼리 (카테고리 및 내 글 필터링 포함)
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
     bool sortByLikes = false,
     String? authorId,
-    PostCategory? category, // [추가]
+    PostCategory? category,
   }) async {
     Query query = _postsRef;
 
-    // 1. 내 글 필터링
     if (authorId != null) {
       query = query.where('authorId', isEqualTo: authorId);
-    }
-    // 2. 카테고리 필터링 (Hot은 전체를 대상으로 좋아요순 정렬이므로 제외)
-    else if (category != null && category != PostCategory.hot) {
+    } else if (category != null && category != PostCategory.hot) {
       query = query.where('category', isEqualTo: category.toString());
     }
 
-    // 3. 정렬 및 페이징
     if (sortByLikes || category == PostCategory.hot) {
       query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
     } else {
@@ -52,11 +56,9 @@ class CommunityService {
     }
 
     query = query.limit(limit);
-
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
-
     return await query.get();
   }
 
@@ -74,19 +76,7 @@ class CommunityService {
   }
 
   Future<void> addPostWithId(Post post) async {
-    await _postsRef.doc(post.id).set({
-      'title': post.title,
-      'content': post.content,
-      'author': post.author,
-      'authorId': post.authorId,
-      'authorName': post.authorName,
-      'createdAt': Timestamp.fromDate(post.createdAt),
-      'category': post.category.toString(),
-      'likes': post.likes,
-      'comments': post.comments,
-      'isAnonymous': post.isAnonymous,
-      'imageUrls': post.imageUrls,
-    });
+    await _postsRef.doc(post.id).set(post.toFirestore());
   }
 
   Future<void> updatePost(Post post) async {

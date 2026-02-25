@@ -67,7 +67,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final String displayName = currentUser?.displayName ?? currentUser?.email?.split('@')[0] ?? 'User';
 
     try {
-      // [수정] onRefresh 파라미터를 추가하여 게시글 추가 후 목록을 새로고침하도록 합니다.
       await communityProvider.addPost(
         Post(
           id: '',
@@ -144,12 +143,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onAnonymousChanged: (val) => setState(() => _isAnonymous = val),
             ),
             const SizedBox(height: 20),
-            // [수정] PostImagePicker의 변경된 파라미터(onRemoveExisting, onRemoveNew)를 적용합니다.
+            // [수정] PostImagePicker 파라미터 불일치 해결
             PostImagePicker(
               existingUrls: const [],
               selectedImages: _selectedImages,
               onPickImages: _pickImages,
-              onRemoveExisting: (_) {},
+              onRemoveExisting: (index) {},
               onRemoveNew: (index) => setState(() => _selectedImages.removeAt(index)),
             ),
             const SizedBox(height: 40),

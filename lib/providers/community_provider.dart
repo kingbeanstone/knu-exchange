@@ -33,6 +33,23 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     fetchPosts(isRefresh: true);
   }
 
+  // [확인] 알림 클릭 시 게시글 상세 조회
+  Future<Post?> fetchPostById(String postId) async {
+    try {
+      final inMemory = _posts.cast<Post?>().firstWhere((p) => p?.id == postId, orElse: () => null);
+      if (inMemory != null) return inMemory;
+
+      // CommunityService에 getPostById가 반드시 정의되어 있어야 합니다.
+      final doc = await _service.getPostById(postId);
+      if (doc.exists) {
+        return Post.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint("Fetch post by id error: $e");
+    }
+    return null;
+  }
+
   void setCategory(PostCategory? category) {
     _currentCategory = category;
     _isMyPostsOnly = false;
@@ -62,13 +79,12 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
 
     try {
-      // [수정] 서버 쿼리에 category 정보를 전달합니다.
       final snapshot = await _service.getPostsQuery(
         limit: 10,
         startAfter: _lastDocument,
         sortByLikes: _currentCategory == PostCategory.hot,
         authorId: _isMyPostsOnly ? userId : null,
-        category: _currentCategory, // [추가]
+        category: _currentCategory,
       );
 
       if (snapshot.docs.length < 10) {

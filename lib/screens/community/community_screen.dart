@@ -4,9 +4,12 @@ import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_search_bar.dart';
+// [수정] 알림 화면 파일 경로 및 클래스명 확인
+import '../notification/notification_screen.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -23,6 +26,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isAuthenticated) {
+        Provider.of<NotificationProvider>(context, listen: false).initNotifications(auth.user!.uid);
+      }
+    });
   }
 
   @override
@@ -46,18 +56,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
+    final notifProvider = Provider.of<NotificationProvider>(context);
 
     final selectedCategory = communityProvider.currentCategory;
     final isMyPostsOnly = communityProvider.isMyPostsOnly;
 
     final List<Post> displayPosts;
     if (communityProvider.isSearching) {
-      // 검색 결과는 클라이언트 사이드에서 카테고리 필터링 유지 (서버 검색은 전체 대상이므로)
       displayPosts = selectedCategory == null
           ? communityProvider.searchResults
           : communityProvider.searchResults.where((p) => p.category == selectedCategory).toList();
     } else {
-      // [수정] 일반 리스트는 이제 Provider(서버)에서 완벽하게 필터링되어 오므로 필터 로직 제거
       displayPosts = communityProvider.posts;
     }
 
@@ -68,6 +77,42 @@ class _CommunityScreenState extends State<CommunityScreen> {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                  );
+                },
+              ),
+              if (notifProvider.unreadCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.yellow,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '${notifProvider.unreadCount}',
+                      style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
+                      // [수정] Center 위젯 대신 TextAlign.center 사용
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -75,7 +120,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             onSearch: (query) => communityProvider.performSearch(query),
             onClear: () => communityProvider.clearSearch(),
           ),
-
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
             isMyPostsSelected: isMyPostsOnly,
@@ -87,7 +131,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             },
           ),
           const Divider(height: 1),
-
           Expanded(
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())

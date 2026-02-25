@@ -13,6 +13,7 @@ import 'providers/menu_provider.dart';
 import 'providers/notice_provider.dart';
 import 'providers/report_provider.dart'; // ReportProvider 추가
 import './widgets/auth/auth_wrapper.dart';
+import 'providers/notification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => NoticeProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const KnuExApp(),
     ),

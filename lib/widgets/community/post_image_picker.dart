@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 class PostImagePicker extends StatelessWidget {
-  final List<String> existingUrls; // 기존 업로드된 이미지들
-  final List<File> selectedImages; // 새로 선택한 이미지들
+  final List<String> existingUrls; // 수정 시 기존 이미지
+  final List<File> selectedImages; // 새로 선택한 이미지
   final VoidCallback onPickImages;
-  final Function(int) onRemoveExisting;
-  final Function(int) onRemoveNew;
+  final Function(int) onRemoveExisting; // 기존 이미지 삭제 콜백
+  final Function(int) onRemoveNew;      // 새 이미지 삭제 콜백
 
   const PostImagePicker({
     super.key,
@@ -33,10 +33,7 @@ class PostImagePicker extends StatelessWidget {
             ),
             Text(
               "$totalCount/10",
-              style: TextStyle(
-                color: totalCount >= 10 ? Colors.red : Colors.grey,
-                fontWeight: totalCount >= 10 ? FontWeight.bold : FontWeight.normal,
-              ),
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -45,15 +42,13 @@ class PostImagePicker extends StatelessWidget {
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            // 추가 버튼(1) + 기존 이미지들 + 새 이미지들
-            itemCount: 1 + existingUrls.length + selectedImages.length,
+            itemCount: totalCount + 1,
             itemBuilder: (context, index) {
-              // 1. 추가 버튼
               if (index == 0) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: InkWell(
-                    onTap: totalCount < 10 ? onPickImages : null,
+                    onTap: onPickImages,
                     child: Container(
                       width: 100,
                       decoration: BoxDecoration(
@@ -61,31 +56,27 @@ class PostImagePicker extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: Icon(
-                        Icons.add_a_photo_outlined,
-                        color: totalCount < 10 ? Colors.grey : Colors.grey[300],
-                      ),
+                      child: const Icon(Icons.add_a_photo_outlined, color: Colors.grey),
                     ),
                   ),
                 );
               }
 
-              // 2. 기존 이미지 URL 렌더링
-              if (index <= existingUrls.length) {
-                final urlIndex = index - 1;
+              final itemIndex = index - 1;
+
+              // 기존 업로드된 이미지 렌더링
+              if (itemIndex < existingUrls.length) {
                 return _buildImageItem(
-                  image: Image.network(existingUrls[urlIndex], fit: BoxFit.cover),
-                  onRemove: () => onRemoveExisting(urlIndex),
-                  isExisting: true,
+                  child: Image.network(existingUrls[itemIndex], fit: BoxFit.cover),
+                  onRemove: () => onRemoveExisting(itemIndex),
                 );
               }
 
-              // 3. 새로 선택한 파일 렌더링
-              final fileIndex = index - 1 - existingUrls.length;
+              // 새로 선택한 파일 이미지 렌더링
+              final fileIndex = itemIndex - existingUrls.length;
               return _buildImageItem(
-                image: Image.file(selectedImages[fileIndex], fit: BoxFit.cover),
+                child: Image.file(selectedImages[fileIndex], fit: BoxFit.cover),
                 onRemove: () => onRemoveNew(fileIndex),
-                isExisting: false,
               );
             },
           ),
@@ -94,7 +85,7 @@ class PostImagePicker extends StatelessWidget {
     );
   }
 
-  Widget _buildImageItem({required Widget image, required VoidCallback onRemove, required bool isExisting}) {
+  Widget _buildImageItem({required Widget child, required VoidCallback onRemove}) {
     return Stack(
       children: [
         Padding(
@@ -104,27 +95,10 @@ class PostImagePicker extends StatelessWidget {
             child: SizedBox(
               width: 100,
               height: 100,
-              child: image,
+              child: child,
             ),
           ),
         ),
-        // 기존 이미지인 경우 표시해주는 배지 (선택 사항)
-        if (isExisting)
-          Positioned(
-            bottom: 4,
-            left: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                "SAVED",
-                style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
         Positioned(
           top: 4,
           right: 12,

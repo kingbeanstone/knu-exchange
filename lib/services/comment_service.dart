@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/comment.dart';
+import '../models/notification_item.dart'; // [추가]
+import 'notification_service.dart';     // [추가]
 
 class CommentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _appId = 'knu-exchange-app';
+  final NotificationService _notifService = NotificationService(); // [추가]
 
   DocumentReference _postRef(String postId) =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts').doc(postId);
@@ -11,26 +14,29 @@ class CommentService {
   Future<List<Comment>> fetchComments(String postId) async {
     final snapshot = await _postRef(postId)
         .collection('comments')
-        .orderBy('createdAt', descending: false) // 시간순 정렬 (번호 부여를 위해)
+        .orderBy('createdAt', descending: false)
         .get();
 
     return snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
   }
 
-  // [핵심] 익명 번호 부여 로직이 포함된 댓글 추가
   Future<void> addComment(String postId, Comment comment) async {
     final postRef = _postRef(postId);
     final commentsRef = postRef.collection('comments');
 
+    // 1. 알림을 위해 게시글 정보(작성자 ID, 제목) 미리 가져오기
+    final postSnap = await postRef.get();
+    final postData = postSnap.data() as Map<String, dynamic>?;
+    final String postAuthorId = postData?['authorId'] ?? '';
+    final String postTitle = postData?['title'] ?? 'your post';
+
     String finalAuthorName = comment.author;
 
-    // 익명 작성 시 번호 계산
+    // 2. 익명 번호 부여 로직
     if (comment.isAnonymous) {
-      // 1. 해당 포스트의 모든 댓글을 가져옴
       final snapshot = await commentsRef.orderBy('createdAt', descending: false).get();
       final allComments = snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
 
-      // 2. 익명으로 작성한 유저들의 ID 목록을 순서대로 추출 (중복 제거)
       final List<String> anonymousUserIds = [];
       for (var c in allComments) {
         if (c.isAnonymous && !anonymousUserIds.contains(c.authorId)) {
@@ -38,14 +44,10 @@ class CommentService {
         }
       }
 
-      // 3. 현재 작성자가 이미 익명으로 참여했는지 확인
       int userIndex = anonymousUserIds.indexOf(comment.authorId);
-
       if (userIndex != -1) {
-        // 이미 익명으로 썼던 유저라면 기존 번호 유지
         finalAuthorName = "Anonymous ${userIndex + 1}";
       } else {
-        // 처음 익명으로 쓰는 유저라면 새로운 번호 부여
         finalAuthorName = "Anonymous ${anonymousUserIds.length + 1}";
       }
     }
@@ -53,7 +55,6 @@ class CommentService {
     final commentRef = commentsRef.doc();
     final batch = _db.batch();
 
-    // 작성자 이름을 계산된 이름으로 변경하여 저장
     final commentData = comment.toFirestore();
     commentData['author'] = finalAuthorName;
 
@@ -61,6 +62,19 @@ class CommentService {
     batch.update(postRef, {'comments': FieldValue.increment(1)});
 
     await batch.commit();
+
+    // 3. [알림 발송] 게시글 작성자에게 새 댓글 알림 전송
+    await _notifService.sendNotification(NotificationItem(
+      id: '',
+      targetUserId: postAuthorId,
+      senderId: comment.authorId,
+      senderName: finalAuthorName, // 계산된 익명 이름 사용
+      postId: postId,
+      postTitle: postTitle,
+      message: 'left a comment: "${comment.content}"',
+      type: NotificationType.comment,
+      createdAt: DateTime.now(),
+    ));
   }
 
   Future<void> deleteComment(String postId, String commentId) async {
