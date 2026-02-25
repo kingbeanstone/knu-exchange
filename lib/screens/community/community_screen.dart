@@ -8,9 +8,9 @@ import '../../providers/notification_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_search_bar.dart';
-// [수정] 알림 화면 파일 경로 및 클래스명 확인
-import '../notification/notification_screen.dart';
 import 'create_post_screen.dart';
+// [수정] 알림 화면 파일 경로 확인
+import '../notification/notification_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -104,7 +104,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     child: Text(
                       '${notifProvider.unreadCount}',
                       style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
-                      // [수정] Center 위젯 대신 TextAlign.center 사용
+                      // [수정] 'Center' 위젯 대신 'TextAlign.center'를 사용해야 합니다.
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -122,6 +122,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
+            // [추가] 리팩토링된 필터 위젯에 필요한 파라미터들
             isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
               communityProvider.setCategory(category);

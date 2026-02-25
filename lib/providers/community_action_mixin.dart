@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 
-/// 게시글의 생성(C), 수정(U), 삭제(D) 및 좋아요 액션을 분리한 Mixin입니다.
 mixin CommunityActionMixin on ChangeNotifier {
   final CommunityService _service = CommunityService();
   bool _isLoadingAction = false;
@@ -15,7 +14,6 @@ mixin CommunityActionMixin on ChangeNotifier {
     notifyListeners();
   }
 
-  // 게시글 추가 (Create)
   Future<void> addPost(Post post, {List<File>? images, required Function onRefresh}) async {
     _setLoading(true);
     try {
@@ -43,7 +41,7 @@ mixin CommunityActionMixin on ChangeNotifier {
       );
 
       await _service.addPostWithId(postWithImages);
-      await onRefresh(); // 목록 새로고침
+      await onRefresh();
     } catch (e) {
       debugPrint("Add post error: $e");
       rethrow;
@@ -52,7 +50,6 @@ mixin CommunityActionMixin on ChangeNotifier {
     }
   }
 
-  // 게시글 수정 (Update)
   Future<void> updatePost(Post post, {
     List<File>? newImages,
     required List<String> remainingUrls,
@@ -63,6 +60,7 @@ mixin CommunityActionMixin on ChangeNotifier {
       List<String> finalUrls = List.from(remainingUrls);
 
       if (newImages != null && newImages.isNotEmpty) {
+        // [수정] 서비스의 uploadPostImages에 prefix 파라미터 전달
         final uploadedNewUrls = await _service.uploadPostImages(post.id, newImages, prefix: "update");
         finalUrls.addAll(uploadedNewUrls);
       }
@@ -82,6 +80,7 @@ mixin CommunityActionMixin on ChangeNotifier {
         imageUrls: finalUrls,
       );
 
+      // [수정] 서비스의 updatePost 호출
       await _service.updatePost(updatedPost);
       await onRefresh();
     } catch (e) {
@@ -92,7 +91,6 @@ mixin CommunityActionMixin on ChangeNotifier {
     }
   }
 
-  // 게시글 삭제 (Delete)
   Future<void> deletePost(String postId) async {
     try {
       await _service.deletePost(postId);
@@ -103,7 +101,6 @@ mixin CommunityActionMixin on ChangeNotifier {
     }
   }
 
-  // 좋아요 토글
   Future<void> toggleLike(String postId, String userId) async {
     try {
       await _service.toggleLike(postId, userId);

@@ -78,7 +78,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           createdAt: DateTime.now(),
           category: _selectedCategory,
           isAnonymous: _isAnonymous,
-          imageUrls: const [],
         ),
         images: _selectedImages,
         onRefresh: () => communityProvider.fetchPosts(isRefresh: true),
@@ -143,12 +142,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onAnonymousChanged: (val) => setState(() => _isAnonymous = val),
             ),
             const SizedBox(height: 20),
-            // [수정] PostImagePicker 파라미터 불일치 해결
+            // [수정] PostImagePicker의 최신 파라미터 적용
             PostImagePicker(
-              existingUrls: const [],
+              existingUrls: const [], // 새 글이므로 기존 URL은 빈 리스트
               selectedImages: _selectedImages,
               onPickImages: _pickImages,
-              onRemoveExisting: (index) {},
+              onRemoveExisting: (index) {}, // 제거할 기존 이미지 없음
               onRemoveNew: (index) => setState(() => _selectedImages.removeAt(index)),
             ),
             const SizedBox(height: 40),

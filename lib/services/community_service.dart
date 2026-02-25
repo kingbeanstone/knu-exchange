@@ -11,21 +11,19 @@ class CommunityService {
   CollectionReference get _postsRef =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts');
 
-  // 새 게시글 문서 레퍼런스 생성 (ID 선점용)
   DocumentReference getNewPostRef() => _postsRef.doc();
 
-  // [추가] 특정 ID로 게시글 문서 가져오기 (알림 이동 시 필요)
+  // [추가] 특정 ID로 게시글 가져오기 (알림 이동 시 필수)
   Future<DocumentSnapshot> getPostById(String postId) async {
     return await _postsRef.doc(postId).get();
   }
 
-  // 이미지 업로드 로직
+  // [수정] prefix 파라미터 정의 추가
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     List<String> urls = [];
     for (int i = 0; i < images.length; i++) {
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
-
       await ref.putFile(images[i]);
       final url = await ref.getDownloadURL();
       urls.add(url);
@@ -33,7 +31,7 @@ class CommunityService {
     return urls;
   }
 
-  // 게시물 조회 쿼리 (카테고리 및 내 글 필터링 포함)
+  // [수정] authorId와 category 파라미터 정의 추가
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
@@ -56,12 +54,15 @@ class CommunityService {
     }
 
     query = query.limit(limit);
+
     if (startAfter != null) {
       query = query.startAfterDocument(startAfter);
     }
+
     return await query.get();
   }
 
+  // [추가] 게시글 검색 메서드 정의
   Future<List<Post>> searchPosts(String queryText) async {
     final snapshot = await _postsRef
         .orderBy('title')
@@ -79,14 +80,9 @@ class CommunityService {
     await _postsRef.doc(post.id).set(post.toFirestore());
   }
 
+  // [추가] 게시글 수정 메서드 정의
   Future<void> updatePost(Post post) async {
-    await _postsRef.doc(post.id).update({
-      'title': post.title,
-      'content': post.content,
-      'category': post.category.toString(),
-      'isAnonymous': post.isAnonymous,
-      'imageUrls': post.imageUrls,
-    });
+    await _postsRef.doc(post.id).update(post.toFirestore());
   }
 
   Future<void> deletePost(String postId) async {
@@ -105,5 +101,27 @@ class CommunityService {
       likes.add(userId);
     }
     await docRef.update({'likes': likes});
+  }
+
+  // 유저 정보 경로 (FCM 토큰 저장용)
+  DocumentReference _userRef(String userId) =>
+      _db.collection('artifacts').doc(_appId).collection('users').doc(userId);
+
+  // FCM 토큰 저장
+  Future<void> updateFcmToken(String userId, String token) async {
+    await _userRef(userId).set({
+      'fcmToken': token,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  // 상대방의 FCM 토큰 조회
+  Future<String?> getUserFcmToken(String userId) async {
+    final doc = await _userRef(userId).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>?;
+      return data?['fcmToken'];
+    }
+    return null;
   }
 }

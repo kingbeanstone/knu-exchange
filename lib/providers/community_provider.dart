@@ -33,13 +33,12 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     fetchPosts(isRefresh: true);
   }
 
-  // [확인] 알림 클릭 시 게시글 상세 조회
+  // [수정] 서비스의 getPostById를 사용하여 단일 게시글 조회
   Future<Post?> fetchPostById(String postId) async {
     try {
       final inMemory = _posts.cast<Post?>().firstWhere((p) => p?.id == postId, orElse: () => null);
       if (inMemory != null) return inMemory;
 
-      // CommunityService에 getPostById가 반드시 정의되어 있어야 합니다.
       final doc = await _service.getPostById(postId);
       if (doc.exists) {
         return Post.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
@@ -79,6 +78,7 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
 
     try {
+      // [수정] 서비스의 getPostsQuery 파라미터에 맞춰 호출
       final snapshot = await _service.getPostsQuery(
         limit: 10,
         startAfter: _lastDocument,
@@ -119,6 +119,7 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     _searchResults = [];
     notifyListeners();
     try {
+      // [수정] 서비스의 searchPosts 호출
       _searchResults = await _service.searchPosts(query);
     } catch (e) {
       debugPrint("Search error: $e");

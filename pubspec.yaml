@@ -39,6 +39,7 @@ dependencies:
   firebase_storage: ^12.4.10
   image_picker: ^1.0.7
 
+  firebase_messaging: ^15.2.10
   shared_preferences: ^2.2.2
   http: ^1.1.0
   csv: ^6.0.0

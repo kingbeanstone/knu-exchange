@@ -19,6 +19,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // [Update] Developer Test Account List
+  final List<Map<String, String>> _devAccounts = [
+    {'name': 'HJ', 'email': 'wlsgudwns112@naver.com', 'pw': '123456'},
+    {'name': 'HJ 2', 'email': 'wlsgudwns112@gmail.com', 'pw': '123456'},
+    {'name': 'Test Student 2', 'email': 'student2@knu.ac.kr', 'pw': 'password123'},
+    {'name': 'Foreigner User', 'email': 'global@knu.ac.kr', 'pw': 'password123'},
+  ];
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -26,11 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _fillDebugInfo() {
+  // Fill input fields with selected account
+  void _fillAccount(String email, String password) {
     setState(() {
-      _emailController.text = "wlsgudwns112@naver.com";
-      _passwordController.text = "123456";
+      _emailController.text = email;
+      _passwordController.text = password;
     });
+  }
+
+  // Callback for LoginForm to fill debug info
+  void _fillDebugInfo() {
+    _fillAccount("wlsgudwns112@naver.com", "123456");
   }
 
   Future<void> _submit() async {
@@ -42,15 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-
-      // [수정] Navigator.pop(context)를 제거합니다.
-      // 이제 AuthWrapper가 AuthProvider의 상태 변화를 감지하여
-      // 자동으로 MainScreen으로 화면을 교체합니다.
-
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? 'Login Failed'))
+            SnackBar(content: Text(e.message ?? 'Login failed.'))
         );
       }
     }
@@ -66,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        // 로그인 화면이 최상단 화면이므로 뒤로가기 버튼 비활성화
         automaticallyImplyLeading: false,
       ),
       body: Center(
@@ -77,13 +85,62 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const AuthHeader(),
               const SizedBox(height: 40),
+
+              // Login Form Widget
               LoginForm(
                 formKey: _formKey,
                 emailController: _emailController,
                 passwordController: _passwordController,
                 isLoading: authProvider.isLoading,
-                onFillDebug: _fillDebugInfo,
                 onSubmit: _submit,
+                onFillDebug: _fillDebugInfo,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Developer account selection dropdown
+              PopupMenuButton<Map<String, String>>(
+                onSelected: (account) {
+                  _fillAccount(account['email']!, account['pw']!);
+                },
+                itemBuilder: (BuildContext context) {
+                  return _devAccounts.map((account) {
+                    return PopupMenuItem<Map<String, String>>(
+                      value: account,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_outline, size: 20, color: Colors.grey),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(account['name']!,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              Text(account['email']!,
+                                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bug_report, size: 16, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text('Select Test Account', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                    ],
+                  ),
+                ),
               ),
 
               const SizedBox(height: 24),
