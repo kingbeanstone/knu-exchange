@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/notice/notice_card.dart';
 import 'notice_detail_screen.dart';
 import 'create_notice_screen.dart';
 
@@ -15,37 +16,28 @@ class NoticeScreen extends StatefulWidget {
 
 class _NoticeScreenState extends State<NoticeScreen> {
   @override
-  void initState() {
-    super.initState();
-    // 화면 로드 시 공지사항 가져오기 (메서드명 수정: refreshNotices)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-    });
-  }
-
-  String _formatDate(DateTime date) {
-    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
-  }
-
-  @override
   Widget build(BuildContext context) {
     final provider = context.watch<NoticeProvider>();
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
+        // [수정] 다른 탭들과의 통일성을 위해 두께(FontWeight)를 기본으로 변경
         title: const Text('Notice'),
+        // 상단바 테마: 빨간색 배경, 흰색 글씨
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false, // 왼쪽 정렬
         actions: [
-          if (context.watch<AuthProvider>().isAdmin)
+          if (isAdmin)
             IconButton(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add_circle_outline_rounded),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateNoticeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const CreateNoticeScreen()),
                 );
               },
             ),
@@ -53,80 +45,45 @@ class _NoticeScreenState extends State<NoticeScreen> {
       ),
       body: Column(
         children: [
-          const Divider(height: 1),
           Expanded(
             child: provider.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
                 : provider.notices.isEmpty
-                ? const Center(child: Text("No notices yet."))
+                ? _buildEmptyState()
                 : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               itemCount: provider.notices.length,
               itemBuilder: (context, index) {
                 final notice = provider.notices[index];
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const textStyle = TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        );
-
-                        final maxWidth = constraints.maxWidth - 50; // 🔥 점 3개 공간 확보
-
-                        final textPainter = TextPainter(
-                          text: TextSpan(text: notice.title, style: textStyle),
-                          maxLines: 1,
-                          textDirection: TextDirection.ltr,
-                        )..layout(maxWidth: maxWidth);
-
-                        if (!textPainter.didExceedMaxLines) {
-                          return Text(
-                            notice.title,
-                            maxLines: 1,
-                            style: textStyle,
-                          );
-                        }
-
-                        int endIndex = notice.title.length;
-                        String truncated = notice.title;
-
-                        while (endIndex > 0) {
-                          endIndex--;
-                          truncated = notice.title.substring(0, endIndex) + "...";
-
-                          textPainter.text = TextSpan(text: truncated, style: textStyle);
-                          textPainter.layout(maxWidth: maxWidth);
-
-                          if (!textPainter.didExceedMaxLines) break;
-                        }
-
-                        return Text(
-                          truncated,
-                          maxLines: 1,
-                          style: textStyle,
-                        );
-                      },
-                    ),
-                    subtitle:
-                    Text(_formatDate(notice.createdAt)),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NoticeDetailScreen(
-                            noticeId: notice.id,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                return NoticeCard(
+                  notice: notice,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NoticeDetailScreen(noticeId: notice.id),
+                      ),
+                    );
+                  },
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text(
+            "No notices yet.",
+            style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ],
       ),

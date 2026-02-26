@@ -9,7 +9,6 @@ class CommentService {
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts').doc(postId);
 
   Future<List<Comment>> fetchComments(String postId) async {
-    // 대댓글도 시간순으로 가져온 뒤 UI에서 정렬하거나, 아예 생성 순으로 나열합니다.
     final snapshot = await _postRef(postId)
         .collection('comments')
         .orderBy('createdAt', descending: false)
@@ -18,13 +17,35 @@ class CommentService {
     return snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
   }
 
+  // [추가] 댓글 좋아요 토글 메서드
+  Future<void> toggleCommentLike(String postId, String commentId, String userId) async {
+    final commentRef = _postRef(postId).collection('comments').doc(commentId);
+
+    // 문서의 현재 상태를 가져와서 좋아요 여부 판단
+    final doc = await commentRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>;
+    List<String> likes = List<String>.from(data['likes'] ?? []);
+
+    if (likes.contains(userId)) {
+      // 이미 좋아요를 눌렀다면 제거
+      await commentRef.update({
+        'likes': FieldValue.arrayRemove([userId])
+      });
+    } else {
+      // 누르지 않았다면 추가
+      await commentRef.update({
+        'likes': FieldValue.arrayUnion([userId])
+      });
+    }
+  }
+
   Future<void> addComment(String postId, Comment comment) async {
     final postRef = _postRef(postId);
     final commentsRef = postRef.collection('comments');
-
     String finalAuthorName = comment.author;
 
-    // 익명 처리 로직
     if (comment.isAnonymous) {
       final snapshot = await commentsRef.orderBy('createdAt', descending: false).get();
       final allComments = snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
@@ -51,11 +72,7 @@ class CommentService {
     commentData['author'] = finalAuthorName;
 
     batch.set(commentRef, commentData);
-
-    // 댓글 수 증가
-    batch.update(postRef, {
-      'comments': FieldValue.increment(1),
-    });
+    batch.update(postRef, {'comments': FieldValue.increment(1)});
 
     await batch.commit();
   }

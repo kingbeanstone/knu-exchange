@@ -10,94 +10,116 @@ class CreateNoticeScreen extends StatefulWidget {
 }
 
 class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  bool _isSaving = false;
+  bool _isSubmitting = false;
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
-  }
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  Future<void> _save() async {
-    final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
-
-    if (title.isEmpty || content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in title and content.')),
-      );
-      return;
-    }
-
-    setState(() => _isSaving = true);
+    setState(() => _isSubmitting = true);
 
     try {
       await FirebaseFirestore.instance.collection('notices').add({
-        'title': title,
-        'content': content,
-        'createdAt': Timestamp.now(),
-        'isImportant': false,
+        'title': _titleController.text.trim(),
+        'content': _contentController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
-      if (!mounted) return;
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Notice posted successfully.')),
+        );
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create notice: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to post: $e')),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Create Notice'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'New Notice',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: AppColors.knuRed, // 빨간색 배경 유지
+        foregroundColor: Colors.white,    // 흰색 글자색 유지
         elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              border: OutlineInputBorder(),
-            ),
+        centerTitle: false,               // 왼쪽 정렬 유지
+        actions: [
+          // 통일감을 위해 텍스트 버튼 대신 아이콘 버튼(체크표시) 사용
+          IconButton(
+            onPressed: _isSubmitting ? null : _submit,
+            icon: const Icon(Icons.check),
+            tooltip: 'Post',
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _contentController,
-            maxLines: 10,
-            decoration: const InputDecoration(
-              labelText: 'Content',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.knuRed,
-                foregroundColor: Colors.white,
-              ),
-              child: _isSaving
-                  ? const CircularProgressIndicator()
-                  : const Text('Publish'),
-            ),
-          ),
+          const SizedBox(width: 8),
         ],
+      ),
+      body: _isSubmitting
+          ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Title",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.grey
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _titleController,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  hintText: "Enter notice title",
+                  hintStyle: TextStyle(color: Colors.grey[300]),
+                  border: InputBorder.none,
+                ),
+                validator: (v) => v!.isEmpty ? 'Please enter title' : null,
+              ),
+              const Divider(height: 32),
+              const Text(
+                "Content (Markdown supported)",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.grey
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _contentController,
+                maxLines: null,
+                minLines: 10,
+                style: const TextStyle(fontSize: 16, height: 1.6),
+                decoration: InputDecoration(
+                  hintText: "Write your notice here...",
+                  hintStyle: TextStyle(color: Colors.grey[300]),
+                  border: InputBorder.none,
+                ),
+                validator: (v) => v!.isEmpty ? 'Please enter content' : null,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -10,18 +10,21 @@ class FCMProvider with ChangeNotifier {
   String? _token;
   String? get token => _token;
 
-  // FCM 초기화 및 토큰 획득
+  // FCM 초기화 및 토큰 획득 프로세스
   Future<void> setupFCM(String userId) async {
     try {
       await _fcmService.initialize();
       _token = await _fcmService.getToken();
 
       if (_token != null) {
-        // 서버에 저장 시도
+        // 1. 개인별 알림을 위한 토큰 서버 등록
         await _communityService.updateFcmToken(userId, _token!);
-        debugPrint("FCM Token saved to Firestore: $_token");
-      } else {
-        debugPrint("FCM Token is null");
+
+        // 2. [추가] 전체 공지사항 알림을 위한 토픽 구독
+        // 모든 사용자가 'notices' 토픽을 구독하게 하여 서버에서 한 번에 쏘게 합니다.
+        await _fcmService.subscribeToTopic('notices');
+
+        debugPrint("FCM Setup complete for user: $userId");
       }
     } catch (e) {
       debugPrint("FCM Setup Error: $e");
@@ -29,22 +32,13 @@ class FCMProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // 토큰을 클립보드에 복사하고 토스트(SnackBar) 메시지 표시
   void copyTokenToClipboard(BuildContext context) {
     if (_token != null) {
       Clipboard.setData(ClipboardData(text: _token!));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('FCM Token copied to clipboard!'),
-          duration: Duration(seconds: 2),
           backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No token found. Please check setup.'),
-          backgroundColor: Colors.red,
         ),
       );
     }

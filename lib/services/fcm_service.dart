@@ -10,24 +10,36 @@ class FCMService {
       alert: true,
       badge: true,
       sound: true,
-      provisional: false, // 임시 권한이 아닌 실제 허용 요청
+      provisional: false,
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('User granted permission');
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-      debugPrint('User granted provisional permission');
-    } else {
-      debugPrint('User declined or has not accepted permission');
     }
 
-    // 포그라운드 메시지 핸들링 (앱이 켜져 있을 때)
+    // 포그라운드 메시지 핸들링
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Got a message whilst in the foreground!');
       if (message.notification != null) {
-        debugPrint('Message also contained a notification: ${message.notification?.title}');
+        debugPrint('Message Title: ${message.notification?.title}');
       }
     });
+
+    // 알림 클릭 시 앱 열기 핸들링
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('A new onMessageOpenedApp event was published!');
+    });
+  }
+
+  // [추가] 특정 토픽(주제) 구독 로직
+  // 공지사항 알림을 받기 위해 'notices' 토픽을 구독합니다.
+  Future<void> subscribeToTopic(String topic) async {
+    try {
+      await _messaging.subscribeToTopic(topic);
+      debugPrint('Subscribed to topic: $topic');
+    } catch (e) {
+      debugPrint('Error subscribing to topic: $e');
+    }
   }
 
   Future<String?> getToken() async {

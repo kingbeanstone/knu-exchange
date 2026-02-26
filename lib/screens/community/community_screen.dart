@@ -5,12 +5,13 @@ import '../../models/post.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/fcm_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_search_bar.dart';
+import '../../widgets/community/community_app_bar.dart';
+import '../../widgets/community/community_empty_state.dart';
 import 'create_post_screen.dart';
-// [수정] 알림 화면 파일 경로 확인
-import '../notification/notification_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -27,10 +28,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
+    // 서비스 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isAuthenticated) {
-        Provider.of<NotificationProvider>(context, listen: false).initNotifications(auth.user!.uid);
+        // 1. 인앱 알림 서비스 초기화
+        Provider.of<NotificationProvider>(context, listen: false)
+            .initNotifications(auth.user!.uid);
+
+        // 2. FCM 토큰 획득 및 서버 등록 프로세스 시작
+        Provider.of<FCMProvider>(context, listen: false)
+            .setupFCM(auth.user!.uid);
       }
     });
   }
@@ -45,7 +53,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    if (!provider.isSearching && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (!provider.isSearching &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
         provider.fetchPosts(userId: auth.user?.uid);
       }
@@ -56,7 +66,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
-    final notifProvider = Provider.of<NotificationProvider>(context);
 
     final selectedCategory = communityProvider.currentCategory;
     final isMyPostsOnly = communityProvider.isMyPostsOnly;
@@ -65,64 +74,28 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (communityProvider.isSearching) {
       displayPosts = selectedCategory == null
           ? communityProvider.searchResults
-          : communityProvider.searchResults.where((p) => p.category == selectedCategory).toList();
+          : communityProvider.searchResults
+          .where((p) => p.category == selectedCategory)
+          .toList();
     } else {
       displayPosts = communityProvider.posts;
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('KNU Community'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const NotificationScreen()),
-                  );
-                },
-              ),
-              if (notifProvider.unreadCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.yellow,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${notifProvider.unreadCount}',
-                      style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
-                      // [수정] 'Center' 위젯 대신 'TextAlign.center'를 사용해야 합니다.
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      // [수정] 공지사항과 동일한 연한 회색 배경 적용
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: const CommunityAppBar(title: 'KNU Community'),
       body: Column(
         children: [
+          // 상단바 장식선 (공지사항과 통일)
+          Container(height: 1, color: Colors.grey[200]),
+          // 검색바와 필터 영역
           CommunitySearchBar(
             onSearch: (query) => communityProvider.performSearch(query),
             onClear: () => communityProvider.clearSearch(),
           ),
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
-            // [추가] 리팩토링된 필터 위젯에 필요한 파라미터들
             isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
               communityProvider.setCategory(category);
@@ -131,28 +104,36 @@ class _CommunityScreenState extends State<CommunityScreen> {
               communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
-          const Divider(height: 1),
           Expanded(
             child: communityProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
                 : displayPosts.isEmpty
-                ? _buildEmptyState(communityProvider.isSearching, isMyPostsOnly)
+                ? CommunityEmptyState(
+              isSearching: communityProvider.isSearching,
+              isMyPostsOnly: isMyPostsOnly,
+            )
                 : RefreshIndicator(
+              color: AppColors.knuRed,
               onRefresh: () => communityProvider.fetchPosts(
                 isRefresh: true,
                 userId: auth.user?.uid,
               ),
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(12),
-                itemCount: displayPosts.length + (!communityProvider.isSearching && communityProvider.hasMore ? 1 : 0),
+                // [수정] 공지사항과 동일한 카드 패딩 값 적용
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                itemCount: displayPosts.length +
+                    (!communityProvider.isSearching &&
+                        communityProvider.hasMore
+                        ? 1
+                        : 0),
                 itemBuilder: (context, index) {
                   if (index < displayPosts.length) {
                     return PostCard(post: displayPosts[index]);
                   } else {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.knuRed)),
                     );
                   }
                 },
@@ -169,36 +150,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
           );
         },
         backgroundColor: AppColors.knuRed,
+        elevation: 4,
         child: const Icon(Icons.edit, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(bool isSearching, bool isMyPostsOnly) {
-    String message = isSearching
-        ? 'No matching results found.'
-        : 'No posts yet.\nBe the first to share!';
-
-    if (!isSearching && isMyPostsOnly) {
-      message = "You haven't written any posts yet.";
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-              isSearching ? Icons.search_off : (isMyPostsOnly ? Icons.person_off : Icons.speaker_notes_off),
-              size: 60,
-              color: Colors.grey[300]
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey, height: 1.5),
-          ),
-        ],
       ),
     );
   }
