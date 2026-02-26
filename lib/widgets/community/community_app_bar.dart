@@ -16,15 +16,10 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(
         title,
-        style: const TextStyle(
-          fontWeight: FontWeight.normal, // 공지사항과 동일하게 얇게 수정
-          fontSize: 18,
-        ),
       ),
       backgroundColor: AppColors.knuRed,
       foregroundColor: Colors.white,
       elevation: 0,
-      centerTitle: false, // 왼쪽 정렬
       actions: [
         Stack(
           alignment: Alignment.center,

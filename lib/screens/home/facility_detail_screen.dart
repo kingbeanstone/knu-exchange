@@ -236,18 +236,12 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
   Widget _buildPhotosTab(Facility f) {
     final photos = f.interiorImages ?? [];
 
-    // 만약 0이 나온다면 파이어베이스에서 데이터를 제대로 못 가져온 것입니다.
-    print("DEBUG: Loaded ${photos.length} images for ${f.engName}");
-
     if (photos.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('No photos available yet.'),
-            // 리스트가 왜 비었는지 확인하기 위한 디버그 문구
-            Text('Debug Info: List count is ${photos.length}',
-                style: const TextStyle(fontSize: 10, color: Colors.red)),
           ],
         ),
       );
