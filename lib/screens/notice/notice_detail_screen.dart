@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
 
 import '../../utils/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/notice/notice_detail_header.dart';
+import '../../widgets/notice/notice_detail_body.dart';
 import 'edit_notice_screen.dart';
 
 class NoticeDetailScreen extends StatelessWidget {
@@ -14,11 +15,6 @@ class NoticeDetailScreen extends StatelessWidget {
     super.key,
     required this.noticeId,
   });
-
-  String _formatDate(Timestamp timestamp) {
-    final date = timestamp.toDate();
-    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
-  }
 
   Future<void> _deleteNotice(BuildContext context) async {
     final confirm = await showDialog<bool>(
@@ -58,49 +54,13 @@ class NoticeDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // [수정] 다른 탭들과 통일감을 위해 글자 두께(fontWeight)를 기본값으로 변경
         title: const Text('Notice Details'),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false, // 왼쪽 정렬
+        centerTitle: false,
         actions: [
-          if (auth.isAdmin)
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('notices')
-                  .doc(noticeId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const SizedBox();
-                final data = snapshot.data!.data() as Map<String, dynamic>?;
-                if (data == null) return const SizedBox();
-
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_horiz),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EditNoticeScreen(
-                            noticeId: noticeId,
-                            initialTitle: data['title'] ?? '',
-                            initialContent: data['content'] ?? '',
-                          ),
-                        ),
-                      );
-                    } else if (value == 'delete') {
-                      _deleteNotice(context);
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.knuRed))),
-                  ],
-                );
-              },
-            ),
+          if (auth.isAdmin) _buildAdminMenu(context),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -123,55 +83,12 @@ class NoticeDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.knuRed.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          "OFFICIAL NOTICE",
-                          style: TextStyle(
-                            color: AppColors.knuRed,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        data['title'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkGrey,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatDate(data['createdAt'] as Timestamp),
-                            style: const TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                NoticeDetailHeader(
+                  title: data['title'] ?? '',
+                  createdAt: data['createdAt'] as Timestamp,
                 ),
                 const Divider(height: 1, thickness: 1, color: AppColors.lightGrey),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-                  child: _markdownWithExactNewlines(data['content'] ?? ''),
-                ),
+                NoticeDetailBody(content: data['content'] ?? ''),
                 const SizedBox(height: 60),
               ],
             ),
@@ -181,32 +98,44 @@ class NoticeDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _markdownWithExactNewlines(String text) {
-    final lines = text.replaceAll('\r\n', '\n').split('\n');
+  Widget _buildAdminMenu(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notices')
+          .doc(noticeId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox();
+        final data = snapshot.data!.data() as Map<String, dynamic>?;
+        if (data == null) return const SizedBox();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final line in lines) ...[
-          if (line.trim().isEmpty)
-            const SizedBox(height: 16)
-          else
-            MarkdownBody(
-              data: line,
-              softLineBreak: true,
-              styleSheet: MarkdownStyleSheet(
-                p: TextStyle(
-                  fontSize: 16,
-                  height: 1.7,
-                  color: Colors.black.withOpacity(0.8),
-                  letterSpacing: -0.2,
+        return PopupMenuButton<String>(
+          icon: const Icon(Icons.more_horiz),
+          onSelected: (value) {
+            if (value == 'edit') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditNoticeScreen(
+                    noticeId: noticeId,
+                    initialTitle: data['title'] ?? '',
+                    initialContent: data['content'] ?? '',
+                  ),
                 ),
-                strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-                listBullet: const TextStyle(color: AppColors.knuRed),
-              ),
+              );
+            } else if (value == 'delete') {
+              _deleteNotice(context);
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(value: 'edit', child: Text('Edit')),
+            PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete', style: TextStyle(color: AppColors.knuRed)),
             ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 }
