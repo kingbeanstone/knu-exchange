@@ -67,6 +67,14 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>지도에서 내 위치를 확인하기 위해 위치 권한이 필요합니다.</string>
+    <string>吏��룄�뿉�꽌 �궡 �쐞移섎�� �솗�씤�븯湲� �쐞�빐 �쐞移� 沅뚰븳�씠 �븘�슂�빀�땲�떎.</string>
+	<key>FirebaseMessagingAutoInitEnabled</key>
+	<true/>
+
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
 </dict>
 </plist>

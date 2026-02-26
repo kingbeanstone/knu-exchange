@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../models/comment.dart';
+import '../../../providers/comment_provider.dart';
 import '../../../utils/app_colors.dart';
 
 class CommentItem extends StatelessWidget {
@@ -16,12 +18,25 @@ class CommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 대댓글인 경우 왼쪽 여백을 줍니다.
+    final bool isReply = comment.parentId != null;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: EdgeInsets.only(
+        top: 12,
+        bottom: 12,
+        left: isReply ? 40 : 0, // 대댓글 여백 적용
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 댓글 작성자 아이콘
+          // 대댓글일 경우 꺽쇠 아이콘 표시
+          if (isReply)
+            const Padding(
+              padding: EdgeInsets.only(top: 8, right: 8),
+              child: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey),
+            ),
+
           CircleAvatar(
             radius: 14,
             backgroundColor: AppColors.lightGrey,
@@ -47,16 +62,16 @@ class CommentItem extends StatelessWidget {
                         ),
                         if (isMyComment) ...[
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: AppColors.knuRed.withValues(alpha: 0.5)),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              "ME",
-                              style: TextStyle(color: AppColors.knuRed, fontSize: 8, fontWeight: FontWeight.bold),
-                            ),
+                          _buildBadge("ME"),
+                        ],
+                        // [추가] 누구에게 답글을 남겼는지 표시
+                        if (comment.replyToName != null) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.play_arrow, size: 10, color: Colors.grey),
+                          const SizedBox(width: 6),
+                          Text(
+                            comment.replyToName!,
+                            style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ],
@@ -76,18 +91,50 @@ class CommentItem extends StatelessWidget {
                     color: Colors.black87,
                   ),
                 ),
+                const SizedBox(height: 8),
+
+                // [추가] 답글 달기 버튼
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        // 해당 댓글을 답글 대상으로 설정
+                        context.read<CommentProvider>().setReplyingTo(comment);
+                      },
+                      child: const Text(
+                        "Reply",
+                        style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    if (isMyComment)
+                      GestureDetector(
+                        onTap: onDelete,
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
-          if (isMyComment)
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
-              onPressed: onDelete,
-              constraints: const BoxConstraints(),
-              padding: const EdgeInsets.only(left: 8),
-              visualDensity: VisualDensity.compact,
-            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.knuRed.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: AppColors.knuRed, fontSize: 8, fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -6,15 +6,10 @@ class CommentService {
   final String _appId = 'knu-exchange-app';
 
   DocumentReference _postRef(String postId) =>
-      _db
-          .collection('artifacts')
-          .doc(_appId)
-          .collection('public')
-          .doc('data')
-          .collection('posts')
-          .doc(postId);
+      _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts').doc(postId);
 
   Future<List<Comment>> fetchComments(String postId) async {
+    // 대댓글도 시간순으로 가져온 뒤 UI에서 정렬하거나, 아예 생성 순으로 나열합니다.
     final snapshot = await _postRef(postId)
         .collection('comments')
         .orderBy('createdAt', descending: false)
@@ -27,18 +22,12 @@ class CommentService {
     final postRef = _postRef(postId);
     final commentsRef = postRef.collection('comments');
 
-    final postSnap = await postRef.get();
-    final postData = postSnap.data() as Map<String, dynamic>?;
-
     String finalAuthorName = comment.author;
 
-    // 익명 처리 로직 유지
+    // 익명 처리 로직
     if (comment.isAnonymous) {
-      final snapshot =
-      await commentsRef.orderBy('createdAt', descending: false).get();
-
-      final allComments =
-      snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
+      final snapshot = await commentsRef.orderBy('createdAt', descending: false).get();
+      final allComments = snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
 
       final List<String> anonymousUserIds = [];
       for (var c in allComments) {
@@ -74,15 +63,9 @@ class CommentService {
   Future<void> deleteComment(String postId, String commentId) async {
     final postRef = _postRef(postId);
     final commentRef = postRef.collection('comments').doc(commentId);
-
     final batch = _db.batch();
-
     batch.delete(commentRef);
-
-    batch.update(postRef, {
-      'comments': FieldValue.increment(-1),
-    });
-
+    batch.update(postRef, {'comments': FieldValue.increment(-1)});
     await batch.commit();
   }
 }

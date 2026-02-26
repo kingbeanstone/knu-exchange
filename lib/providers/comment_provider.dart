@@ -8,14 +8,22 @@ class CommentProvider with ChangeNotifier {
   List<Comment> _comments = [];
   bool _isLoading = false;
 
+  // [추가] 대댓글 작성을 위한 상태
+  Comment? _replyingTo;
+
   List<Comment> get comments => _comments;
   bool get isLoading => _isLoading;
+  Comment? get replyingTo => _replyingTo;
 
-  // 특정 게시글의 댓글 목록 로드
+  // 특정 댓글에 답글 달기 모드 설정
+  void setReplyingTo(Comment? comment) {
+    _replyingTo = comment;
+    notifyListeners();
+  }
+
   Future<void> loadComments(String postId) async {
     _isLoading = true;
     notifyListeners();
-
     try {
       _comments = await _service.fetchComments(postId);
     } catch (e) {
@@ -26,14 +34,13 @@ class CommentProvider with ChangeNotifier {
     }
   }
 
-  // 댓글 추가 (익명 여부 파라미터 추가 및 로직 강화)
   Future<void> addComment(
       String postId,
       String author,
       String authorId,
-      String content,
-      {bool isAnonymous = false} // [추가] 익명 여부
-      ) async {
+      String content, {
+        bool isAnonymous = false,
+      }) async {
     final newComment = Comment(
       id: '',
       author: author,
@@ -41,11 +48,13 @@ class CommentProvider with ChangeNotifier {
       content: content,
       createdAt: DateTime.now(),
       isAnonymous: isAnonymous,
+      parentId: _replyingTo?.id,        // [추가] 답글인 경우 부모 ID 저장
+      replyToName: _replyingTo?.author, // [추가] 답글 대상자 이름 저장
     );
 
     try {
-      // 서비스에서 익명 번호 부여 로직을 처리하도록 수정됨
       await _service.addComment(postId, newComment);
+      _replyingTo = null; // 전송 후 답글 모드 해제
       await loadComments(postId);
     } catch (e) {
       debugPrint("Comment add error: $e");
@@ -53,7 +62,6 @@ class CommentProvider with ChangeNotifier {
     }
   }
 
-  // 댓글 삭제
   Future<void> removeComment(String postId, String commentId) async {
     try {
       await _service.deleteComment(postId, commentId);

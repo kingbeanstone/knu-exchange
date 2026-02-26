@@ -16,7 +16,7 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-  bool _isAnonymous = false; // [추가] 익명 체크 상태
+  bool _isAnonymous = false;
 
   Future<void> _submitComment() async {
     if (_isSubmitting) return;
@@ -35,7 +35,7 @@ class _CommentInputState extends State<CommentInput> {
     setState(() => _isSubmitting = true);
 
     try {
-      // [수정] 익명 여부 파라미터 추가
+      // Provider 내부에서 _replyingTo 상태를 참조하여 parentId를 자동으로 설정합니다.
       await commentProvider.addComment(
         widget.postId,
         auth.user?.displayName ?? "User",
@@ -48,7 +48,7 @@ class _CommentInputState extends State<CommentInput> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to post comment: $e")),
+          SnackBar(content: Text("Failed to post: $e")),
         );
       }
     } finally {
@@ -71,6 +71,9 @@ class _CommentInputState extends State<CommentInput> {
 
   @override
   Widget build(BuildContext context) {
+    final commentProvider = context.watch<CommentProvider>();
+    final replyingTo = commentProvider.replyingTo;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -88,7 +91,35 @@ class _CommentInputState extends State<CommentInput> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // [추가] 익명 체크박스 영역
+            // [추가] 답글 모드일 때 표시되는 상단 바
+            if (replyingTo != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.reply, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Replying to ${replyingTo.author}",
+                        style: const TextStyle(fontSize: 12, color: AppColors.darkGrey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => commentProvider.setReplyingTo(null),
+                      child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+
             Row(
               children: [
                 SizedBox(
@@ -119,10 +150,10 @@ class _CommentInputState extends State<CommentInput> {
                     child: TextField(
                       controller: _commentController,
                       enabled: !_isSubmitting,
-                      decoration: const InputDecoration(
-                        hintText: "Add a comment...",
+                      decoration: InputDecoration(
+                        hintText: replyingTo != null ? "Write a reply..." : "Add a comment...",
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       maxLines: null,
                     ),
