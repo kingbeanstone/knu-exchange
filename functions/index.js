@@ -5,7 +5,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 
 initializeApp();
 
-// 1. 댓글 생성 알림 (기존 유지 및 대댓글 대응)
+// 1. 댓글 생성 알림 (기존 유지)
 exports.onCommentCreated = onDocumentCreated(
   "artifacts/{appId}/public/data/posts/{postId}/comments/{commentId}",
   async (event) => {
@@ -61,7 +61,7 @@ exports.onCommentCreated = onDocumentCreated(
   }
 );
 
-// 2. [추가] 댓글 좋아요 알림
+// 2. 댓글 좋아요 알림 (기존 유지)
 exports.onCommentLiked = onDocumentUpdated(
   "artifacts/{appId}/public/data/posts/{postId}/comments/{commentId}",
   async (event) => {
@@ -75,21 +75,15 @@ exports.onCommentLiked = onDocumentUpdated(
       const oldLikes = beforeData.likes || [];
       const newLikes = afterData.likes || [];
 
-      // 좋아요 수가 늘어난 경우에만 알림 발송
       if (newLikes.length <= oldLikes.length) return;
 
-      // 새로 추가된 유저 ID 찾기
       const senderId = newLikes.find(id => !oldLikes.includes(id));
       if (!senderId) return;
 
       const targetUserId = afterData.authorId;
-      // 본인이 본인 댓글에 좋아요를 누른 경우 제외
       if (targetUserId === senderId) return;
 
       const db = getFirestore();
-
-      // 발신자 이름 조회를 위해 프로필 정보 확인 (또는 기본값 사용)
-      // 여기서는 단순히 'Someone'으로 처리하거나 발신자 정보를 가져올 수 있습니다.
       const senderDoc = await db.collection("artifacts").doc(appId).collection("users").doc(senderId).get();
       const senderName = senderDoc.data()?.displayName || "Someone";
 
@@ -114,6 +108,37 @@ exports.onCommentLiked = onDocumentUpdated(
       });
     } catch (error) {
       console.error("Error in onCommentLiked:", error);
+    }
+  }
+);
+
+// 3. [추가] 공지사항 생성 시 전체 알림 발송 (Topic 방식)
+exports.onNoticeCreated = onDocumentCreated(
+  "notices/{noticeId}",
+  async (event) => {
+    try {
+      const noticeData = event.data.data();
+      if (!noticeData) return;
+
+      const title = noticeData.title || "New Announcement";
+      const content = noticeData.content || "A new notice has been posted.";
+
+      // 'notices' 토픽을 구독 중인 모든 기기에 푸시 발송
+      await getMessaging().send({
+        topic: "notices",
+        notification: {
+          title: `[Notice] ${title}`,
+          body: content.length > 100 ? content.substring(0, 97) + "..." : content,
+        },
+        data: {
+          type: "notice",
+          noticeId: event.params.noticeId,
+        },
+      });
+
+      console.log(`Notice push notification sent for: ${event.params.noticeId}`);
+    } catch (error) {
+      console.error("Error in onNoticeCreated:", error);
     }
   }
 );
