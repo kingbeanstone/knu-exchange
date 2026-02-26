@@ -1,46 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../utils/app_colors.dart';
+import '../../screens/notification/notification_screen.dart';
 
-class CommunityAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  const CommunityAppBar({super.key});
+class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+
+  const CommunityAppBar({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount =
-        context.watch<NotificationProvider>().unreadCount;
+    final unreadCount = context.watch<NotificationProvider>().unreadCount;
 
     return AppBar(
-      title: const Text("Community"),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.normal, // 공지사항과 동일하게 얇게 수정
+          fontSize: 18,
+        ),
+      ),
+      backgroundColor: AppColors.knuRed,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: false, // 왼쪽 정렬
       actions: [
         Stack(
+          alignment: Alignment.center,
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications),
+              icon: const Icon(Icons.notifications_none), // 얇은 아이콘으로 변경
               onPressed: () {
-                Navigator.pushNamed(context, '/notifications');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                );
               },
             ),
             if (unreadCount > 0)
               Positioned(
-                right: 6,
-                top: 6,
+                right: 8,
+                top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: Colors.yellow, // 눈에 띄는 노란색 배지
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                   child: Text(
                     unreadCount > 9 ? '9+' : unreadCount.toString(),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -48,6 +62,7 @@ class CommunityAppBar extends StatelessWidget
               ),
           ],
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
