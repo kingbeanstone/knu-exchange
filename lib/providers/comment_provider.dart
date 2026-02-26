@@ -7,15 +7,12 @@ class CommentProvider with ChangeNotifier {
 
   List<Comment> _comments = [];
   bool _isLoading = false;
-
-  // [추가] 대댓글 작성을 위한 상태
   Comment? _replyingTo;
 
   List<Comment> get comments => _comments;
   bool get isLoading => _isLoading;
   Comment? get replyingTo => _replyingTo;
 
-  // 특정 댓글에 답글 달기 모드 설정
   void setReplyingTo(Comment? comment) {
     _replyingTo = comment;
     notifyListeners();
@@ -34,6 +31,18 @@ class CommentProvider with ChangeNotifier {
     }
   }
 
+  // [추가] 댓글 좋아요 토글 로직
+  Future<void> toggleCommentLike(String postId, String commentId, String userId) async {
+    try {
+      await _service.toggleCommentLike(postId, commentId, userId);
+      // 최신 데이터를 반영하기 위해 댓글 목록 다시 로드
+      await loadComments(postId);
+    } catch (e) {
+      debugPrint("Comment like toggle error: $e");
+      rethrow;
+    }
+  }
+
   Future<void> addComment(
       String postId,
       String author,
@@ -48,13 +57,13 @@ class CommentProvider with ChangeNotifier {
       content: content,
       createdAt: DateTime.now(),
       isAnonymous: isAnonymous,
-      parentId: _replyingTo?.id,        // [추가] 답글인 경우 부모 ID 저장
-      replyToName: _replyingTo?.author, // [추가] 답글 대상자 이름 저장
+      parentId: _replyingTo?.id,
+      replyToName: _replyingTo?.author,
     );
 
     try {
       await _service.addComment(postId, newComment);
-      _replyingTo = null; // 전송 후 답글 모드 해제
+      _replyingTo = null;
       await loadComments(postId);
     } catch (e) {
       debugPrint("Comment add error: $e");

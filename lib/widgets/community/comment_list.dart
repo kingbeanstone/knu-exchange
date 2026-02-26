@@ -32,16 +32,14 @@ class CommentList extends StatelessWidget {
       );
     }
 
-    // [정렬 로직] 대댓글을 부모 댓글 바로 아래로 배치하도록 리스트를 재구성합니다.
+    // 계층 구조 정렬 로직
     final List<Comment> organizedComments = [];
     final Map<String?, List<Comment>> commentGroups = {};
 
-    // 1. 댓글들을 그룹화 (부모ID별)
     for (var comment in provider.comments) {
       commentGroups.putIfAbsent(comment.parentId, () => []).add(comment);
     }
 
-    // 2. 부모 댓글(parentId == null)을 먼저 넣고, 그 바로 뒤에 자식 대댓글들을 배치
     final parents = commentGroups[null] ?? [];
     for (var parent in parents) {
       organizedComments.add(parent);
@@ -58,6 +56,7 @@ class CommentList extends StatelessWidget {
         return Column(
           children: [
             CommentItem(
+              postId: postId, // [수정] postId 전달
               comment: comment,
               isMyComment: auth.user?.uid == comment.authorId,
               onDelete: () => _confirmDelete(context, provider, comment.id),
