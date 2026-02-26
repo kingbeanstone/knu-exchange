@@ -4,21 +4,26 @@ import '../../utils/app_colors.dart';
 
 class CommunityCategoryFilter extends StatelessWidget {
   final PostCategory? selectedCategory;
+  final bool isMyPostsSelected;
   final Function(PostCategory?) onCategorySelected;
+  final Function(bool) onMyPostsSelected;
 
   const CommunityCategoryFilter({
     super.key,
     required this.selectedCategory,
+    required this.isMyPostsSelected,
     required this.onCategorySelected,
+    required this.onMyPostsSelected,
   });
 
-  // 카테고리별 라벨, 아이콘, 벨류 정의
-  final List<Map<String, dynamic>> _items = const [
-    {'label': 'All', 'icon': Icons.apps, 'value': null},
+  List<Map<String, dynamic>> get _items => [
+    {'label': 'All', 'icon': Icons.apps, 'value': 'all'},
+    {'label': 'My Posts', 'icon': Icons.person_pin, 'value': 'mine'},
+    {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
+    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
     {'label': 'Tip', 'icon': Icons.lightbulb_outline, 'value': PostCategory.tip},
     {'label': 'Market', 'icon': Icons.shopping_cart_outlined, 'value': PostCategory.market},
-    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
   ];
 
   @override
@@ -32,7 +37,17 @@ class CommunityCategoryFilter extends StatelessWidget {
         itemCount: _items.length,
         itemBuilder: (context, index) {
           final item = _items[index];
-          final isSelected = selectedCategory == item['value'];
+
+          bool isSelected = false;
+          if (item['value'] == 'all') {
+            isSelected = selectedCategory == null && !isMyPostsSelected;
+          } else if (item['value'] == 'mine') {
+            isSelected = isMyPostsSelected;
+          } else {
+            isSelected = selectedCategory == item['value'] && !isMyPostsSelected;
+          }
+
+          final Color themeColor = item['value'] == PostCategory.hot ? Colors.orange : AppColors.knuRed;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -41,12 +56,20 @@ class CommunityCategoryFilter extends StatelessWidget {
               avatar: Icon(
                 item['icon'],
                 size: 16,
-                color: isSelected ? Colors.white : AppColors.knuRed,
+                color: isSelected ? Colors.white : themeColor,
               ),
               label: Text(item['label']),
               selected: isSelected,
-              onSelected: (_) => onCategorySelected(item['value']),
-              selectedColor: AppColors.knuRed,
+              onSelected: (_) {
+                if (item['value'] == 'all') {
+                  onCategorySelected(null);
+                } else if (item['value'] == 'mine') {
+                  onMyPostsSelected(true);
+                } else {
+                  onCategorySelected(item['value'] as PostCategory?);
+                }
+              },
+              selectedColor: themeColor,
               backgroundColor: Colors.white,
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
@@ -56,7 +79,7 @@ class CommunityCategoryFilter extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? AppColors.knuRed : Colors.grey.shade300,
+                  color: isSelected ? themeColor : Colors.grey.shade300,
                 ),
               ),
               elevation: 0,

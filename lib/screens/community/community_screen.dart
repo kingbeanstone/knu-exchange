@@ -3,8 +3,14 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/fcm_provider.dart';
 import '../../widgets/community/post_card.dart';
-import '../../widgets/community/community_category_filter.dart'; // [추가] 신규 위젯 임포트
+import '../../widgets/community/community_category_filter.dart';
+import '../../widgets/community/community_search_bar.dart';
+import '../../widgets/community/community_app_bar.dart';
+import '../../widgets/community/community_empty_state.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -15,45 +21,122 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  PostCategory? _selectedCategory;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    // 서비스 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isAuthenticated) {
+        // 1. 인앱 알림 서비스 초기화
+        Provider.of<NotificationProvider>(context, listen: false)
+            .initNotifications(auth.user!.uid);
+
+        // 2. FCM 토큰 획득 및 서버 등록 프로세스 시작
+        Provider.of<FCMProvider>(context, listen: false)
+            .setupFCM(auth.user!.uid);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final provider = Provider.of<CommunityProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    if (!provider.isSearching &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
+      if (provider.hasMore && !provider.isLoadingMore) {
+        provider.fetchPosts(userId: auth.user?.uid);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
 
-    final filteredPosts = _selectedCategory == null
-        ? communityProvider.posts
-        : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
+    final selectedCategory = communityProvider.currentCategory;
+    final isMyPostsOnly = communityProvider.isMyPostsOnly;
+
+    final List<Post> displayPosts;
+    if (communityProvider.isSearching) {
+      displayPosts = selectedCategory == null
+          ? communityProvider.searchResults
+          : communityProvider.searchResults
+          .where((p) => p.category == selectedCategory)
+          .toList();
+    } else {
+      displayPosts = communityProvider.posts;
+    }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('KNU Community'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      // [수정] 공지사항과 동일한 연한 회색 배경 적용
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: const CommunityAppBar(title: 'KNU Community'),
       body: Column(
         children: [
-          // [수정] 분리된 카테고리 필터 위젯 적용
+          // 상단바 장식선 (공지사항과 통일)
+          Container(height: 1, color: Colors.grey[200]),
+          // 검색바와 필터 영역
+          CommunitySearchBar(
+            onSearch: (query) => communityProvider.performSearch(query),
+            onClear: () => communityProvider.clearSearch(),
+          ),
           CommunityCategoryFilter(
-            selectedCategory: _selectedCategory,
+            selectedCategory: selectedCategory,
+            isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
-              setState(() => _selectedCategory = category);
+              communityProvider.setCategory(category);
+            },
+            onMyPostsSelected: (isActive) {
+              communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
-          const Divider(height: 1), // 시각적 구분을 위한 구분선
           Expanded(
             child: communityProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredPosts.isEmpty
-                ? _buildEmptyState()
+                ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
+                : displayPosts.isEmpty
+                ? CommunityEmptyState(
+              isSearching: communityProvider.isSearching,
+              isMyPostsOnly: isMyPostsOnly,
+            )
                 : RefreshIndicator(
-              onRefresh: communityProvider.fetchPosts,
+              color: AppColors.knuRed,
+              onRefresh: () => communityProvider.fetchPosts(
+                isRefresh: true,
+                userId: auth.user?.uid,
+              ),
               child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: filteredPosts.length,
-                itemBuilder: (context, index) => PostCard(post: filteredPosts[index]),
+                controller: _scrollController,
+                // [수정] 공지사항과 동일한 카드 패딩 값 적용
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                itemCount: displayPosts.length +
+                    (!communityProvider.isSearching &&
+                        communityProvider.hasMore
+                        ? 1
+                        : 0),
+                itemBuilder: (context, index) {
+                  if (index < displayPosts.length) {
+                    return PostCard(post: displayPosts[index]);
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.knuRed)),
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -67,24 +150,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
           );
         },
         backgroundColor: AppColors.knuRed,
+        elevation: 4,
         child: const Icon(Icons.edit, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.speaker_notes_off, size: 60, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text(
-            'No posts yet.\nBe the first to share!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
       ),
     );
   }
