@@ -33,7 +33,7 @@ class NoticeDetailScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(color: AppColors.knuRed)),
           ),
         ],
       ),
@@ -56,12 +56,14 @@ class NoticeDetailScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Notice'),
+        // [수정] 다른 탭들과 통일감을 위해 글자 두께(fontWeight)를 기본값으로 변경
+        title: const Text('Notice Details'),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false, // 왼쪽 정렬
         actions: [
           if (auth.isAdmin)
             StreamBuilder<DocumentSnapshot>(
@@ -71,13 +73,11 @@ class NoticeDetailScreen extends StatelessWidget {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
-
-                final data =
-                snapshot.data!.data() as Map<String, dynamic>?;
-
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
                 if (data == null) return const SizedBox();
 
                 return PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_horiz),
                   onSelected: (value) {
                     if (value == 'edit') {
                       Navigator.push(
@@ -95,14 +95,8 @@ class NoticeDetailScreen extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.knuRed))),
                   ],
                 );
               },
@@ -116,7 +110,7 @@ class NoticeDetailScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: AppColors.knuRed));
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
@@ -125,29 +119,60 @@ class NoticeDetailScreen extends StatelessWidget {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: ListView(
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  data['title'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.knuRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          "OFFICIAL NOTICE",
+                          style: TextStyle(
+                            color: AppColors.knuRed,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        data['title'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGrey,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDate(data['createdAt'] as Timestamp),
+                            style: const TextStyle(fontSize: 13, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatDate(data['createdAt'] as Timestamp),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                const Divider(height: 1, thickness: 1, color: AppColors.lightGrey),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  child: _markdownWithExactNewlines(data['content'] ?? ''),
                 ),
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
-                _markdownWithExactNewlines(data['content'] ?? ''),
+                const SizedBox(height: 60),
               ],
             ),
           );
@@ -155,8 +180,8 @@ class NoticeDetailScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _markdownWithExactNewlines(String text) {
-    // Windows 줄바꿈(\r\n)도 처리
     final lines = text.replaceAll('\r\n', '\n').split('\n');
 
     return Column(
@@ -164,14 +189,20 @@ class NoticeDetailScreen extends StatelessWidget {
       children: [
         for (final line in lines) ...[
           if (line.trim().isEmpty)
-            const SizedBox(height: 24) // ✅ 빈 줄(엔터) 1개당 간격
+            const SizedBox(height: 16)
           else
             MarkdownBody(
               data: line,
               softLineBreak: true,
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(fontSize: 16, height: 1.6),
-                strong: const TextStyle(fontWeight: FontWeight.bold),
+                p: TextStyle(
+                  fontSize: 16,
+                  height: 1.7,
+                  color: Colors.black.withOpacity(0.8),
+                  letterSpacing: -0.2,
+                ),
+                strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                listBullet: const TextStyle(color: AppColors.knuRed),
               ),
             ),
         ],
