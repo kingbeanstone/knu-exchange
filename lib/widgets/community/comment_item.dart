@@ -18,19 +18,19 @@ class CommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 대댓글인 경우 왼쪽 여백을 줍니다.
+    // 대댓글 여부 확인 (parentId가 있으면 대댓글)
     final bool isReply = comment.parentId != null;
 
     return Padding(
       padding: EdgeInsets.only(
         top: 12,
         bottom: 12,
-        left: isReply ? 40 : 0, // 대댓글 여백 적용
+        left: isReply ? 40 : 0, // 대댓글일 경우 들여쓰기 적용
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 대댓글일 경우 꺽쇠 아이콘 표시
+          // 대댓글일 경우 시각적 아이콘 표시
           if (isReply)
             const Padding(
               padding: EdgeInsets.only(top: 8, right: 8),
@@ -64,16 +64,7 @@ class CommentItem extends StatelessWidget {
                           const SizedBox(width: 6),
                           _buildBadge("ME"),
                         ],
-                        // [추가] 누구에게 답글을 남겼는지 표시
-                        if (comment.replyToName != null) ...[
-                          const SizedBox(width: 6),
-                          const Icon(Icons.play_arrow, size: 10, color: Colors.grey),
-                          const SizedBox(width: 6),
-                          Text(
-                            comment.replyToName!,
-                            style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
-                        ],
+                        // [수정] 지저분해 보일 수 있는 답글 대상자(replyToName) 표시 제거
                       ],
                     ),
                     Text(
@@ -93,20 +84,29 @@ class CommentItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // [추가] 답글 달기 버튼
+                // 버튼 영역
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        // 해당 댓글을 답글 대상으로 설정
-                        context.read<CommentProvider>().setReplyingTo(comment);
-                      },
-                      child: const Text(
-                        "Reply",
-                        style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+                    // 최상위 댓글(parentId == null)인 경우에만 Reply 버튼 표시
+                    if (comment.parentId == null)
+                      GestureDetector(
+                        onTap: () {
+                          context.read<CommentProvider>().setReplyingTo(comment);
+                        },
+                        child: const Text(
+                          "Reply",
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
+
+                    // 간격 조절
+                    if (comment.parentId == null && isMyComment)
+                      const SizedBox(width: 16),
+
                     if (isMyComment)
                       GestureDetector(
                         onTap: onDelete,
