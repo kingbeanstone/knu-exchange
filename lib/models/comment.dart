@@ -6,6 +6,9 @@ class Comment {
   final String authorId;
   final String content;
   final DateTime createdAt;
+  final bool isAnonymous;
+  final String? parentId;     // [추가] 부모 댓글 ID (대댓글인 경우)
+  final String? replyToName;  // [추가] 답글 대상자 이름 (UI 표시용)
 
   Comment({
     required this.id,
@@ -13,9 +16,11 @@ class Comment {
     required this.authorId,
     required this.content,
     required this.createdAt,
+    this.isAnonymous = false,
+    this.parentId,
+    this.replyToName,
   });
 
-  // Firestore 데이터를 모델로 변환
   factory Comment.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Comment(
@@ -24,16 +29,21 @@ class Comment {
       authorId: data['authorId'] ?? '',
       content: data['content'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isAnonymous: data['isAnonymous'] ?? false,
+      parentId: data['parentId'],
+      replyToName: data['replyToName'],
     );
   }
 
-  // 모델을 Firestore 데이터로 변환
   Map<String, dynamic> toFirestore() {
     return {
       'author': author,
       'authorId': authorId,
       'content': content,
       'createdAt': FieldValue.serverTimestamp(),
+      'isAnonymous': isAnonymous,
+      'parentId': parentId,
+      'replyToName': replyToName,
     };
   }
 }

@@ -5,41 +5,67 @@ class CommentService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _appId = 'knu-exchange-app';
 
-  // 게시글 문서 참조
   DocumentReference _postRef(String postId) =>
       _db.collection('artifacts').doc(_appId).collection('public').doc('data').collection('posts').doc(postId);
 
-  // 댓글 목록 가져오기 (단발성)
   Future<List<Comment>> fetchComments(String postId) async {
+    // 대댓글도 시간순으로 가져온 뒤 UI에서 정렬하거나, 아예 생성 순으로 나열합니다.
     final snapshot = await _postRef(postId)
         .collection('comments')
-        .orderBy('createdAt', descending: true)
+        .orderBy('createdAt', descending: false)
         .get();
 
     return snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
   }
 
-  // 댓글 작성 및 게시글 댓글 수 증가 (Batch)
   Future<void> addComment(String postId, Comment comment) async {
     final postRef = _postRef(postId);
-    final commentRef = postRef.collection('comments').doc();
+    final commentsRef = postRef.collection('comments');
 
+    String finalAuthorName = comment.author;
+
+    // 익명 처리 로직
+    if (comment.isAnonymous) {
+      final snapshot = await commentsRef.orderBy('createdAt', descending: false).get();
+      final allComments = snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
+
+      final List<String> anonymousUserIds = [];
+      for (var c in allComments) {
+        if (c.isAnonymous && !anonymousUserIds.contains(c.authorId)) {
+          anonymousUserIds.add(c.authorId);
+        }
+      }
+
+      int userIndex = anonymousUserIds.indexOf(comment.authorId);
+      if (userIndex != -1) {
+        finalAuthorName = "Anonymous ${userIndex + 1}";
+      } else {
+        finalAuthorName = "Anonymous ${anonymousUserIds.length + 1}";
+      }
+    }
+
+    final commentRef = commentsRef.doc();
     final batch = _db.batch();
-    batch.set(commentRef, comment.toFirestore());
-    batch.update(postRef, {'comments': FieldValue.increment(1)});
+
+    final commentData = comment.toFirestore();
+    commentData['author'] = finalAuthorName;
+
+    batch.set(commentRef, commentData);
+
+    // 댓글 수 증가
+    batch.update(postRef, {
+      'comments': FieldValue.increment(1),
+    });
 
     await batch.commit();
   }
 
-  // [추가] 댓글 삭제 및 게시글 댓글 수 감소 (Batch)
   Future<void> deleteComment(String postId, String commentId) async {
     final postRef = _postRef(postId);
     final commentRef = postRef.collection('comments').doc(commentId);
-
     final batch = _db.batch();
     batch.delete(commentRef);
     batch.update(postRef, {'comments': FieldValue.increment(-1)});
-
     await batch.commit();
   }
 }

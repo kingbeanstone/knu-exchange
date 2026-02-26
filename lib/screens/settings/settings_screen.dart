@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import 'privacy_policy_screen.dart';
+import 'contact_screen.dart';
+
 import '../admin/admin_dashboard_screen.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/settings/settings_widgets.dart';
@@ -63,10 +66,46 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
 
-          const SizedBox(height: 32),
+          // 4. 지원 섹션
+          const SettingsSectionHeader(title: 'Support'),
+          SettingsGroupCard(
+            child: Column(
+              children: [
+                SettingsMenuTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  trailing: '',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                SettingsMenuTile(
+                  icon: Icons.mail_outline,
+                  title: 'Contact Us',
+                  trailing: '',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ContactScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
 
-          // 4. 계정 관리
+          // 5. 계정 관리
           if (authProvider.isAuthenticated)
             Center(
               child: TextButton(
@@ -83,6 +122,9 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+
+
+  // 계정 삭제 확인 다이얼로그
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,

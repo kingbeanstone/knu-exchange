@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../utils/app_colors.dart';
 import '../../models/facility.dart';
 import '../../services/map_service.dart';
@@ -8,138 +7,129 @@ import '../../widgets/home/category_filter.dart';
 import '../../widgets/home/facility_bottom_sheet.dart';
 import '../../widgets/home/map_controls.dart';
 import '../../widgets/home/campus_map_view.dart';
-import '../../widgets/home/admin_coords_sheet.dart';
+import 'facility_detail_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final void Function(String facilityId) onGoToCafeteria;
+
+  const HomeScreen({
+    super.key,
+    required this.onGoToCafeteria,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey<CampusMapViewState> _mapKey =
+  GlobalKey<CampusMapViewState>();
+
   NaverMapController? _mapController;
   final MapService _mapService = MapService();
+
   String _selectedCategory = 'All';
 
-  // 관리자 모드 관련 상태
-  bool _adminMode = false;
-  int _titleTapCount = 0;
 
   static const _knuCenter = NLatLng(35.8899, 128.6105);
 
   @override
   Widget build(BuildContext context) {
-    final filteredFacilities = _mapService.getFacilitiesByCategory(_selectedCategory);
+    return StreamBuilder<List<Facility>>(
+      stream: _mapService.getFacilitiesStream(), // 파이어베이스 실시간 데이터 구독
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return const Scaffold(body: Center(child: Text('Error')));
+        if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: _handleAdminTap,
-          child: const Text('KNU Campus Map'),
-        ),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Stack(
-        children: [
-          // 분리된 지도 뷰 위젯
-          CampusMapView(
-            initialPosition: _knuCenter,
-            facilities: filteredFacilities,
-            onMapReady: (controller) {
-              _mapController = controller;
-              _initializeLocation();
-            },
-            onFacilitySelected: _showFacilityDetail,
-            onMapLongTap: (latLng) {
-              if (_adminMode) _showAdminCoords(latLng);
-            },
-          ),
+        // 가져온 전체 데이터 중 선택된 카테고리만 필터링
+        final allFacilities = snapshot.data!;
+        final filteredFacilities = _selectedCategory == 'All'
+            ? allFacilities
+            : allFacilities.where((f) => f.category == _selectedCategory).toList();
 
-          // 카테고리 필터 영역
-          Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: CategoryFilter(
-              selectedCategory: _selectedCategory,
-              onCategorySelected: (category) {
-                setState(() => _selectedCategory = category);
-              },
-            ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('KNU Campus Map'),
+            backgroundColor: AppColors.knuRed,
+            foregroundColor: Colors.white,
           ),
-
-          // 지도 컨트롤 버튼 영역
-          Positioned(
-            bottom: 24,
-            right: 16,
-            child: MapControls(
-              onResetToKnu: _resetToKnu,
-              onMyLocation: _moveToMyLocation,
-            ),
+          body: Stack(
+            children: [
+              CampusMapView(
+                key: _mapKey,
+                initialPosition: _knuCenter,
+                facilities: filteredFacilities,
+                onMapReady: (controller) => _mapController = controller,
+                onFacilitySelected: _showFacilityDetail,
+              ),
+              Positioned(
+                top: 10,
+                left: 0,
+                right: 0,
+                child: CategoryFilter(
+                  selectedCategory: _selectedCategory,
+                  onCategorySelected: (category) => setState(() => _selectedCategory = category),
+                ),
+              ),
+              Positioned(
+                bottom: 24,
+                right: 16,
+                child: MapControls(
+                  onResetToKnu: _resetToKnu,
+                  onMyLocation: () => _mapController?.setLocationTrackingMode(NLocationTrackingMode.follow),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // --- 비즈니스 로직 ---
-
-  Future<void> _initializeLocation() async {
-    final status = await Permission.location.request();
-    if (status.isGranted && _mapController != null) {
-      _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
-    }
-  }
 
   void _resetToKnu() {
     if (_mapController == null) return;
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
     _mapController!.updateCamera(
       NCameraUpdate.withParams(target: _knuCenter, zoom: 15)
-        ..setAnimation(animation: NCameraAnimation.easing, duration: const Duration(milliseconds: 500)),
+        ..setAnimation(
+            animation: NCameraAnimation.easing,
+            duration: const Duration(milliseconds: 500)),
     );
   }
 
-  // [버그 수정] 내 위치로 이동 로직 강화
-  void _moveToMyLocation() {
-    if (_mapController == null) return;
 
-    // 현재 모드가 무엇이든 간에, none으로 세팅 후 다시 follow를 걸어줌으로써
-    // 카메라가 강제로 내 위치를 추적하도록 Jump를 유도합니다.
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.none);
-    _mapController!.setLocationTrackingMode(NLocationTrackingMode.follow);
-  }
-
-  void _showFacilityDetail(Facility facility) {
-    showModalBottomSheet(
+  Future<void> _showFacilityDetail(Facility facility) async {
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => FacilityBottomSheet(facility: facility),
-    );
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final bool isCafeteria = facility.category == 'Restaurant';
+
+        return FacilityBottomSheet(
+          facility: facility,
+          onMoreInfo: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    FacilityDetailScreen(facility: facility),
+              ),
+            );
+          },
+          onViewMenu: isCafeteria
+              ? () {
+            Navigator.pop(sheetContext);
+            widget.onGoToCafeteria(facility.id);
+          }
+              : null,
+        );
+      },
+    ).whenComplete(() {
+      _mapKey.currentState?.clearSelectedMarker();
+    });
   }
 
-  void _showAdminCoords(NLatLng latLng) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => AdminCoordsSheet(latLng: latLng),
-    );
-  }
-
-  void _handleAdminTap() {
-    _titleTapCount++;
-    if (_titleTapCount >= 5) {
-      setState(() => _adminMode = !_adminMode);
-      _titleTapCount = 0;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_adminMode ? 'Admin Mode Enabled' : 'Admin Mode Disabled'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
-  }
 }

@@ -28,7 +28,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     try {
       // 1. 게시글 삭제 실행 (관리자 권한)
-      await communityProvider.removePost(targetId);
+      await communityProvider.deletePost(targetId);
       // 2. 해당 신고 내역 종결 (삭제)
       await reportProvider.removeReportRecord(reportId);
 

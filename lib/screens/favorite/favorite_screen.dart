@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/facility.dart';
-import '../../widgets/facility_card.dart';
-import 'package:provider/provider.dart';
+import '../../widgets/facility_card.dart'; // 경로 확인 필요 (widgets/home/ 하위인지)
 import '../../providers/favorite_provider.dart';
 import '../../services/map_service.dart';
+import '../home/facility_detail_screen.dart'; // 상세 페이지 이동을 위해 추가
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -15,11 +16,11 @@ class FavoriteScreen extends StatefulWidget {
 
 class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final MapService _mapService = MapService();
 
   @override
   void initState() {
     super.initState();
-    // 탭 항목을 1개로 설정하여 'Places'만 나타나도록 합니다.
     _tabController = TabController(length: 1, vsync: this);
   }
 
@@ -38,7 +39,6 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        // 탭바를 다시 추가하되, 탭 항목은 'Places' 하나만 넣습니다.
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -49,46 +49,60 @@ class _FavoriteScreenState extends State<FavoriteScreen> with SingleTickerProvid
           ],
         ),
       ),
-      // TabBarView를 사용하여 탭 구조를 유지합니다.
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          Consumer<FavoriteProvider>(
-            builder: (context, favoriteProvider, child) {
-              final favoriteIds = favoriteProvider.favoriteIds;
+      // StreamBuilder를 사용하여 파이어베이스의 전체 시설 데이터를 실시간으로 가져옵니다.
+      body: StreamBuilder<List<Facility>>(
+        stream: _mapService.getFacilitiesStream(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return const Center(child: Text('Error loading data'));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-              // 전체 시설 중 즐겨찾기에 포함된 시설만 필터링
-              final allFacilities = MapService().getAllFacilities();
+          final allFacilities = snapshot.data!;
 
-              final favoriteFacilities = allFacilities
-                  .where((facility) => favoriteIds.contains(facility.id))
-                  .toList();
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              Consumer<FavoriteProvider>(
+                builder: (context, favoriteProvider, child) {
+                  final favoriteIds = favoriteProvider.favoriteIds;
 
-              if (favoriteFacilities.isEmpty) {
-                return _buildEmptyState(
-                    'No favorite places yet.\nAdd places from the map!');
-              }
+                  // 파이어베이스 데이터 중 사용자의 즐겨찾기 ID 리스트에 포함된 것만 필터링
+                  final favoriteFacilities = allFacilities
+                      .where((facility) => favoriteIds.contains(facility.id))
+                      .toList();
 
-              return ListView.builder(
-                padding: const EdgeInsets.only(top: 12, bottom: 20),
-                itemCount: favoriteFacilities.length,
-                itemBuilder: (context, index) {
-                  return FacilityCard(
-                    facility: favoriteFacilities[index],
-                    onTap: () {
-                      // 필요한 경우 상세 화면 이동 로직을 추가하세요.
+                  if (favoriteFacilities.isEmpty) {
+                    return _buildEmptyState(
+                        'No favorite places yet.\nAdd places from the map!');
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.only(top: 12, bottom: 20),
+                    itemCount: favoriteFacilities.length,
+                    itemBuilder: (context, index) {
+                      final facility = favoriteFacilities[index];
+                      return FacilityCard(
+                        facility: facility,
+                        onTap: () {
+                          // 상세 페이지 이동 로직 추가
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FacilityDetailScreen(facility: facility),
+                            ),
+                          );
+                        },
+                      );
                     },
                   );
                 },
-              );
-            },
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  // 데이터가 없을 때 표시할 화면
   Widget _buildEmptyState(String message) {
     return Center(
       child: Column(
