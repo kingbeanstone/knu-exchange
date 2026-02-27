@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class FacilityPhotosTab extends StatelessWidget {
   final List<String> photos;
@@ -31,15 +33,14 @@ class FacilityPhotosTab extends StatelessWidget {
       itemCount: photos.length,
       itemBuilder: (context, index) {
         return GestureDetector(
-          onTap: () => _openFullScreenImage(context, index),
+          onTap: () => _openPhotoGallery(context, index),
           child: Hero(
-            tag: 'photo_$index',
+            tag: photos[index],
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 photos[index],
                 fit: BoxFit.cover,
-                // 이미지 로딩 중 표시
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
@@ -55,36 +56,77 @@ class FacilityPhotosTab extends StatelessWidget {
     );
   }
 
-  // 이미지를 크게 보여주는 다이얼로그/화면 함수
-  void _openFullScreenImage(BuildContext context, int initialIndex) {
+  void _openPhotoGallery(BuildContext context, int initialIndex) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            iconTheme: const IconThemeData(color: Colors.white),
-            elevation: 0,
-          ),
-          body: PageView.builder(
-            itemCount: photos.length,
-            controller: PageController(initialPage: initialIndex),
-            itemBuilder: (context, index) {
-              return Center(
-                child: Hero(
-                  tag: 'photo_$index',
-                  child: InteractiveViewer( // 핀치 줌 기능 추가
-                    child: Image.network(
-                      photos[index],
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+        builder: (context) => SamsungStyleGalleryScreen(
+          photos: photos,
+          initialIndex: initialIndex,
         ),
+      ),
+    );
+  }
+}
+
+class SamsungStyleGalleryScreen extends StatefulWidget {
+  final List<String> photos;
+  final int initialIndex;
+
+  const SamsungStyleGalleryScreen({
+    super.key,
+    required this.photos,
+    required this.initialIndex,
+  });
+
+  @override
+  State<SamsungStyleGalleryScreen> createState() => _SamsungStyleGalleryScreenState();
+}
+
+class _SamsungStyleGalleryScreenState extends State<SamsungStyleGalleryScreen> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: PhotoViewGallery.builder(
+        itemCount: widget.photos.length,
+        builder: (context, index) {
+          return PhotoViewGalleryPageOptions(
+            imageProvider: NetworkImage(widget.photos[index]),
+            heroAttributes: PhotoViewHeroAttributes(tag: widget.photos[index]),
+            minScale: PhotoViewComputedScale.contained,
+            maxScale: PhotoViewComputedScale.covered * 3.0,
+            // ❌ 기존 에러 원인: loadingBuilder는 여기서 정의하지 않습니다.
+          );
+        },
+        pageController: _pageController,
+        backgroundDecoration: const BoxDecoration(color: Colors.black),
+        // ✅ 해결 1: physics를 scrollPhysics로 변경
+        scrollPhysics: const BouncingScrollPhysics(),
+        // ✅ 해결 2: loadingBuilder를 이 위치(Gallery 레벨)로 이동
+        loadingBuilder: (context, event) => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+        wantKeepAlive: true,
       ),
     );
   }
