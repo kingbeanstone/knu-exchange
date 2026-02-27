@@ -10,7 +10,6 @@ import '../../widgets/community/post_image_picker.dart';
 import '../../widgets/community/post_form_fields.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  // [수정] 초기 카테고리를 받을 수 있는 생성자 추가
   final PostCategory? initialCategory;
 
   const CreatePostScreen({
@@ -28,15 +27,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  late PostCategory _selectedCategory; // late 선언으로 initState에서 초기화
+  late PostCategory _selectedCategory;
   bool _isSubmitting = false;
-  bool _isAnonymous = false;
+  bool _isAnonymous = true; // 기본값 익명 활성화 유지
   List<File> _selectedImages = [];
 
   @override
   void initState() {
     super.initState();
-    // [수정] 전달받은 초기 카테고리가 있으면 사용, 없으면 Lounge 기본값
     _selectedCategory = widget.initialCategory ?? PostCategory.lounge;
   }
 
@@ -47,13 +45,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.dispose();
   }
 
+  // [수정] 화질 유지를 위해 리사이징 및 압축 옵션 제거
   Future<void> _pickImages() async {
     if (_selectedImages.length >= 10) {
       _showSnackBar('You can upload up to 10 images.');
       return;
     }
 
+    // 원본 화질을 유지하기 위해 imageQuality와 maxWidth 옵션을 제거했습니다.
     final List<XFile> images = await _picker.pickMultiImage();
+
     if (images.isNotEmpty) {
       setState(() {
         final remaining = 10 - _selectedImages.length;
@@ -131,7 +132,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         children: [
           CircularProgressIndicator(color: AppColors.knuRed),
           SizedBox(height: 16),
-          Text('Uploading post...', style: TextStyle(color: Colors.grey)),
+          Text(
+            'Uploading post...',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
         ],
       ),
     );

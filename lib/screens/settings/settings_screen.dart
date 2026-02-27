@@ -6,14 +6,15 @@ import 'contact_screen.dart';
 
 import '../admin/admin_dashboard_screen.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/settings/settings_widgets.dart';
+// 분리된 위젯 파일들로 임포트 변경
+import '../../widgets/settings/settings_common_widgets.dart';
+import '../../widgets/settings/settings_profile_widgets.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // AuthProvider의 상태 변화를 감시합니다.
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
@@ -21,27 +22,30 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Settings',
-          style: TextStyle(fontWeight: FontWeight.normal),
+          style: TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 18,
+          ),
         ),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false, // 통일성을 위해 왼쪽 정렬
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24),
         children: [
-          // 1. 프로필 섹션
-          const SettingsSectionHeader(title: 'Profile'),
+          // 1. Profile Section
+          const SettingsSectionHeader(title: 'Account'),
           SettingsGroupCard(
             child: authProvider.isAuthenticated
                 ? SettingsProfileContent(auth: authProvider)
                 : const SettingsLoginPrompt(),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // 2. 관리자 섹션
+          // 2. Admin Section
           if (authProvider.isAdmin) ...[
             const SettingsSectionHeader(title: 'Management'),
             SettingsGroupCard(
@@ -55,40 +59,40 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
 
-          // 3. 일반 설정 섹션
+          // 3. Preferences Section
           const SettingsSectionHeader(title: 'Preferences'),
           SettingsGroupCard(
             child: Column(
               children: [
-                // 알림 설정 토글 스위치 적용
                 SettingsMenuTile(
                   icon: Icons.notifications_none_rounded,
+                  iconColor: Colors.orange,
                   title: 'Notifications',
                   trailing: Switch(
                     value: authProvider.isNotificationsEnabled,
-                    // 스위치 조작 시 AuthProvider의 토글 함수 호출
                     onChanged: authProvider.isAuthenticated
                         ? (val) => authProvider.toggleNotifications(val)
-                        : null, // 로그인 안 된 경우 비활성화
-                    activeThumbColor: AppColors.knuRed,
-                    activeTrackColor: AppColors.knuRed.withValues(alpha: 0.2),
+                        : null,
+                    activeColor: AppColors.knuRed,
+                    activeTrackColor: AppColors.knuRed.withOpacity(0.2),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // 4. 지원 섹션
+          // 4. Support Section
           const SettingsSectionHeader(title: 'Support'),
           SettingsGroupCard(
             child: Column(
               children: [
                 SettingsMenuTile(
                   icon: Icons.privacy_tip_outlined,
+                  iconColor: Colors.green,
                   title: 'Privacy Policy',
                   onTap: () {
                     Navigator.push(
@@ -102,6 +106,7 @@ class SettingsScreen extends StatelessWidget {
                 const SettingsDivider(),
                 SettingsMenuTile(
                   icon: Icons.mail_outline,
+                  iconColor: Colors.blue,
                   title: 'Contact Us',
                   onTap: () {
                     Navigator.push(
@@ -115,16 +120,16 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // 5. 계정 관리
+          // 5. Account Management
           if (authProvider.isAuthenticated)
             Center(
               child: TextButton(
                 onPressed: () => _showDeleteAccountDialog(context, authProvider),
                 child: Text(
                   'Delete Account',
-                  style: TextStyle(color: Colors.red.shade300, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                 ),
               ),
             ),
@@ -134,27 +139,40 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // 계정 삭제 확인 다이얼로그 (생략 없이 유지)
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to delete your account?\nAll your profile information will be permanently removed.'),
+        content: const Text(
+          'Are you sure you want to delete your account?\nAll your profile information will be permanently removed.',
+          style: TextStyle(height: 1.5),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey))
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await auth.deleteAccount();
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account has been deleted.')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account has been deleted.'))
+                  );
+                }
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'))
+                  );
+                }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

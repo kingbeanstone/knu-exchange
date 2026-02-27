@@ -17,16 +17,28 @@ class CommunityService {
     return await _postsRef.doc(postId).get();
   }
 
+  // [속도 개선] 병렬 업로드 적용
+  // 기존: for 루프로 한 장씩 순차 업로드 (1번 끝날 때까지 2번 대기)
+  // 변경: Future.wait를 사용해 모든 이미지를 동시에 업로드 시작
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
-    List<String> urls = [];
-    for (int i = 0; i < images.length; i++) {
+    if (images.isEmpty) return [];
+
+    // 각 이미지 업로드 작업을 생성
+    final uploadTasks = images.asMap().entries.map((entry) async {
+      int i = entry.key;
+      File image = entry.value;
+
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
-      await ref.putFile(images[i]);
-      final url = await ref.getDownloadURL();
-      urls.add(url);
-    }
-    return urls;
+
+      // 파일 업로드 (비동기 실행)
+      await ref.putFile(image);
+      // 다운로드 URL 반환
+      return await ref.getDownloadURL();
+    });
+
+    // 모든 업로드 작업이 완료될 때까지 대기 (병렬 처리)
+    return await Future.wait(uploadTasks);
   }
 
   Future<QuerySnapshot> getPostsQuery({
@@ -60,10 +72,7 @@ class CommunityService {
     return await query.get();
   }
 
-  // [수정] 포함 단어 검색을 위해 최근 게시글들을 풀(Pool)로 가져오는 메서드
-  // Firestore는 포함(contains) 검색을 직접 지원하지 않으므로 클라이언트에서 필터링하기 위해 데이터를 가져옵니다.
   Future<List<Post>> fetchPostsForSearch() async {
-    // 최근 100개의 게시글을 가져와서 검색 대상으로 삼습니다.
     final snapshot = await _postsRef
         .orderBy('createdAt', descending: true)
         .limit(100)
