@@ -53,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('KNU Campus Map'),
             backgroundColor: AppColors.knuRed,
             foregroundColor: Colors.white,
+            centerTitle: true,
           ),
           body: Stack(
             children: [

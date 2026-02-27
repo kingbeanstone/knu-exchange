@@ -29,6 +29,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         actions: [
           if (isAdmin)
             IconButton(

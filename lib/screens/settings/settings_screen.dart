@@ -26,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),

@@ -20,6 +20,7 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.knuRed,
       foregroundColor: Colors.white,
       elevation: 0,
+      centerTitle: true,
       actions: [
         Stack(
           alignment: Alignment.center,

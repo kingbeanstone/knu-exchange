@@ -84,6 +84,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen>
         title: const Text('Cafeteria Menu'),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
