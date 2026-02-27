@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../utils/app_colors.dart';
-import '../../utils/date_formatter.dart'; // [추가]
+import '../../utils/date_formatter.dart';
 import '../../screens/community/post_detail_screen.dart';
 
 class PostCard extends StatelessWidget {
@@ -29,6 +29,15 @@ class PostCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            // [트릭 개선] 상세 페이지 진입 전 게시글의 "모든" 이미지를 미리 캐싱합니다.
+            // 사용자가 글을 클릭하고 화면이 전환되는 찰나에 모든 사진의 로딩을 시작하여
+            // 상세 페이지에서 사진 슬라이드를 넘길 때 딜레이를 최소화합니다.
+            if (post.imageUrls.isNotEmpty) {
+              for (var url in post.imageUrls) {
+                precacheImage(NetworkImage(url), context);
+              }
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -59,7 +68,6 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // [수정] 상대적 시간 표시 적용
                     Text(
                       DateFormatter.formatRelativeTime(post.createdAt),
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -109,6 +117,7 @@ class PostCard extends StatelessWidget {
                             width: 70,
                             height: 70,
                             fit: BoxFit.cover,
+                            cacheWidth: 200, // 리스트 썸네일용 최적화
                             errorBuilder: (context, error, stackTrace) => Container(
                               width: 70,
                               height: 70,
