@@ -5,7 +5,8 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/main_screen.dart';
 import '../../utils/app_colors.dart';
 
-/// 앱의 인증 상태를 감시하여 로그인 화면 또는 메인 화면을 자동으로 보여주는 위젯입니다.
+/// A widget that monitors the app's authentication state to automatically
+/// show either the login screen or the main screen.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -13,7 +14,7 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // 1. 초기 사용자 정보 로드 중일 때 (Splash 화면 역할)
+    // 1. When the initial user information is being loaded (Splash screen role)
     if (authProvider.isInitialLoading) {
       return const Scaffold(
         body: Center(
@@ -22,19 +23,19 @@ class AuthWrapper extends StatelessWidget {
             children: [
               CircularProgressIndicator(color: AppColors.knuRed),
               SizedBox(height: 16),
-              Text('인증 정보 확인 중...', style: TextStyle(color: Colors.grey)),
+              Text('Verifying authentication...', style: TextStyle(color: Colors.grey)),
             ],
           ),
         ),
       );
     }
 
-    // 2. 로그인된 경우 메인 화면(탭바가 있는 화면)으로 이동
+    // 2. If logged in, navigate to the main screen (screen with the tab bar)
     if (authProvider.isAuthenticated) {
       return const MainScreen();
     }
 
-    // 3. 로그인되지 않은 경우 로그인 화면으로 이동
+    // 3. If not logged in, navigate to the login screen
     return const LoginScreen();
   }
 }
