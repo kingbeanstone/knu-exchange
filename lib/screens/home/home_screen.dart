@@ -119,12 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-          onViewMenu: isCafeteria
-              ? () {
-            Navigator.pop(sheetContext);
-            widget.onGoToCafeteria(facility.id);
-          }
-              : null,
         );
       },
     ).whenComplete(() {

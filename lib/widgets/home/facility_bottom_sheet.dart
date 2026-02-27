@@ -5,22 +5,20 @@ import '../../../utils/app_colors.dart';
 class FacilityBottomSheet extends StatelessWidget {
   final Facility facility;
   final VoidCallback onMoreInfo;
-  final VoidCallback? onViewMenu;
+  // 🗑️ onViewMenu 콜백 제거
 
   const FacilityBottomSheet({
     super.key,
     required this.facility,
     required this.onMoreInfo,
-    this.onViewMenu,
+    // 🗑️ 생성자에서 onViewMenu 제거
   });
 
   @override
   Widget build(BuildContext context) {
-    // 기기의 하단 세이프 에어리어(홈 바 영역) 높이를 가져옵니다.
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      // 하단 패딩에 bottomPadding을 더해 버튼이 홈 바와 겹치지 않게 합니다.
       padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding > 0 ? bottomPadding + 10 : 24),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -81,22 +79,7 @@ class FacilityBottomSheet extends StatelessWidget {
               child: const Text('More Info'),
             ),
           ),
-          if (onViewMenu != null) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onViewMenu,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.knuRed,
-                  side: const BorderSide(color: AppColors.knuRed),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('View Menu'),
-              ),
-            ),
-          ],
+          // 🗑️ View Menu 버튼(if (onViewMenu != null) ...) 블록 전체 삭제
         ],
       ),
     );
