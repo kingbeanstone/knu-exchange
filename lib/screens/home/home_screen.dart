@@ -106,8 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (sheetContext) {
-        final bool isCafeteria = facility.category == 'Restaurant';
-
         return FacilityBottomSheet(
           facility: facility,
           onMoreInfo: () {
