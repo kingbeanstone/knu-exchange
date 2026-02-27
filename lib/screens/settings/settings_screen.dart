@@ -16,12 +16,16 @@ class SettingsScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8F9FA), // 공지사항/커뮤니티와 동일한 배경색
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.normal), // 얇은 글씨로 수정
+        ),
+        backgroundColor: AppColors.knuRed, // 빨간색 배경
+        foregroundColor: Colors.white,    // 흰색 글자
         elevation: 0,
+        centerTitle: false,               // 왼쪽 정렬
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -59,9 +63,13 @@ class SettingsScreen extends StatelessWidget {
           SettingsGroupCard(
             child: Column(
               children: [
-                SettingsMenuTile(icon: Icons.language, title: 'Language', trailing: 'English', onTap: () {}),
-                const SettingsDivider(),
-                SettingsMenuTile(icon: Icons.notifications_none_rounded, title: 'Notifications', trailing: 'On', onTap: () {}),
+                // [삭제됨] Language 버튼 제거
+                SettingsMenuTile(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifications',
+                    trailing: 'On',
+                    onTap: () {}
+                ),
               ],
             ),
           ),
@@ -121,8 +129,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-
-
   // 계정 삭제 확인 다이얼로그
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     showDialog(
@@ -138,9 +144,17 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(ctx);
               try {
                 await auth.deleteAccount();
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account has been deleted.')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account has been deleted.'))
+                  );
+                }
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'))
+                  );
+                }
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
