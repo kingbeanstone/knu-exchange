@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/facility.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/facility_menu_tab.dart';
 
 class FacilityDetailScreen extends StatefulWidget {
   final Facility facility;
@@ -111,8 +112,8 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
               controller: _tabController,
               children: [
                 _buildHomeTab(f),
-                if (_showMenuTab) _buildMenuTab(f),
-                _buildPhotosTab(f), // 👈 기존 Placeholder를 이 함수로 교체
+                if (_showMenuTab) FacilityMenuTab(facility: f), // 👈 새로 만든 위젯 호출 (id는 자동으로 f에서 전달됨)
+                _buildPhotosTab(f),
                 const Center(child: Text('Floor info is coming soon!')),
               ],
             ),
