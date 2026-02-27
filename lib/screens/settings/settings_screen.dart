@@ -73,8 +73,8 @@ class SettingsScreen extends StatelessWidget {
                     onChanged: authProvider.isAuthenticated
                         ? (val) => authProvider.toggleNotifications(val)
                         : null, // 로그인 안 된 경우 비활성화
-                    activeColor: AppColors.knuRed,
-                    activeTrackColor: AppColors.knuRed.withOpacity(0.2),
+                    activeThumbColor: AppColors.knuRed,
+                    activeTrackColor: AppColors.knuRed.withValues(alpha: 0.2),
                   ),
                 ),
               ],
