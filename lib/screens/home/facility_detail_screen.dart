@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/facility.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/facility_menu_tab.dart';
 
 class FacilityDetailScreen extends StatefulWidget {
   final Facility facility;
@@ -15,40 +13,13 @@ class FacilityDetailScreen extends StatefulWidget {
 
 class _FacilityDetailScreenState extends State<FacilityDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isAdmin = false;
   late bool _showMenuTab;
 
   @override
   void initState() {
     super.initState();
-    // 식당이나 카페일 때만 메뉴 탭을 보여줍니다
     _showMenuTab = widget.facility.category == 'Restaurant' || widget.facility.category == 'Cafe';
-
-    // 탭 개수 설정 (4개 또는 3개)
     _tabController = TabController(length: _showMenuTab ? 4 : 3, vsync: this);
-
-    _checkAdminStatus();
-  }
-
-  Future<void> _checkAdminStatus() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('artifacts')
-          .doc('knu-exchange-app')
-          .collection('users')
-          .doc(user.uid)
-          .collection('profile')
-          .doc('info')
-          .get();
-      if (mounted) setState(() => _isAdmin = doc.data()?['isAdmin'] == true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -58,7 +29,9 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final data = snapshot.data!.data() as Map<String, dynamic>? ?? {}; // 👈 데이터가 없으면 빈 맵 반환
+        final List<String> customHeaders = List<String>.from(data['menuHeaders'] ?? []);
+
         final f = Facility(
           id: widget.facility.id,
           korName: data['korName'] ?? '',
@@ -81,6 +54,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                   expandedHeight: 200.0,
                   pinned: true,
                   backgroundColor: AppColors.knuRed,
+                  foregroundColor: Colors.white,
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: false,
                     titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 60),
@@ -100,7 +74,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                           const Tab(text: 'Home'),
                           if (_showMenuTab) const Tab(text: 'Menu'),
                           const Tab(text: 'Photos'),
-                          const Tab(text: 'Floor'), // 👈 "Indoor Map"에서 "Floor"로 단축
+                          const Tab(text: 'Floor'),
                         ],
                       ),
                     ),
@@ -112,7 +86,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
               controller: _tabController,
               children: [
                 _buildHomeTab(f),
-                if (_showMenuTab) FacilityMenuTab(facility: f), // 👈 새로 만든 위젯 호출 (id는 자동으로 f에서 전달됨)
+                if (_showMenuTab) _buildMenuTab(f, customHeaders),
                 _buildPhotosTab(f),
                 const Center(child: Text('Floor info is coming soon!')),
               ],
@@ -123,7 +97,90 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
     );
   }
 
-  // 홈 탭과 메뉴 탭 빌더는 이전과 동일
+  // --- 가장 안전한 버전의 메뉴 탭 ---
+  Widget _buildMenuTab(Facility f, List<String> headers) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('facilities').doc(f.id).collection('menu').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) return const Center(child: Text('No menu available.'));
+
+        // ✅ [안전 장치 1] 어떤 타입의 order 필드가 오거나, 없어도 무조건 숫자로 변환하여 정렬
+        final sortedDocs = docs.toList()..sort((a, b) {
+          int getOrder(DocumentSnapshot doc) {
+            final val = (doc.data() as Map<String, dynamic>)['order'];
+            if (val == null) return 999;
+            if (val is int) return val;
+            return int.tryParse(val.toString()) ?? 999;
+          }
+          return getOrder(a).compareTo(getOrder(b));
+        });
+
+        // ✅ [안전 장치 2] 카테고리 그룹화 (LinkedHashMap으로 순서 유지)
+        Map<String, List<Map<String, dynamic>>> groupedMenu = {};
+        for (var doc in sortedDocs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final category = data['category'] ?? 'Others';
+          groupedMenu.putIfAbsent(category, () => []).add(data);
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: groupedMenu.keys.map((category) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(category, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.knuRed)),
+                    Row(
+                      children: headers.map((h) => SizedBox(
+                          width: 55,
+                          child: Text(h, textAlign: TextAlign.end, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w300))
+                      )).toList(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...groupedMenu[category]!.map((item) {
+                  final Map<String, dynamic> prices = item['prices'] ?? {};
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(item['name'] ?? '', style: const TextStyle(fontSize: 14))),
+                        Row(
+                          children: headers.map((h) {
+                            // ✅ [안전 장치 3] 가격 데이터가 숫자/문자/null 상관없이 안전하게 출력
+                            final price = prices[h];
+                            return SizedBox(
+                              width: 55,
+                              child: Text(
+                                price?.toString() ?? '-', // 가격이 없으면 '-'
+                                textAlign: TextAlign.end,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black87),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const Divider(height: 30),
+              ],
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  // --- 이하 공통 탭 빌더 (기존 유지) ---
   Widget _buildHomeTab(Facility f) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -141,6 +198,16 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
     );
   }
 
+  Widget _buildPhotosTab(Facility f) {
+    final photos = f.interiorImages ?? [];
+    if (photos.isEmpty) return const Center(child: Text('No photos available yet.'));
+    return GridView.builder(
+      padding: const EdgeInsets.all(2),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 2, mainAxisSpacing: 2),
+      itemCount: photos.length,
+      itemBuilder: (context, index) => Image.network(photos[index], fit: BoxFit.cover),
+    );
+  }
 
   Widget _buildInfoRow(IconData icon, String title, String content) {
     return Padding(
@@ -152,72 +219,11 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
               Text(content, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPhotosTab(Facility f) {
-    final photos = f.interiorImages ?? [];
-
-    if (photos.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('No photos available yet.'),
-          ],
-        ),
-      );
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(2),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, // 한 줄에 3장씩 표시
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
-      ),
-      itemCount: photos.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () => _showFullScreenImage(context, photos[index]), // 클릭 시 크게 보기
-          child: Hero(
-            tag: photos[index],
-            child: Image.network(
-              photos[index],
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-// 사진 크게 보기 다이얼로그
-  void _showFullScreenImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          alignment: Alignment.topRight,
-          children: [
-            // 줌 기능이 포함된 이미지 뷰어
-            InteractiveViewer(
-              child: Image.network(imageUrl, width: double.infinity, fit: BoxFit.contain),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
       ),
     );
   }
