@@ -38,17 +38,13 @@ class CommunityService {
   }) async {
     Query query = _postsRef;
 
-    // 1. 작성자 필터링 (My Posts)
     if (authorId != null) {
       query = query.where('authorId', isEqualTo: authorId);
     }
-    // 2. 카테고리 필터링 (Hot 제외 - Hot은 정렬 조건임)
     else if (category != null && category != PostCategory.hot) {
-      // [수정 핵심] enum.toString() 대신 split('.').last를 사용하여 "lounge" 형태의 문자열로 쿼리
       query = query.where('category', isEqualTo: category.toString().split('.').last);
     }
 
-    // 3. 정렬 조건 설정
     if (sortByLikes || category == PostCategory.hot) {
       query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
     } else {
@@ -64,12 +60,13 @@ class CommunityService {
     return await query.get();
   }
 
-  Future<List<Post>> searchPosts(String queryText) async {
+  // [수정] 포함 단어 검색을 위해 최근 게시글들을 풀(Pool)로 가져오는 메서드
+  // Firestore는 포함(contains) 검색을 직접 지원하지 않으므로 클라이언트에서 필터링하기 위해 데이터를 가져옵니다.
+  Future<List<Post>> fetchPostsForSearch() async {
+    // 최근 100개의 게시글을 가져와서 검색 대상으로 삼습니다.
     final snapshot = await _postsRef
-        .orderBy('title')
-        .startAt([queryText])
-        .endAt([queryText + '\uf8ff'])
-        .limit(20)
+        .orderBy('createdAt', descending: true)
+        .limit(100)
         .get();
 
     return snapshot.docs.map((doc) {
@@ -94,7 +91,6 @@ class CommunityService {
     final doc = await docRef.get();
     final data = doc.data() as Map<String, dynamic>?;
 
-    // Likes 필드가 리스트인 경우 (ID 중복 체크용)
     List likes = (data?['likes'] as List?) ?? [];
     if (likes.contains(userId)) {
       likes.remove(userId);

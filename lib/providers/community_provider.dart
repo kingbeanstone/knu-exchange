@@ -33,7 +33,6 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     fetchPosts(isRefresh: true);
   }
 
-  // [수정] 서비스의 getPostById를 사용하여 단일 게시글 조회
   Future<Post?> fetchPostById(String postId) async {
     try {
       final inMemory = _posts.cast<Post?>().firstWhere((p) => p?.id == postId, orElse: () => null);
@@ -78,7 +77,6 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
 
     try {
-      // [수정] 서비스의 getPostsQuery 파라미터에 맞춰 호출
       final snapshot = await _service.getPostsQuery(
         limit: 10,
         startAfter: _lastDocument,
@@ -108,19 +106,31 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
   }
 
+  // [수정] 대소문자 무시 및 포함 단어 검색(Contains) 로직 적용
   Future<void> performSearch(String query) async {
     if (query.isEmpty) {
       clearSearch();
       return;
     }
+
     _isSearching = true;
     _isLoading = true;
     _searchQuery = query;
     _searchResults = [];
     notifyListeners();
+
     try {
-      // [수정] 서비스의 searchPosts 호출
-      _searchResults = await _service.searchPosts(query);
+      // 1. 서버에서 검색 대상이 될 최근 게시글 100개를 가져옵니다.
+      final searchPool = await _service.fetchPostsForSearch();
+
+      // 2. 클라이언트 측에서 대소문자를 무시하고 제목에 검색어가 포함되었는지 필터링합니다.
+      final filtered = searchPool.where((post) {
+        final title = post.title.toLowerCase();
+        final search = query.toLowerCase();
+        return title.contains(search);
+      }).toList();
+
+      _searchResults = filtered;
     } catch (e) {
       debugPrint("Search error: $e");
     } finally {

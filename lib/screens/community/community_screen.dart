@@ -8,7 +8,6 @@ import '../../providers/notification_provider.dart';
 import '../../providers/fcm_provider.dart';
 import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
-import '../../widgets/community/community_search_bar.dart';
 import '../../widgets/community/community_app_bar.dart';
 import '../../widgets/community/community_empty_state.dart';
 import 'create_post_screen.dart';
@@ -22,6 +21,8 @@ class CommunityScreen extends StatefulWidget {
 
 class _CommunityScreenState extends State<CommunityScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchMode = false;
 
   @override
   void initState() {
@@ -31,9 +32,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isAuthenticated) {
+        // Initialize notification and FCM services
         Provider.of<NotificationProvider>(context, listen: false)
             .initNotifications(auth.user!.uid);
-
         Provider.of<FCMProvider>(context, listen: false)
             .setupFCM(auth.user!.uid);
       }
@@ -43,6 +44,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -50,6 +52,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
+    // Infinite scroll logic: load more posts when reaching the bottom
     if (!provider.isSearching &&
         _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200) {
@@ -79,15 +82,28 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Notice 탭과 동일한 배경색
-      appBar: const CommunityAppBar(title: 'Community'),
+      backgroundColor: const Color(0xFFF8F9FA),
+      // AppBar with integrated search logic
+      appBar: CommunityAppBar(
+        title: 'Community',
+        isSearchMode: _isSearchMode,
+        searchController: _searchController,
+        onSearchToggle: () {
+          setState(() {
+            _isSearchMode = !_isSearchMode;
+            if (!_isSearchMode) {
+              _searchController.clear();
+              communityProvider.clearSearch();
+            }
+          });
+        },
+        onSearchChanged: (val) => communityProvider.performSearch(val),
+      ),
       body: Column(
         children: [
-          Container(height: 1, color: Colors.grey[200]),
-          CommunitySearchBar(
-            onSearch: (query) => communityProvider.performSearch(query),
-            onClear: () => communityProvider.clearSearch(),
-          ),
+          if (!_isSearchMode) // Show top border only when not in search mode
+            Container(height: 1, color: Colors.grey[200]),
+
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
             isMyPostsSelected: isMyPostsOnly,
@@ -138,14 +154,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Determine initial category for new post based on current filter
           PostCategory initialCategory = PostCategory.lounge;
-
           if (selectedCategory != null &&
               selectedCategory != PostCategory.hot &&
               !isMyPostsOnly) {
             initialCategory = selectedCategory;
           }
-
           Navigator.push(
             context,
             MaterialPageRoute(
