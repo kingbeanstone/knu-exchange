@@ -28,15 +28,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
-    // 서비스 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isAuthenticated) {
-        // 1. 인앱 알림 서비스 초기화
         Provider.of<NotificationProvider>(context, listen: false)
             .initNotifications(auth.user!.uid);
 
-        // 2. FCM 토큰 획득 및 서버 등록 프로세스 시작
         Provider.of<FCMProvider>(context, listen: false)
             .setupFCM(auth.user!.uid);
       }
@@ -82,19 +79,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
 
     return Scaffold(
-      // 공지사항과 동일한 연한 회색 배경
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: const CommunityAppBar(title: 'KNU Community'),
+      backgroundColor: const Color(0xFFF8F9FA), // Notice 탭과 동일한 배경색
+      appBar: const CommunityAppBar(title: 'Community'),
       body: Column(
         children: [
-          // 상단바 장식선
           Container(height: 1, color: Colors.grey[200]),
-          // 검색바
           CommunitySearchBar(
             onSearch: (query) => communityProvider.performSearch(query),
             onClear: () => communityProvider.clearSearch(),
           ),
-          // [수정] 2줄 필터 위젯이 들어가는 영역
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
             isMyPostsSelected: isMyPostsOnly,
@@ -105,7 +98,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
               communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
-          // 리스트 시작 부분에 약간의 여백 추가
           const SizedBox(height: 4),
           Expanded(
             child: communityProvider.isLoading
@@ -146,9 +138,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          PostCategory initialCategory = PostCategory.lounge;
+
+          if (selectedCategory != null &&
+              selectedCategory != PostCategory.hot &&
+              !isMyPostsOnly) {
+            initialCategory = selectedCategory;
+          }
+
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+            MaterialPageRoute(
+              builder: (context) => CreatePostScreen(initialCategory: initialCategory),
+            ),
           );
         },
         backgroundColor: AppColors.knuRed,

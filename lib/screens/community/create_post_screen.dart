@@ -10,7 +10,13 @@ import '../../widgets/community/post_image_picker.dart';
 import '../../widgets/community/post_form_fields.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key});
+  // [수정] 초기 카테고리를 받을 수 있는 생성자 추가
+  final PostCategory? initialCategory;
+
+  const CreatePostScreen({
+    super.key,
+    this.initialCategory,
+  });
 
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -22,10 +28,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  PostCategory _selectedCategory = PostCategory.lounge;
+  late PostCategory _selectedCategory; // late 선언으로 initState에서 초기화
   bool _isSubmitting = false;
   bool _isAnonymous = false;
   List<File> _selectedImages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // [수정] 전달받은 초기 카테고리가 있으면 사용, 없으면 Lounge 기본값
+    _selectedCategory = widget.initialCategory ?? PostCategory.lounge;
+  }
 
   @override
   void dispose() {
@@ -116,7 +129,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
+          CircularProgressIndicator(color: AppColors.knuRed),
           SizedBox(height: 16),
           Text('Uploading post...', style: TextStyle(color: Colors.grey)),
         ],
@@ -142,12 +155,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               onAnonymousChanged: (val) => setState(() => _isAnonymous = val),
             ),
             const SizedBox(height: 20),
-            // [수정] PostImagePicker의 최신 파라미터 적용
             PostImagePicker(
-              existingUrls: const [], // 새 글이므로 기존 URL은 빈 리스트
+              existingUrls: const [],
               selectedImages: _selectedImages,
               onPickImages: _pickImages,
-              onRemoveExisting: (index) {}, // 제거할 기존 이미지 없음
+              onRemoveExisting: (index) {},
               onRemoveNew: (index) => setState(() => _selectedImages.removeAt(index)),
             ),
             const SizedBox(height: 40),

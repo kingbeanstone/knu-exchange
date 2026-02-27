@@ -37,7 +37,7 @@ class Post {
       case PostCategory.hot: return 'Hot';
       case PostCategory.question: return 'Question';
       case PostCategory.tip: return 'Tip';
-      case PostCategory.lounge: return 'Free';
+      case PostCategory.lounge: return 'Lounge';
       case PostCategory.food: return 'Food'; // [추가]
     }
   }

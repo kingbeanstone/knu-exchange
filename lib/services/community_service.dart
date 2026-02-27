@@ -13,12 +13,10 @@ class CommunityService {
 
   DocumentReference getNewPostRef() => _postsRef.doc();
 
-  // [추가] 특정 ID로 게시글 가져오기 (알림 이동 시 필수)
   Future<DocumentSnapshot> getPostById(String postId) async {
     return await _postsRef.doc(postId).get();
   }
 
-  // [수정] prefix 파라미터 정의 추가
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     List<String> urls = [];
     for (int i = 0; i < images.length; i++) {
@@ -31,7 +29,6 @@ class CommunityService {
     return urls;
   }
 
-  // [수정] authorId와 category 파라미터 정의 추가
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
@@ -41,12 +38,17 @@ class CommunityService {
   }) async {
     Query query = _postsRef;
 
+    // 1. 작성자 필터링 (My Posts)
     if (authorId != null) {
       query = query.where('authorId', isEqualTo: authorId);
-    } else if (category != null && category != PostCategory.hot) {
-      query = query.where('category', isEqualTo: category.toString());
+    }
+    // 2. 카테고리 필터링 (Hot 제외 - Hot은 정렬 조건임)
+    else if (category != null && category != PostCategory.hot) {
+      // [수정 핵심] enum.toString() 대신 split('.').last를 사용하여 "lounge" 형태의 문자열로 쿼리
+      query = query.where('category', isEqualTo: category.toString().split('.').last);
     }
 
+    // 3. 정렬 조건 설정
     if (sortByLikes || category == PostCategory.hot) {
       query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
     } else {
@@ -62,7 +64,6 @@ class CommunityService {
     return await query.get();
   }
 
-  // [추가] 게시글 검색 메서드 정의
   Future<List<Post>> searchPosts(String queryText) async {
     final snapshot = await _postsRef
         .orderBy('title')
@@ -80,7 +81,6 @@ class CommunityService {
     await _postsRef.doc(post.id).set(post.toFirestore());
   }
 
-  // [추가] 게시글 수정 메서드 정의
   Future<void> updatePost(Post post) async {
     await _postsRef.doc(post.id).update(post.toFirestore());
   }
@@ -94,6 +94,7 @@ class CommunityService {
     final doc = await docRef.get();
     final data = doc.data() as Map<String, dynamic>?;
 
+    // Likes 필드가 리스트인 경우 (ID 중복 체크용)
     List likes = (data?['likes'] as List?) ?? [];
     if (likes.contains(userId)) {
       likes.remove(userId);
@@ -103,25 +104,13 @@ class CommunityService {
     await docRef.update({'likes': likes});
   }
 
-  // 유저 정보 경로 (FCM 토큰 저장용)
   DocumentReference _userRef(String userId) =>
       _db.collection('artifacts').doc(_appId).collection('users').doc(userId);
 
-  // FCM 토큰 저장
   Future<void> updateFcmToken(String userId, String token) async {
     await _userRef(userId).set({
       'fcmToken': token,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-  }
-
-  // 상대방의 FCM 토큰 조회
-  Future<String?> getUserFcmToken(String userId) async {
-    final doc = await _userRef(userId).get();
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>?;
-      return data?['fcmToken'];
-    }
-    return null;
   }
 }
