@@ -4,8 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/facility.dart';
 import '../providers/menu_provider.dart';
 import '../utils/app_colors.dart';
-import './date_selector.dart';
-import './menu_section.dart';
+// [수정] 통합된 위젯 파일로 임포트 경로 변경
+import 'cafeteria/cafeteria_widgets.dart';
+import 'cafeteria/menu_section.dart';
 
 class FacilityMenuTab extends StatefulWidget {
   final Facility facility;
@@ -55,7 +56,7 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
       return _buildStudentCafeteriaView();
     }
 
-    // 2. 일반 시설인 경우 (상세 페이지의 고급 로직 적용)
+    // 2. 일반 시설인 경우 (매점, 카페 등)
     return _buildGeneralMenuView();
   }
 
@@ -65,15 +66,16 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
 
     return Column(
       children: [
+        // [확인] cafeteria_widgets.dart에 정의된 고도화된 날짜 선택기 사용
         CafeteriaDateSelector(
           selectedDate: _selectedDate,
           onPrev: () => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
           onNext: () => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1))),
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, thickness: 1, color: AppColors.lightGrey),
         Expanded(
           child: menuProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
               : SingleChildScrollView(
             child: CafeteriaMenuSection(
               menuData: menuProvider.getFilteredMenu(widget.facility.id, dateStr),
@@ -95,7 +97,18 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
         final docs = snapshot.data!.docs;
-        if (docs.isEmpty) return const Center(child: Text('No menu available.'));
+        if (docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, color: Colors.grey.shade300, size: 48),
+                const SizedBox(height: 16),
+                const Text('No menu available.', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
 
         // 정렬 로직
         final sortedDocs = docs.toList()..sort((a, b) {
@@ -125,11 +138,22 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(category, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.knuRed)),
+                    Text(
+                        category,
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.knuRed
+                        )
+                    ),
                     Row(
                       children: widget.customHeaders.map((h) => SizedBox(
                           width: 55,
-                          child: Text(h, textAlign: TextAlign.end, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w300))
+                          child: Text(
+                              h,
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w300)
+                          )
                       )).toList(),
                     ),
                   ],
@@ -142,7 +166,12 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: Text(item['name'] ?? '', style: const TextStyle(fontSize: 14))),
+                        Expanded(
+                            child: Text(
+                                item['name'] ?? '',
+                                style: const TextStyle(fontSize: 14, color: AppColors.darkGrey)
+                            )
+                        ),
                         Row(
                           children: widget.customHeaders.map((h) {
                             final price = prices[h];
@@ -151,7 +180,11 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                               child: Text(
                                 price?.toString() ?? '-',
                                 textAlign: TextAlign.end,
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black87),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.black87
+                                ),
                               ),
                             );
                           }).toList(),
@@ -160,7 +193,7 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                     ),
                   );
                 }),
-                const Divider(height: 30),
+                const Divider(height: 30, thickness: 1, color: AppColors.lightGrey),
               ],
             );
           }).toList(),
