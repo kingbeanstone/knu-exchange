@@ -89,7 +89,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: [Tab(text: 'Student'), Tab(text: 'Dormitory')],
+          tabs: [Tab(text: 'On Campus'), Tab(text: 'Cheomseong Dormitory')],
         ),
       ),
       body: Column(
