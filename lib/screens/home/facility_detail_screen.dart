@@ -54,12 +54,53 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                   expandedHeight: 200.0,
                   pinned: true,
                   backgroundColor: AppColors.knuRed,
-                  foregroundColor: Colors.white,
-                  flexibleSpace: FlexibleSpaceBar(
-                    centerTitle: false,
-                    titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 60),
-                    title: Text(f.engName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                    background: f.imageUrl != null ? Image.network(f.imageUrl!, fit: BoxFit.cover) : Container(color: Colors.grey[300]),
+                  foregroundColor: Colors.white, // 뒤로 가기 화살표 색상 고정
+                  flexibleSpace: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      // 1. 현재 AppBar의 높이를 계산합니다.
+                      var top = constraints.biggest.height;
+
+                      // 2. 펼쳐졌을 때(200)와 접혔을 때(약 104) 사이의 비율을 계산합니다.
+                      // (104 = 툴바 56 + 탭바 48)
+                      double expandRatio = ((top - 104) / (200 - 104)).clamp(0.0, 1.0);
+
+                      // 3. 비율에 따라 좌측 패딩을 20에서 56 사이로 조절합니다.
+                      // 접힐수록(expandRatio가 0에 가까울수록) 56에 가까워집니다.
+                      double paddingStart = 56.0 - (36.0 * expandRatio);
+
+                      return FlexibleSpaceBar(
+                        centerTitle: false,
+                        titlePadding: EdgeInsetsDirectional.only(
+                          start: paddingStart,
+                          bottom: 62, // 탭바 위쪽으로 위치 고정
+                        ),
+                        title: Text(
+                          f.engName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        background: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            f.imageUrl != null
+                                ? Image.network(f.imageUrl!, fit: BoxFit.cover)
+                                : Container(color: Colors.grey[300]),
+                            // 글자가 잘 보이도록 어두운 그라데이션 추가
+                            const DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black54],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(48),
