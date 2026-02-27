@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum PostCategory { hot, question, tip, market, free }
+// [수정] 'food' 카테고리 추가
+enum PostCategory { hot, question, tip, lounge, food }
 
 class Post {
   final String id;
@@ -14,7 +15,7 @@ class Post {
   final int likes;
   final int comments;
   final bool isAnonymous;
-  final List<String> imageUrls; // [추가] 이미지 URL 리스트
+  final List<String> imageUrls;
 
   Post({
     required this.id,
@@ -28,7 +29,7 @@ class Post {
     this.likes = 0,
     this.comments = 0,
     this.isAnonymous = false,
-    this.imageUrls = const [], // [추가] 기본값 빈 리스트
+    this.imageUrls = const [],
   });
 
   String get categoryLabel {
@@ -36,8 +37,8 @@ class Post {
       case PostCategory.hot: return 'Hot';
       case PostCategory.question: return 'Question';
       case PostCategory.tip: return 'Tip';
-      case PostCategory.market: return 'Market';
-      case PostCategory.free: return 'Free';
+      case PostCategory.lounge: return 'Free';
+      case PostCategory.food: return 'Food'; // [추가]
     }
   }
 
@@ -51,18 +52,16 @@ class Post {
       authorName: data['authorName'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       category: PostCategory.values.firstWhere(
-            (e) => e.toString() == data['category'],
-        orElse: () => PostCategory.free,
+            (e) => e.toString().split('.').last == data['category'],
+        orElse: () => PostCategory.lounge,
       ),
       likes: data['likes'] ?? 0,
       comments: data['comments'] ?? 0,
       isAnonymous: data['isAnonymous'] ?? false,
-      // [추가] 리스트 타입 캐스팅 처리
       imageUrls: List<String>.from(data['imageUrls'] ?? []),
     );
   }
 
-  // [참고] Firestore 저장 시 Map 변환 로직은 CommunityService에서 직접 수행하거나 여기에 작성 가능
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
@@ -71,11 +70,11 @@ class Post {
       'authorId': authorId,
       'authorName': authorName,
       'createdAt': Timestamp.fromDate(createdAt),
-      'category': category.toString(),
+      'category': category.toString().split('.').last, // 저장 시 문자열 값만 저장
       'likes': likes,
       'comments': comments,
       'isAnonymous': isAnonymous,
-      'imageUrls': imageUrls, // [추가]
+      'imageUrls': imageUrls,
     };
   }
 }

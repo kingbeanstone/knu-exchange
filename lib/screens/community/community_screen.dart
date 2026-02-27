@@ -82,18 +82,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
 
     return Scaffold(
-      // [수정] 공지사항과 동일한 연한 회색 배경 적용
+      // 공지사항과 동일한 연한 회색 배경
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: const CommunityAppBar(title: 'KNU Community'),
       body: Column(
         children: [
-          // 상단바 장식선 (공지사항과 통일)
+          // 상단바 장식선
           Container(height: 1, color: Colors.grey[200]),
-          // 검색바와 필터 영역
+          // 검색바
           CommunitySearchBar(
             onSearch: (query) => communityProvider.performSearch(query),
             onClear: () => communityProvider.clearSearch(),
           ),
+          // [수정] 2줄 필터 위젯이 들어가는 영역
           CommunityCategoryFilter(
             selectedCategory: selectedCategory,
             isMyPostsSelected: isMyPostsOnly,
@@ -104,6 +105,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
               communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
+          // 리스트 시작 부분에 약간의 여백 추가
+          const SizedBox(height: 4),
           Expanded(
             child: communityProvider.isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
@@ -120,8 +123,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               child: ListView.builder(
                 controller: _scrollController,
-                // [수정] 공지사항과 동일한 카드 패딩 값 적용
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: displayPosts.length +
                     (!communityProvider.isSearching &&
                         communityProvider.hasMore

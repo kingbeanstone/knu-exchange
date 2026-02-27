@@ -16,27 +16,45 @@ class CommunityCategoryFilter extends StatelessWidget {
     required this.onMyPostsSelected,
   });
 
-  List<Map<String, dynamic>> get _items => [
+  // [수정] 1번째 줄 아이템: All, Hot, Free, Food
+  List<Map<String, dynamic>> get _row1Items => [
     {'label': 'All', 'icon': Icons.apps, 'value': 'all'},
-    {'label': 'My Posts', 'icon': Icons.person_pin, 'value': 'mine'},
     {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
-    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.free},
+    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.lounge},
+    {'label': 'Food', 'icon': Icons.restaurant_menu, 'value': PostCategory.food},
+  ];
+
+  // [수정] 2번째 줄 아이템: My Posts, Question, Tip, Market
+  List<Map<String, dynamic>> get _row2Items => [
+    {'label': 'My Posts', 'icon': Icons.person_pin, 'value': 'mine'},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
     {'label': 'Tip', 'icon': Icons.lightbulb_outline, 'value': PostCategory.tip},
-    {'label': 'Market', 'icon': Icons.shopping_cart_outlined, 'value': PostCategory.market},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      height: 60,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: [
+          _buildFilterRow(_row1Items),
+          const SizedBox(height: 4),
+          _buildFilterRow(_row2Items),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterRow(List<Map<String, dynamic>> items) {
+    return SizedBox(
+      height: 44, // 디자인에 맞춰 높이 소폭 조정
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        itemCount: _items.length,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = _items[index];
+          final item = items[index];
 
           bool isSelected = false;
           if (item['value'] == 'all') {
@@ -47,15 +65,17 @@ class CommunityCategoryFilter extends StatelessWidget {
             isSelected = selectedCategory == item['value'] && !isMyPostsSelected;
           }
 
-          final Color themeColor = item['value'] == PostCategory.hot ? Colors.orange : AppColors.knuRed;
+          final Color themeColor = item['value'] == PostCategory.hot
+              ? Colors.orange
+              : AppColors.knuRed;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 8), // 간격 8
             child: FilterChip(
               showCheckmark: false,
               avatar: Icon(
                 item['icon'],
-                size: 16,
+                size: 16, // 아이콘 크기 16
                 color: isSelected ? Colors.white : themeColor,
               ),
               label: Text(item['label']),
@@ -74,8 +94,12 @@ class CommunityCategoryFilter extends StatelessWidget {
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
+                fontSize: 13, // 폰트 크기 13
               ),
+              // 아이콘(avatar)과 텍스트(label) 사이 간격 조정을 위해 여백 최소화
+              labelPadding: const EdgeInsets.only(left: 0, right: 4),
+              // [수정] 아이콘 왼쪽의 빈 공간을 줄이기 위해 padding을 대칭이 아닌 개별 설정
+              padding: const EdgeInsets.only(left: 4, right: 8, top: 0, bottom: 0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(

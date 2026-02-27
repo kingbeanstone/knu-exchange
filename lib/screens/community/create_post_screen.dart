@@ -22,7 +22,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _contentController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
-  PostCategory _selectedCategory = PostCategory.free;
+  PostCategory _selectedCategory = PostCategory.lounge;
   bool _isSubmitting = false;
   bool _isAnonymous = false;
   List<File> _selectedImages = [];
