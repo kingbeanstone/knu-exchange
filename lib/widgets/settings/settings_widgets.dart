@@ -4,7 +4,6 @@ import '../../utils/app_colors.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/settings/profile_edit_screen.dart';
 
-/// 설정 화면의 섹션 제목 위젯
 class SettingsSectionHeader extends StatelessWidget {
   final String title;
   const SettingsSectionHeader({super.key, required this.title});
@@ -26,12 +25,12 @@ class SettingsSectionHeader extends StatelessWidget {
   }
 }
 
-/// 설정 화면의 범용 메뉴 타일 위젯
+/// [수정] trailing을 Widget으로 받아 Switch 등을 넣을 수 있게 개선
 class SettingsMenuTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? trailing;
-  final VoidCallback onTap;
+  final Widget? trailing; // [수정] String? -> Widget?
+  final VoidCallback? onTap; // [수정] Nullable로 변경 (Switch가 있을 땐 필수가 아님)
   final Color? iconColor;
 
   const SettingsMenuTile({
@@ -39,7 +38,7 @@ class SettingsMenuTile extends StatelessWidget {
     required this.icon,
     required this.title,
     this.trailing,
-    required this.onTap,
+    this.onTap,
     this.iconColor,
   });
 
@@ -51,13 +50,11 @@ class SettingsMenuTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (trailing != null)
-            Text(
-              trailing!,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            ),
-          const SizedBox(width: 4),
-          Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+          if (trailing != null) trailing!,
+          if (onTap != null && trailing == null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+          ],
         ],
       ),
       onTap: onTap,
@@ -65,7 +62,6 @@ class SettingsMenuTile extends StatelessWidget {
   }
 }
 
-/// 설정 항목 사이의 얇은 구분선
 class SettingsDivider extends StatelessWidget {
   const SettingsDivider({super.key});
 
@@ -75,7 +71,6 @@ class SettingsDivider extends StatelessWidget {
   }
 }
 
-/// 설정 화면 전용 카드 컨테이너
 class SettingsGroupCard extends StatelessWidget {
   final Widget child;
   const SettingsGroupCard({super.key, required this.child});
@@ -96,7 +91,6 @@ class SettingsGroupCard extends StatelessWidget {
   }
 }
 
-/// [신규] 로그인된 사용자의 프로필 위젯
 class SettingsProfileContent extends StatelessWidget {
   final AuthProvider auth;
   const SettingsProfileContent({super.key, required this.auth});
@@ -159,7 +153,6 @@ class SettingsProfileContent extends StatelessWidget {
   }
 }
 
-/// [신규] 로그인이 필요한 상태를 보여주는 위젯
 class SettingsLoginPrompt extends StatelessWidget {
   const SettingsLoginPrompt({super.key});
 

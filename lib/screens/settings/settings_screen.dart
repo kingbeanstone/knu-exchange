@@ -13,19 +13,20 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // AuthProvider의 상태 변화를 감시합니다.
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // 공지사항/커뮤니티와 동일한 배경색
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
           'Settings',
-          style: TextStyle(fontWeight: FontWeight.normal), // 얇은 글씨로 수정
+          style: TextStyle(fontWeight: FontWeight.normal),
         ),
-        backgroundColor: AppColors.knuRed, // 빨간색 배경
-        foregroundColor: Colors.white,    // 흰색 글자
+        backgroundColor: AppColors.knuRed,
+        foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,               // 왼쪽 정렬
+        centerTitle: false,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -48,7 +49,6 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.admin_panel_settings_rounded,
                 iconColor: Colors.blueAccent,
                 title: 'Admin Dashboard',
-                trailing: 'Manage',
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
@@ -63,12 +63,19 @@ class SettingsScreen extends StatelessWidget {
           SettingsGroupCard(
             child: Column(
               children: [
-                // [삭제됨] Language 버튼 제거
+                // 알림 설정 토글 스위치 적용
                 SettingsMenuTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    trailing: 'On',
-                    onTap: () {}
+                  icon: Icons.notifications_none_rounded,
+                  title: 'Notifications',
+                  trailing: Switch(
+                    value: authProvider.isNotificationsEnabled,
+                    // 스위치 조작 시 AuthProvider의 토글 함수 호출
+                    onChanged: authProvider.isAuthenticated
+                        ? (val) => authProvider.toggleNotifications(val)
+                        : null, // 로그인 안 된 경우 비활성화
+                    activeColor: AppColors.knuRed,
+                    activeTrackColor: AppColors.knuRed.withOpacity(0.2),
+                  ),
                 ),
               ],
             ),
@@ -83,7 +90,6 @@ class SettingsScreen extends StatelessWidget {
                 SettingsMenuTile(
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
-                  trailing: '',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -97,7 +103,6 @@ class SettingsScreen extends StatelessWidget {
                 SettingsMenuTile(
                   icon: Icons.mail_outline,
                   title: 'Contact Us',
-                  trailing: '',
                   onTap: () {
                     Navigator.push(
                       context,
@@ -129,7 +134,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // 계정 삭제 확인 다이얼로그
+  // 계정 삭제 확인 다이얼로그 (생략 없이 유지)
   void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
     showDialog(
       context: context,
@@ -144,17 +149,9 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(ctx);
               try {
                 await auth.deleteAccount();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account has been deleted.'))
-                  );
-                }
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account has been deleted.')));
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e'))
-                  );
-                }
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
