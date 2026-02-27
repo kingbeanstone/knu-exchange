@@ -11,7 +11,7 @@ import '../../widgets/community/post_detail_header.dart';
 import '../../widgets/community/post_detail_content.dart';
 import '../../widgets/community/comment_input.dart';
 import '../../widgets/report_dialog.dart';
-import 'edit_post_screen.dart'; // [추가] 수정 화면 임포트
+import 'edit_post_screen.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -40,7 +40,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  // [추가] 최신 포스트 정보를 프로바이더에서 찾아 업데이트 (수정 후 반영용)
   void _syncPostData() {
     final posts = context.read<CommunityProvider>().posts;
     final updated = posts.firstWhere((p) => p.id == _currentPost.id, orElse: () => _currentPost);
@@ -93,7 +92,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    // 작성자 본인인지 확인
     final bool isAuthor = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
     final bool canDelete = isAuthor || auth.isAdmin;
 
@@ -106,7 +104,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
-          // [추가] 작성자 본인인 경우 수정 버튼 노출
           if (isAuthor)
             IconButton(
               icon: const Icon(Icons.edit_outlined, color: Colors.grey),
@@ -115,7 +112,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   context,
                   MaterialPageRoute(builder: (context) => EditPostScreen(post: _currentPost)),
                 );
-                _syncPostData(); // 수정 후 돌아오면 데이터 동기화
+                _syncPostData();
               },
             ),
           if (canDelete)
@@ -141,10 +138,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 children: [
                   PostDetailHeader(post: _currentPost),
                   const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
+
+                  // 게시글 본문 내용
                   PostDetailContent(
                     content: _currentPost.content,
                     imageUrls: _currentPost.imageUrls,
                   ),
+
+                  // [수정] 좋아요 및 댓글 수 액션 바를 본문 바로 아래로 이동
+                  // 기존 bottomNavigationBar에서 제거하고 이곳에 배치합니다.
+                  PostActionBar(post: _currentPost),
+
+                  // 구분선 및 댓글 섹션
                   Container(height: 8, color: AppColors.lightGrey),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -154,10 +159,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
             ),
           ),
+          // 댓글 입력창은 하단에 고정된 상태 유지
           CommentInput(postId: _currentPost.id),
         ],
       ),
-      bottomNavigationBar: PostActionBar(post: _currentPost),
+      // [수정] bottomNavigationBar 영역 제거 (본문 내부로 이동됨)
     );
   }
 }
