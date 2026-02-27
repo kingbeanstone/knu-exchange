@@ -13,45 +13,33 @@ class CafeteriaScreen extends StatefulWidget {
   State<CafeteriaScreen> createState() => _CafeteriaScreenState();
 }
 
-class _CafeteriaScreenState extends State<CafeteriaScreen>
-    with SingleTickerProviderStateMixin {
+class _CafeteriaScreenState extends State<CafeteriaScreen> {
   late DateTime _selectedDate;
-  late TabController _tabController;
-  String _selectedStudentFacility = 'welfare_bldg_cafeteria';
+  String _selectedFacilityId = 'welfare_bldg_cafeteria';
 
-  // 학내 식당 목록 (On Campus 전용)
-  final Map<String, String> _studentFacilities = {
+  // [수정] On Campus와 Dormitory를 구분하지 않고 하나의 통합된 식당 목록으로 관리
+  final Map<String, String> _allFacilities = {
     'welfare_bldg_cafeteria': 'Welfare Bldg',
     'information_center_cafeteria': 'Info Center',
     'engineering_bldg_cafeteria': 'Eng. Bldg',
-    'kyungdaria_cafeteria': 'Kyungdaria'
+    'kyungdaria_cafeteria': 'Kyungdaria',
+    'cheomseong_dorm_cafeteria': 'Dormitory', // 기숙사 식당을 목록에 통합
   };
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
-    _tabController = TabController(length: 2, vsync: this);
 
-    // 초기 진입 시 기숙사 식당일 경우 탭 이동
-    if (widget.initialFacilityId == 'cheomseong_dorm_cafeteria') {
-      _tabController.index = 1;
-    }
-
+    // 초기 진입 시 전달된 식당 ID가 있으면 해당 식당을 선택 상태로 설정
     if (widget.initialFacilityId != null &&
-        _studentFacilities.containsKey(widget.initialFacilityId)) {
-      _selectedStudentFacility = widget.initialFacilityId!;
+        _allFacilities.containsKey(widget.initialFacilityId)) {
+      _selectedFacilityId = widget.initialFacilityId!;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MenuProvider>().refreshMenu();
     });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   String _formatDate(DateTime d) =>
@@ -63,7 +51,7 @@ class _CafeteriaScreenState extends State<CafeteriaScreen>
     final dateStr = _formatDate(_selectedDate);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // 다른 탭과 동일한 배경색
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
           'Cafeteria',
@@ -72,72 +60,38 @@ class _CafeteriaScreenState extends State<CafeteriaScreen>
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false, // 왼쪽 정렬 통일
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: const [
-            Tab(text: 'On Campus'),
-            Tab(text: 'Dormitory'),
-          ],
-        ),
+        centerTitle: false,
+        // [수정] TabBar를 제거하여 상단 영역을 깔끔하게 정리했습니다.
       ),
       body: Column(
         children: [
-          // 1. 커스텀 날짜 선택기
+          // 1. 날짜 선택 영역
           CafeteriaDateSelector(
             selectedDate: _selectedDate,
             onPrev: () => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
             onNext: () => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1))),
           ),
 
-          // 2. 본문 컨텐츠
+          // 2. 통합된 식당 필터 (기숙사 식당 포함)
+          CafeteriaFacilityFilter(
+            selectedId: _selectedFacilityId,
+            facilities: _allFacilities,
+            onSelected: (id) => setState(() => _selectedFacilityId = id),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. 본문 영역 (TabBarView를 제거하고 단일 스크롤 뷰 적용)
           Expanded(
             child: menuProvider.isLoading
                 ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
-                : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOnCampusView(menuProvider, dateStr),
-                _buildDormitoryView(menuProvider, dateStr),
-              ],
+                : SingleChildScrollView(
+              child: CafeteriaMenuSection(
+                menuData: menuProvider.getFilteredMenu(_selectedFacilityId, dateStr),
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // 학내 식당 뷰 (가로 칩 필터 포함)
-  Widget _buildOnCampusView(MenuProvider provider, String dateStr) {
-    return Column(
-      children: [
-        CafeteriaFacilityFilter(
-          selectedId: _selectedStudentFacility,
-          facilities: _studentFacilities,
-          onSelected: (id) => setState(() => _selectedStudentFacility = id),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: SingleChildScrollView(
-            child: CafeteriaMenuSection(
-              menuData: provider.getFilteredMenu(_selectedStudentFacility, dateStr),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 기숙사 식당 뷰
-  Widget _buildDormitoryView(MenuProvider provider, String dateStr) {
-    return SingleChildScrollView(
-      child: CafeteriaMenuSection(
-        menuData: provider.getFilteredMenu('cheomseong_dorm_cafeteria', dateStr),
       ),
     );
   }

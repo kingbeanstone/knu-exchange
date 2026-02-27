@@ -4,13 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/facility.dart';
 import '../providers/menu_provider.dart';
 import '../utils/app_colors.dart';
-// [수정] 통합된 위젯 파일로 임포트 경로 변경
 import 'cafeteria/cafeteria_widgets.dart';
 import 'cafeteria/menu_section.dart';
 
 class FacilityMenuTab extends StatefulWidget {
   final Facility facility;
-  final List<String> customHeaders; // 상세 페이지에서 받은 헤더 정보
+  final List<String> customHeaders;
 
   const FacilityMenuTab({
     super.key,
@@ -25,7 +24,6 @@ class FacilityMenuTab extends StatefulWidget {
 class _FacilityMenuTabState extends State<FacilityMenuTab> {
   late DateTime _selectedDate;
 
-  // 학생 식당 ID 리스트
   final List<String> _studentCafeteriaIds = [
     'welfare_bldg_cafeteria',
     'information_center_cafeteria',
@@ -51,13 +49,13 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 학생 식당인 경우
-    if (_studentCafeteriaIds.contains(widget.facility.id)) {
-      return _buildStudentCafeteriaView();
-    }
-
-    // 2. 일반 시설인 경우 (매점, 카페 등)
-    return _buildGeneralMenuView();
+    // [수정] 배경색을 CafeteriaScreen과 동일하게 설정하여 통일감 부여
+    return Container(
+      color: const Color(0xFFF8F9FA),
+      child: _studentCafeteriaIds.contains(widget.facility.id)
+          ? _buildStudentCafeteriaView()
+          : _buildGeneralMenuView(),
+    );
   }
 
   Widget _buildStudentCafeteriaView() {
@@ -66,17 +64,18 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
 
     return Column(
       children: [
-        // [확인] cafeteria_widgets.dart에 정의된 고도화된 날짜 선택기 사용
         CafeteriaDateSelector(
           selectedDate: _selectedDate,
           onPrev: () => setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 1))),
           onNext: () => setState(() => _selectedDate = _selectedDate.add(const Duration(days: 1))),
         ),
-        const Divider(height: 1, thickness: 1, color: AppColors.lightGrey),
+        // [수정] 디자인 가이드에 맞춰 Divider 높이 및 여백 조정
+        const SizedBox(height: 8),
         Expanded(
           child: menuProvider.isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
               : SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             child: CafeteriaMenuSection(
               menuData: menuProvider.getFilteredMenu(widget.facility.id, dateStr),
             ),
@@ -102,7 +101,7 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.info_outline, color: Colors.grey.shade300, size: 48),
+                Icon(Icons.restaurant_menu_rounded, color: Colors.grey.shade300, size: 48),
                 const SizedBox(height: 16),
                 const Text('No menu available.', style: TextStyle(color: Colors.grey)),
               ],
@@ -110,18 +109,16 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
           );
         }
 
-        // 정렬 로직
+        // 정렬 및 카테고리 그룹화 로직 (기존 유지)
         final sortedDocs = docs.toList()..sort((a, b) {
           int getOrder(DocumentSnapshot doc) {
             final val = (doc.data() as Map<String, dynamic>)['order'];
             if (val == null) return 999;
-            if (val is int) return val;
-            return int.tryParse(val.toString()) ?? 999;
+            return val is int ? val : int.tryParse(val.toString()) ?? 999;
           }
           return getOrder(a).compareTo(getOrder(b));
         });
 
-        // 카테고리 그룹화
         Map<String, List<Map<String, dynamic>>> groupedMenu = {};
         for (var doc in sortedDocs) {
           final data = doc.data() as Map<String, dynamic>;
@@ -135,15 +132,16 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 일반 시설 메뉴용 헤더 디자인 개선
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                         category,
                         style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.knuRed
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.knuRed,
                         )
                     ),
                     Row(
@@ -152,7 +150,7 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                           child: Text(
                               h,
                               textAlign: TextAlign.end,
-                              style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w300)
+                              style: const TextStyle(fontSize: 10, color: Colors.grey)
                           )
                       )).toList(),
                     ),
@@ -164,7 +162,6 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                             child: Text(
@@ -172,28 +169,19 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
                                 style: const TextStyle(fontSize: 14, color: AppColors.darkGrey)
                             )
                         ),
-                        Row(
-                          children: widget.customHeaders.map((h) {
-                            final price = prices[h];
-                            return SizedBox(
-                              width: 55,
-                              child: Text(
-                                price?.toString() ?? '-',
-                                textAlign: TextAlign.end,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black87
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                        ...widget.customHeaders.map((h) => SizedBox(
+                            width: 55,
+                            child: Text(
+                              prices[h]?.toString() ?? '-',
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                            )
+                        )),
                       ],
                     ),
                   );
                 }),
-                const Divider(height: 30, thickness: 1, color: AppColors.lightGrey),
+                const Divider(height: 32, thickness: 1, color: Color(0xFFEEEEEE)),
               ],
             );
           }).toList(),
