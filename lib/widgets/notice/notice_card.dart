@@ -18,7 +18,6 @@ class NoticeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 제목이 너무 길 경우를 대비한 처리
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -45,7 +44,6 @@ class NoticeCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // 상단 배지 (공지 아이콘)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -78,7 +76,6 @@ class NoticeCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // 제목
                 Text(
                   notice.title,
                   style: const TextStyle(
@@ -91,7 +88,6 @@ class NoticeCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                // 본문 미리보기 (가독성을 위해 추가)
                 Text(
                   notice.content.replaceAll('\n', ' '),
                   style: TextStyle(
@@ -102,21 +98,7 @@ class NoticeCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      "Read more",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.knuRed,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.knuRed),
-                  ],
-                ),
+                // [수정] 통일성을 위해 하단의 "Read more" 행을 제거했습니다.
               ],
             ),
           ),

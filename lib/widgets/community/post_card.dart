@@ -18,7 +18,7 @@ class PostCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16), // 공지사항과 동일한 라운드
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -44,7 +44,7 @@ class PostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. 상단 배지 및 날짜 영역 (NoticeCard 스타일)
+                // 1. 상단 배지 및 날짜
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -71,7 +71,7 @@ class PostCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // 2. 제목 및 본문 내용 (이미지 썸네일 포함)
+                // 2. 제목 및 본문 미리보기 (썸네일 포함)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -127,7 +127,7 @@ class PostCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // 3. 하단 메타 데이터 영역
+                // 3. 하단 정보 영역 (Read more 제거)
                 Row(
                   children: [
                     const Icon(Icons.person_outline, size: 14, color: Colors.grey),
@@ -140,16 +140,7 @@ class PostCard extends StatelessWidget {
                     _buildStatItem(Icons.favorite_border, post.likes.toString()),
                     const SizedBox(width: 12),
                     _buildStatItem(Icons.chat_bubble_outline, post.comments.toString()),
-                    const SizedBox(width: 12),
-                    const Text(
-                      "Read more",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.knuRed,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.knuRed),
+                    // [수정] 디자인 단순화를 위해 우측 하단 화살표 및 "Read more" 가이드 제거
                   ],
                 ),
               ],
