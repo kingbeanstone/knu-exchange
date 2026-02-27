@@ -20,7 +20,7 @@ class CommunityCategoryFilter extends StatelessWidget {
   List<Map<String, dynamic>> get _row1Items => [
     {'label': 'All', 'icon': Icons.apps, 'value': 'all'},
     {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
-    {'label': 'Free', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.lounge},
+    {'label': 'Lounge', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.lounge},
     {'label': 'Food', 'icon': Icons.restaurant_menu, 'value': PostCategory.food},
   ];
 
