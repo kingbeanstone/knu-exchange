@@ -16,7 +16,9 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-  bool _isAnonymous = false;
+
+  // [수정] 댓글 작성 시 기본적으로 익명 체크박스가 선택되어 있도록 초기값을 true로 변경
+  bool _isAnonymous = true;
 
   Future<void> _submitComment() async {
     if (_isSubmitting) return;
