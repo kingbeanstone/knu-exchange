@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/notice.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/date_formatter.dart'; // [추가]
 
 class NoticeCard extends StatelessWidget {
   final Notice notice;
@@ -11,10 +12,6 @@ class NoticeCard extends StatelessWidget {
     required this.notice,
     required this.onTap,
   });
-
-  String _formatDate(DateTime date) {
-    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +63,9 @@ class NoticeCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    // [수정] 상대적 시간 표시 적용
                     Text(
-                      _formatDate(notice.createdAt),
+                      DateFormatter.formatRelativeTime(notice.createdAt),
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
@@ -98,7 +96,6 @@ class NoticeCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                // [수정] 통일성을 위해 하단의 "Read more" 행을 제거했습니다.
               ],
             ),
           ),

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../models/post.dart';
-import '../../../utils/app_colors.dart';
-import '../../../screens/community/post_detail_screen.dart';
+import '../../models/post.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/date_formatter.dart'; // [추가]
+import '../../screens/community/post_detail_screen.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
 
   const PostCard({super.key, required this.post});
-
-  String _formatDate(DateTime date) {
-    return "${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,6 @@ class PostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. 상단 배지 및 날짜
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -63,15 +59,14 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // [수정] 상대적 시간 표시 적용
                     Text(
-                      _formatDate(post.createdAt),
+                      DateFormatter.formatRelativeTime(post.createdAt),
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // 2. 제목 및 본문 미리보기 (썸네일 포함)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -126,8 +121,6 @@ class PostCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // 3. 하단 정보 영역 (Read more 제거)
                 Row(
                   children: [
                     const Icon(Icons.person_outline, size: 14, color: Colors.grey),
@@ -140,7 +133,6 @@ class PostCard extends StatelessWidget {
                     _buildStatItem(Icons.favorite_border, post.likes.toString()),
                     const SizedBox(width: 12),
                     _buildStatItem(Icons.chat_bubble_outline, post.comments.toString()),
-                    // [수정] 디자인 단순화를 위해 우측 하단 화살표 및 "Read more" 가이드 제거
                   ],
                 ),
               ],
