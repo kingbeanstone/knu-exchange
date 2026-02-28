@@ -97,14 +97,14 @@ class ContactScreen extends StatelessWidget {
             child: Column(
               children: [
                 _buildTeamTile(
-                  name: '신주연',
+                  name: 'Shin juyeon',
                   role: 'Project Manager',
-                  email: 'hah658117@gmail.com',
+                  email: '102wndus@naver.com',
                 ),
                 const SettingsDivider(),
                 // [수정] 김대한 개발자 이메일 추가
                 _buildTeamTile(
-                  name: '김대한',
+                  name: 'Kim daehan',
                   role: 'Developer',
                   email: 'Kimtony598@gmail.com',
                 ),
@@ -112,7 +112,7 @@ class ContactScreen extends StatelessWidget {
                 _buildTeamTile(
                   name: '진형준',
                   role: 'Developer',
-                  email: 'wlsgudwns112@gmail.com',
+                  email: 'wlsgudwns112@naver.com',
                 ),
               ],
             ),
