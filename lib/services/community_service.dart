@@ -17,13 +17,10 @@ class CommunityService {
     return await _postsRef.doc(postId).get();
   }
 
-  // [속도 개선] 병렬 업로드 적용
-  // 기존: for 루프로 한 장씩 순차 업로드 (1번 끝날 때까지 2번 대기)
-  // 변경: Future.wait를 사용해 모든 이미지를 동시에 업로드 시작
+  // 병렬 업로드 적용
   Future<List<String>> uploadPostImages(String postId, List<File> images, {String prefix = "img"}) async {
     if (images.isEmpty) return [];
 
-    // 각 이미지 업로드 작업을 생성
     final uploadTasks = images.asMap().entries.map((entry) async {
       int i = entry.key;
       File image = entry.value;
@@ -31,16 +28,14 @@ class CommunityService {
       final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = _storage.ref().child('artifacts/$_appId/posts/$postId/${prefix}_${timestamp}_$i.jpg');
 
-      // 파일 업로드 (비동기 실행)
       await ref.putFile(image);
-      // 다운로드 URL 반환
       return await ref.getDownloadURL();
     });
 
-    // 모든 업로드 작업이 완료될 때까지 대기 (병렬 처리)
     return await Future.wait(uploadTasks);
   }
 
+  /// 게시글 쿼리 메서드 (Hot 필터 로직 포함)
   Future<QuerySnapshot> getPostsQuery({
     int limit = 10,
     DocumentSnapshot? startAfter,
@@ -57,15 +52,28 @@ class CommunityService {
       query = query.where('category', isEqualTo: category.toString().split('.').last);
     }
 
-    if (sortByLikes || category == PostCategory.hot) {
-      query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
-    } else {
+    // [수정] 핫 게시물 필터링: 최근 1주일 이내의 글만 필터링
+    if (category == PostCategory.hot) {
+      final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+      query = query.where('createdAt', isGreaterThanOrEqualTo: oneWeekAgo);
+
+      // Firestore 제약상 범위 쿼리 시 첫 번째 정렬은 필터링 필드(createdAt)여야 함
       query = query.orderBy('createdAt', descending: true);
+
+      // 상위 10개를 정확히 뽑기 위해 최근 1주일치 글을 최대 100개까지 가져옵니다.
+      query = query.limit(100);
+    }
+    else if (sortByLikes) {
+      query = query.orderBy('likes', descending: true).orderBy('createdAt', descending: true);
+      query = query.limit(limit);
+    }
+    else {
+      query = query.orderBy('createdAt', descending: true);
+      query = query.limit(limit);
     }
 
-    query = query.limit(limit);
-
-    if (startAfter != null) {
+    // 핫 게시물은 전체 정렬이 필요하므로 페이징(startAfter)을 적용하지 않습니다.
+    if (startAfter != null && category != PostCategory.hot) {
       query = query.startAfterDocument(startAfter);
     }
 

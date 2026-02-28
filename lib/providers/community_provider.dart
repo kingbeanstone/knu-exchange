@@ -77,15 +77,19 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
 
     try {
+      final bool isHot = _currentCategory == PostCategory.hot;
+
       final snapshot = await _service.getPostsQuery(
-        limit: 10,
+        // [수정] Hot 필터일 경우 상위 10개를 뽑기 위해 넉넉히 가져옵니다.
+        limit: isHot ? 100 : 10,
         startAfter: _lastDocument,
-        sortByLikes: _currentCategory == PostCategory.hot,
+        sortByLikes: isHot,
         authorId: _isMyPostsOnly ? userId : null,
         category: _currentCategory,
       );
 
-      if (snapshot.docs.length < 10) {
+      // Hot 필터는 상위 10개 고정 목록이므로 추가 페이징을 비활성화합니다.
+      if (isHot || snapshot.docs.length < 10) {
         _hasMore = false;
       }
 
@@ -95,7 +99,13 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
           return Post.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
         }).toList();
 
-        _posts.addAll(newPosts);
+        if (isHot) {
+          // [수정] 1주일 이내 글들 중 좋아요 순으로 내림차순 정렬 후 상위 10개만 추출
+          newPosts.sort((a, b) => b.likes.compareTo(a.likes));
+          _posts = newPosts.take(10).toList();
+        } else {
+          _posts.addAll(newPosts);
+        }
       }
     } catch (e) {
       debugPrint("Fetch posts error: $e");
@@ -106,7 +116,6 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     }
   }
 
-  // [수정] 대소문자 무시 및 포함 단어 검색(Contains) 로직 적용
   Future<void> performSearch(String query) async {
     if (query.isEmpty) {
       clearSearch();
@@ -120,10 +129,8 @@ class CommunityProvider with ChangeNotifier, CommunityActionMixin {
     notifyListeners();
 
     try {
-      // 1. 서버에서 검색 대상이 될 최근 게시글 100개를 가져옵니다.
       final searchPool = await _service.fetchPostsForSearch();
 
-      // 2. 클라이언트 측에서 대소문자를 무시하고 제목에 검색어가 포함되었는지 필터링합니다.
       final filtered = searchPool.where((post) {
         final title = post.title.toLowerCase();
         final search = query.toLowerCase();
