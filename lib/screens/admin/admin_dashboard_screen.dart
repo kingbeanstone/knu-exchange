@@ -4,6 +4,7 @@ import '../../providers/report_provider.dart';
 import '../../providers/community_provider.dart';
 import '../../widgets/admin/admin_report_card.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/facility_seeder.dart'; // [추가] 시더 임포트
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -16,7 +17,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // 화면 진입 시 신고 목록 새로고침
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReportProvider>().fetchAllReports();
     });
@@ -27,11 +27,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final communityProvider = context.read<CommunityProvider>();
 
     try {
-      // 1. 게시글 삭제 실행 (관리자 권한)
       await communityProvider.deletePost(targetId);
-      // 2. 해당 신고 내역 종결 (삭제)
       await reportProvider.removeReportRecord(reportId);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Content removed and report closed.")),
@@ -76,24 +73,66 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: const Text("Admin Dashboard"),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
+        actions: [
+          // [추가] 상단바에 데이터 시딩 버튼 배치
+          IconButton(
+            icon: const Icon(Icons.add_location_alt_rounded),
+            tooltip: 'Add Default Facilities',
+            onPressed: () => FacilitySeeder.seedNewFacilities(context),
+          ),
+        ],
       ),
-      body: reportProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : reportProvider.reports.isEmpty
-          ? _buildEmptyState()
-          : RefreshIndicator(
-        onRefresh: reportProvider.fetchAllReports,
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: reportProvider.reports.length,
-          itemBuilder: (context, index) {
-            final report = reportProvider.reports[index];
-            return AdminReportCard(
-              report: report,
-              onDeleteAction: () => _showConfirmDialog(report.targetId, report.id),
-            );
-          },
-        ),
+      body: Column(
+        children: [
+          // [추가] 관리 도구 영역
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Data Management",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => FacilitySeeder.seedNewFacilities(context),
+                  icon: const Icon(Icons.library_add_rounded),
+                  label: const Text("Seed Library & Gym Data"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.knuRed,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // 기존 신고 목록 영역
+          Expanded(
+            child: reportProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : reportProvider.reports.isEmpty
+                ? _buildEmptyState()
+                : RefreshIndicator(
+              onRefresh: reportProvider.fetchAllReports,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                itemCount: reportProvider.reports.length,
+                itemBuilder: (context, index) {
+                  final report = reportProvider.reports[index];
+                  return AdminReportCard(
+                    report: report,
+                    onDeleteAction: () => _showConfirmDialog(report.targetId, report.id),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
