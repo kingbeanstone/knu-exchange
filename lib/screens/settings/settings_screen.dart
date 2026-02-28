@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'privacy_policy_screen.dart';
 import 'contact_screen.dart';
+import 'feedback_screen.dart'; // [추가] 피드백 화면 임포트
 
 import '../admin/admin_dashboard_screen.dart';
 import '../../utils/app_colors.dart';
-// 분리된 위젯 파일들로 임포트 변경
 import '../../widgets/settings/settings_common_widgets.dart';
 import '../../widgets/settings/settings_profile_widgets.dart';
 
@@ -30,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false, // 통일성을 위해 왼쪽 정렬
+        centerTitle: false,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -99,6 +99,21 @@ class SettingsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                // [수정] 피드백 메뉴 추가
+                SettingsMenuTile(
+                  icon: Icons.rate_review_outlined,
+                  iconColor: Colors.amber,
+                  title: 'Feedback',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FeedbackScreen(),
                       ),
                     );
                   },
