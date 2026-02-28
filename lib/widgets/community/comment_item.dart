@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/comment.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/date_formatter.dart'; // [추가] 시간 포맷터 임포트
 import 'comment_actions.dart';
 
 class CommentItem extends StatelessWidget {
@@ -68,20 +69,30 @@ class CommentItem extends StatelessWidget {
   Widget _buildHeader() {
     return Row(
       children: [
-        Text(
-          comment.author,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: AppColors.darkGrey,
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  comment.author,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.darkGrey,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isMyComment) ...[
+                const SizedBox(width: 6),
+                _buildMyBadge(),
+              ],
+            ],
           ),
         ),
-        if (isMyComment) ...[
-          const SizedBox(width: 6),
-          _buildMyBadge(),
-        ],
-        const Spacer(),
-        // 분리된 액션 버튼 위젯 호출
+        const SizedBox(width: 8),
         CommentActions(
           postId: postId,
           comment: comment,
@@ -92,10 +103,10 @@ class CommentItem extends StatelessWidget {
     );
   }
 
-  // 작성 시간 표시
+  // [수정] 작성 시간 표시 - 상대적 시간(DateFormatter) 적용
   Widget _buildTimestamp() {
     return Text(
-      "${comment.createdAt.month}/${comment.createdAt.day} ${comment.createdAt.hour.toString().padLeft(2, '0')}:${comment.createdAt.minute.toString().padLeft(2, '0')}",
+      DateFormatter.formatRelativeTime(comment.createdAt),
       style: const TextStyle(color: Colors.grey, fontSize: 11),
     );
   }

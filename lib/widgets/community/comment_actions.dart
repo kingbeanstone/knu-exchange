@@ -29,7 +29,7 @@ class CommentActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 1. 답글 버튼 (최상위 댓글에만 노출)
+        // 1. 답글 버튼
         if (comment.parentId == null)
           _buildIconButton(
             icon: Icons.reply_outlined,
@@ -40,13 +40,12 @@ class CommentActions extends StatelessWidget {
         // 2. 좋아요 버튼 및 카운트
         _buildLikeSection(context, authProvider, isLiked),
 
-        // 3. 더보기 메뉴 (신고/삭제)
+        // 3. 더보기 메뉴
         _buildMoreMenu(context),
       ],
     );
   }
 
-  // 아이콘 버튼 공통 스타일
   Widget _buildIconButton({
     required IconData icon,
     required VoidCallback onPressed,
@@ -57,13 +56,13 @@ class CommentActions extends StatelessWidget {
       icon: Icon(icon, size: 18, color: color),
       onPressed: onPressed,
       constraints: const BoxConstraints(),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      // [수정] 가로 여백을 미세하게 줄여 좁은 화면 대응
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       visualDensity: VisualDensity.compact,
       tooltip: tooltip,
     );
   }
 
-  // 좋아요 영역
   Widget _buildLikeSection(BuildContext context, AuthProvider auth, bool isLiked) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -89,12 +88,11 @@ class CommentActions extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2), // [수정] 간격 조정
       ],
     );
   }
 
-  // 더보기 메뉴
   Widget _buildMoreMenu(BuildContext context) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert_rounded, size: 18, color: Colors.grey),
