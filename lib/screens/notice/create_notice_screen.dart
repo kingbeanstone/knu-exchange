@@ -15,12 +15,15 @@ class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
   final _contentController = TextEditingController();
   bool _isSubmitting = false;
 
+  /// 공지사항 업로드 및 푸시 알림 트리거
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
     try {
+      // [중요] Cloud Functions(index.js)의 onNoticeCreated 트리거 경로인
+      // 'notices' 컬렉션에 문서를 추가합니다.
       await FirebaseFirestore.instance.collection('notices').add({
         'title': _titleController.text.trim(),
         'content': _contentController.text.trim(),
@@ -30,7 +33,10 @@ class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notice posted successfully.')),
+          const SnackBar(
+            content: Text('Notice posted! Push notifications are being sent.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
@@ -51,18 +57,17 @@ class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
       appBar: AppBar(
         title: const Text(
           'New Notice',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(fontWeight: FontWeight.normal, fontSize: 18),
         ),
-        backgroundColor: AppColors.knuRed, // 빨간색 배경 유지
-        foregroundColor: Colors.white,    // 흰색 글자색 유지
+        backgroundColor: AppColors.knuRed,
+        foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,               // 왼쪽 정렬 유지
+        centerTitle: true, // 제목 중앙 정렬 통일
         actions: [
-          // 통일감을 위해 텍스트 버튼 대신 아이콘 버튼(체크표시) 사용
           IconButton(
             onPressed: _isSubmitting ? null : _submit,
             icon: const Icon(Icons.check),
-            tooltip: 'Post',
+            tooltip: 'Post Notice',
           ),
           const SizedBox(width: 8),
         ],
@@ -77,19 +82,15 @@ class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Title",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.grey
-                ),
+                "NOTICE TITLE",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _titleController,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
-                  hintText: "Enter notice title",
+                  hintText: "Enter title for all students",
                   hintStyle: TextStyle(color: Colors.grey[300]),
                   border: InputBorder.none,
                 ),
@@ -97,21 +98,17 @@ class _CreateNoticeScreenState extends State<CreateNoticeScreen> {
               ),
               const Divider(height: 32),
               const Text(
-                "Content (Markdown supported)",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.grey
-                ),
+                "CONTENT",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _contentController,
                 maxLines: null,
-                minLines: 10,
+                minLines: 12,
                 style: const TextStyle(fontSize: 16, height: 1.6),
                 decoration: InputDecoration(
-                  hintText: "Write your notice here...",
+                  hintText: "Describe the announcement details...",
                   hintStyle: TextStyle(color: Colors.grey[300]),
                   border: InputBorder.none,
                 ),

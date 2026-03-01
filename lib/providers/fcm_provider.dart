@@ -1,5 +1,5 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/fcm_service.dart';
 import '../services/community_service.dart';
@@ -11,53 +11,41 @@ class FCMProvider with ChangeNotifier {
   String? _token;
   String? get token => _token;
 
-  /// FCM 초기화 및 토큰 획득 프로세스
+  /// FCM 초기화 및 토픽 구독 프로세스
   Future<void> setupFCM(String userId) async {
     try {
-      // 1. 서비스 초기화 (권한 요청 및 기본 핸들러 설정)
+      // 1. FCM 서비스 초기화 (권한 요청 등)
       await _fcmService.initialize();
 
-      // 2. 현재 기기의 토큰 가져오기
-      _token = await _fcmService.getToken();
+      // 2. iOS의 경우 APNs 토큰 준비 대기
+      if (Platform.isIOS) {
+        String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        if (apnsToken == null) {
+          debugPrint("FCM: Waiting for APNs token...");
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
 
+      // 3. 기기 토큰 획득 및 서버 저장 (개별 알림용)
+      _token = await _fcmService.getToken();
       if (_token != null) {
-        // 3. 개인별 알림을 위한 토큰 서버(Firestore) 등록
         await _communityService.updateFcmToken(userId, _token!);
 
-        // 4. 전체 공지사항 알림을 위한 'notices' 토픽 구독
+        // 4. [핵심] 공지사항 토픽 구독
+        // 방식 B의 핵심으로, 모든 기기가 'notices' 토픽을 구독하게 합니다.
         await _fcmService.subscribeToTopic('notices');
+        debugPrint("FCM: Topic 'notices' subscribed for $userId");
 
-        // 5. [중요] 토큰 갱신 리스너 등록
-        // 앱 실행 중 토큰이 변경되어도 서버 데이터를 즉시 최신화합니다.
+        // 5. 토큰 갱신 리스너
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
           _token = newToken;
           await _communityService.updateFcmToken(userId, newToken);
           notifyListeners();
         });
-
-        debugPrint("FCM Setup complete for user: $userId");
       }
     } catch (e) {
-      debugPrint("FCM Setup Error: $e");
+      debugPrint("FCM Provider Error: $e");
     }
     notifyListeners();
-  }
-
-  /// 디버깅을 위해 현재 토큰을 클립보드에 복사
-  void copyTokenToClipboard(BuildContext context) {
-    if (_token != null) {
-      Clipboard.setData(ClipboardData(text: _token!));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('FCM Token copied to clipboard!'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Token is not available yet.')),
-      );
-    }
   }
 }
