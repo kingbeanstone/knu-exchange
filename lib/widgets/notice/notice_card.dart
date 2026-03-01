@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/notice.dart';
 import '../../utils/app_colors.dart';
-import '../../utils/date_formatter.dart'; // [추가]
+import '../../utils/date_formatter.dart';
 
 class NoticeCard extends StatelessWidget {
   final Notice notice;
@@ -63,7 +63,6 @@ class NoticeCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // [수정] 상대적 시간 표시 적용
                     Text(
                       DateFormatter.formatRelativeTime(notice.createdAt),
                       style: const TextStyle(
@@ -82,20 +81,11 @@ class NoticeCard extends StatelessWidget {
                     color: AppColors.darkGrey,
                     height: 1.3,
                   ),
+                  // 제목이 길어질 경우 최대 2줄까지 표시하고 나머지는 생략 처리합니다.
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  notice.content.replaceAll('\n', ' '),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // [수정] 본문 미리보기(notice.content) 섹션을 제거했습니다.
               ],
             ),
           ),
