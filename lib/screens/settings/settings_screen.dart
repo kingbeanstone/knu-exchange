@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import 'privacy_policy_screen.dart';
-import 'contact_screen.dart';
-import 'feedback_screen.dart'; // [추가] 피드백 화면 임포트
-
-import '../admin/admin_dashboard_screen.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/settings/settings_common_widgets.dart';
 import '../../widgets/settings/settings_profile_widgets.dart';
+import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
+import 'privacy_policy_screen.dart';
+import 'contact_screen.dart';
+import 'feedback_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -30,8 +30,12 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        // [수정] 제목을 중앙으로 정렬합니다.
         centerTitle: true,
+        // [수정] 상단바 우측에 알림 버튼 추가
+        actions: const [
+          CommonNotificationButton(),
+          SizedBox(width: 8),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 24),
@@ -105,7 +109,6 @@ class SettingsScreen extends StatelessWidget {
                   },
                 ),
                 const SettingsDivider(),
-                // [수정] 피드백 메뉴 추가
                 SettingsMenuTile(
                   icon: Icons.rate_review_outlined,
                   iconColor: Colors.amber,

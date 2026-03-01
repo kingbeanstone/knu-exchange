@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/notice/notice_card.dart';
+import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
 import 'notice_detail_screen.dart';
 import 'create_notice_screen.dart';
 
@@ -23,14 +24,19 @@ class _NoticeScreenState extends State<NoticeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        // [수정] 다른 탭들과의 통일성을 위해 두께(FontWeight)를 기본으로 변경
-        title: const Text('Notice'),
-        // 상단바 테마: 빨간색 배경, 흰색 글씨
+        title: const Text(
+          'Notice',
+          style: TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         actions: [
+          // [수정] 관리자용 추가 버튼과 알림 버튼을 함께 배치
           if (isAdmin)
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
@@ -41,6 +47,8 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 );
               },
             ),
+          const CommonNotificationButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(

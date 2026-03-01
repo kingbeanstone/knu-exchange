@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../providers/menu_provider.dart';
 import '../../widgets/cafeteria/cafeteria_widgets.dart';
 import '../../widgets/cafeteria/menu_section.dart';
+import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
 
 class CafeteriaScreen extends StatefulWidget {
   final String? initialFacilityId;
@@ -15,16 +16,14 @@ class CafeteriaScreen extends StatefulWidget {
 
 class _CafeteriaScreenState extends State<CafeteriaScreen> {
   late DateTime _selectedDate;
-  // 기본 선택 식당
   String _selectedFacilityId = 'welfare_bldg_cafeteria';
 
-  /// [확인] 엑셀의 'facility' 열에 적힌 이름과 왼쪽의 키(Key)값이 같아야 합니다.
   final Map<String, String> _allFacilities = {
     'cheomseong_dorm_cafeteria': 'Cheomeong Dorm',
     'welfare_bldg_cafeteria': 'Welfare Bldg',
     'information_center_cafeteria': 'Info Center',
     'engineering_bldg_cafeteria': 'Eng. Bldg',
-    'kyungdaria': 'Kyungdaria', // ID를 kyungdaria로 단순화 (엑셀과 일치 확인 필요)
+    'kyungdaria': 'Kyungdaria',
   };
 
   @override
@@ -37,7 +36,6 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
       _selectedFacilityId = widget.initialFacilityId!;
     }
 
-    // 화면 진입 시 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MenuProvider>().refreshMenu();
     });
@@ -61,7 +59,12 @@ class _CafeteriaScreenState extends State<CafeteriaScreen> {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true, // 제목 중앙 정렬 추가
+        centerTitle: true,
+        // [수정] 상단바 우측에 알림 버튼 추가
+        actions: const [
+          CommonNotificationButton(),
+          SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
