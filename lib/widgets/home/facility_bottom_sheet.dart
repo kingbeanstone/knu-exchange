@@ -4,13 +4,22 @@ import '../../../utils/app_colors.dart';
 
 class FacilityBottomSheet extends StatelessWidget {
   final Facility facility;
+  final VoidCallback onMoreInfo;
+  // 🗑️ onViewMenu 콜백 제거
 
-  const FacilityBottomSheet({super.key, required this.facility});
+  const FacilityBottomSheet({
+    super.key,
+    required this.facility,
+    required this.onMoreInfo,
+    // 🗑️ 생성자에서 onViewMenu 제거
+  });
 
   @override
   Widget build(BuildContext context) {
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding > 0 ? bottomPadding + 10 : 24),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -41,7 +50,7 @@ class FacilityBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.knuRed.withOpacity(0.1),
+                  color: AppColors.knuRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -60,15 +69,17 @@ class FacilityBottomSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: onMoreInfo,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.knuRed,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Close'),
+              child: const Text('More Info'),
             ),
           ),
+          // 🗑️ View Menu 버튼(if (onViewMenu != null) ...) 블록 전체 삭제
         ],
       ),
     );

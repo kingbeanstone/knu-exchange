@@ -3,8 +3,13 @@ import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../models/post.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/fcm_provider.dart';
 import '../../widgets/community/post_card.dart';
-import '../../widgets/community/community_category_filter.dart'; // [추가] 신규 위젯 임포트
+import '../../widgets/community/community_category_filter.dart';
+import '../../widgets/community/community_app_bar.dart';
+import '../../widgets/community/community_empty_state.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -15,45 +20,133 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  PostCategory? _selectedCategory;
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isAuthenticated) {
+        // Initialize notification and FCM services
+        Provider.of<NotificationProvider>(context, listen: false)
+            .initNotifications(auth.user!.uid);
+        Provider.of<FCMProvider>(context, listen: false)
+            .setupFCM(auth.user!.uid);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final provider = Provider.of<CommunityProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    // Infinite scroll logic: load more posts when reaching the bottom
+    if (!provider.isSearching &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
+      if (provider.hasMore && !provider.isLoadingMore) {
+        provider.fetchPosts(userId: auth.user?.uid);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final communityProvider = Provider.of<CommunityProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
 
-    final filteredPosts = _selectedCategory == null
-        ? communityProvider.posts
-        : communityProvider.posts.where((p) => p.category == _selectedCategory).toList();
+    final selectedCategory = communityProvider.currentCategory;
+    final isMyPostsOnly = communityProvider.isMyPostsOnly;
+
+    final List<Post> displayPosts;
+    if (communityProvider.isSearching) {
+      displayPosts = selectedCategory == null
+          ? communityProvider.searchResults
+          : communityProvider.searchResults
+          .where((p) => p.category == selectedCategory)
+          .toList();
+    } else {
+      displayPosts = communityProvider.posts;
+    }
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('KNU Community'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      backgroundColor: const Color(0xFFF8F9FA),
+      // AppBar with integrated search logic
+      appBar: CommunityAppBar(
+        title: 'Community',
+        isSearchMode: _isSearchMode,
+        searchController: _searchController,
+        onSearchToggle: () {
+          setState(() {
+            _isSearchMode = !_isSearchMode;
+            if (!_isSearchMode) {
+              _searchController.clear();
+              communityProvider.clearSearch();
+            }
+          });
+        },
+        onSearchChanged: (val) => communityProvider.performSearch(val),
       ),
       body: Column(
         children: [
-          // [수정] 분리된 카테고리 필터 위젯 적용
+          if (!_isSearchMode) // Show top border only when not in search mode
+            Container(height: 1, color: Colors.grey[200]),
+
           CommunityCategoryFilter(
-            selectedCategory: _selectedCategory,
+            selectedCategory: selectedCategory,
+            isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
-              setState(() => _selectedCategory = category);
+              communityProvider.setCategory(category);
+            },
+            onMyPostsSelected: (isActive) {
+              communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
-          const Divider(height: 1), // 시각적 구분을 위한 구분선
+          const SizedBox(height: 4),
           Expanded(
             child: communityProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredPosts.isEmpty
-                ? _buildEmptyState()
+                ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
+                : displayPosts.isEmpty
+                ? CommunityEmptyState(
+              isSearching: communityProvider.isSearching,
+              isMyPostsOnly: isMyPostsOnly,
+            )
                 : RefreshIndicator(
-              onRefresh: communityProvider.fetchPosts,
+              color: AppColors.knuRed,
+              onRefresh: () => communityProvider.fetchPosts(
+                isRefresh: true,
+                userId: auth.user?.uid,
+              ),
               child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: filteredPosts.length,
-                itemBuilder: (context, index) => PostCard(post: filteredPosts[index]),
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                itemCount: displayPosts.length +
+                    (!communityProvider.isSearching &&
+                        communityProvider.hasMore
+                        ? 1
+                        : 0),
+                itemBuilder: (context, index) {
+                  if (index < displayPosts.length) {
+                    return PostCard(post: displayPosts[index]);
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.knuRed)),
+                    );
+                  }
+                },
               ),
             ),
           ),
@@ -61,30 +154,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Determine initial category for new post based on current filter
+          PostCategory initialCategory = PostCategory.lounge;
+          if (selectedCategory != null &&
+              selectedCategory != PostCategory.hot &&
+              !isMyPostsOnly) {
+            initialCategory = selectedCategory;
+          }
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+            MaterialPageRoute(
+              builder: (context) => CreatePostScreen(initialCategory: initialCategory),
+            ),
           );
         },
         backgroundColor: AppColors.knuRed,
+        elevation: 4,
         child: const Icon(Icons.edit, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.speaker_notes_off, size: 60, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text(
-            'No posts yet.\nBe the first to share!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
       ),
     );
   }

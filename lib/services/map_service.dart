@@ -1,230 +1,30 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/facility.dart';
 
 class MapService {
-  // 모든 시설 데이터를 반환하는 함수
-  List<Facility> getAllFacilities() {
-    return [
-      // 행정/필수 (Admin)
-      Facility(
-        id: 'global_plaza_building',
-        korName: '글로벌플라자',
-        engName: 'Global Plaza',
-        latitude: 35.8921082,
-        longitude: 128.6112880,
-        korDesc: '경북대학교 글로벌플라자 건물입니다.',
-        engDesc: 'Global Plaza building on KNU campus.',
-        category: 'Admin',
-      ),
-      Facility(
-        id: 'oia_office',
-        korName: '국제교류처(OIA)',
-        engName: 'Office of International Affairs (OIA)',
-        latitude: 35.8907840,
-        longitude: 128.6118112,
-        korDesc: '교환학생/유학생 관련 서류 제출 및 상담이 진행되는 곳입니다.',
-        engDesc: 'Support for exchange/international students (documents & consultation).',
-        category: 'Admin',
-      ),
-      // 카페 (Cafe)
-      // 카페 (Cafe)
-      Facility(
-        id: 'prompt_cafe',
-        korName: '프롬프트',
-        engName: 'PROMPT',
-        latitude: 35.8888151,
-        longitude: 128.6116508,
-        korDesc: '교내 카페입니다.',
-        engDesc: 'A cafe on campus.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'bighands_cafe',
-        korName: '빅핸즈',
-        engName: 'BIGHANDS',
-        latitude: 35.8919718,
-        longitude: 128.6126492,
-        korDesc: '교내 카페입니다.',
-        engDesc: 'A cafe on campus.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'hollys_cafe',
-        korName: '할리스',
-        engName: 'HOLLYS',
-        latitude: 35.8890624,
-        longitude: 128.6146194,
-        korDesc: '교내 카페입니다.',
-        engDesc: 'A cafe on campus.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'ilcheongdam_cafe',
-        korName: '일청담 카페',
-        engName: 'Ilcheongdam Cafe',
-        latitude: 35.8890730,
-        longitude: 128.6140186,
-        korDesc: '교내 카페입니다.',
-        engDesc: 'A cafe on campus.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'gp_cafe',
-        korName: 'GP 카페',
-        engName: 'GP Cafe',
-        latitude: 35.8920417,
-        longitude: 128.6113503,
-        korDesc: '글로벌플라자 인근 카페입니다.',
-        engDesc: 'A cafe near Global Plaza.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'cheomseong_cafe',
-        korName: '첨성관 카페',
-        engName: 'Cheomseong Dorm Cafe',
-        latitude: 35.8912897,
-        longitude: 128.6147518,
-        korDesc: '첨성관 기숙사 내에 있는 카페입니다.',
-        engDesc: 'A cafe located inside Cheomseong-gwan dormitory.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'Jinri_Dorm_cafe',
-        korName: '생활관 카페',
-        engName: 'Jinri Dorm Cafe',
-        latitude: 35.8869255,
-        longitude: 128.6094060,
-        korDesc: '진리관 기숙사 내에 있는 카페입니다.',
-        engDesc: 'A cafe located inside Jinri Dorm.',
-        category: 'Cafe',
-      ),
-      Facility(
-        id: 'Paris Baguette',
-        korName: '파리바게트',
-        engName: 'Paris Baguette',
-        latitude: 35.8891030,
-        longitude: 128.6140486,
-        korDesc: '교내 파리바게트입니다.',
-        engDesc: 'Paris Baguette on campus.',
-        category: 'Cafe',
-      ),
-      // 편의점 (Store)
-      Facility(
-        id: 'gs25_dorm',
-        korName: 'GS25 첨성관점',
-        engName: 'GS25 Cheomseong-gwan',
-        latitude: 35.8913055,
-        longitude: 128.6147971,
-        korDesc: '첨성관 기숙사 1층에 있는 편의점입니다.',
-        engDesc: 'Convenience store located in Cheomseong-gwan dorm.',
-        category: 'Store',
-      ),
-      Facility(
-        id: 'gs25_gp',
-        korName: 'GS25 글로벌플라자점',
-        engName: 'GS25 Global Plaza',
-        latitude: 35.8920417,
-        longitude: 128.6113124,
-        korDesc: '글로벌플라자 인근 편의점입니다.',
-        engDesc: 'Convenience store near Global Plaza.',
-        category: 'Store',
-      ),
-      Facility(
-        id: '7-ELEVEn',
-        korName: '세븐일레븐 공학관점',
-        engName: '7-ELEVEn Engineering Bldg',
-        latitude: 35.8884474,
-        longitude: 128.6098514,
-        korDesc: '공과대학 인근 편의점입니다.',
-        engDesc: 'Convenience store near the Engineering Building.',
-        category: 'Store',
-      ),
-      Facility(
-        id: 'gs25_welfare_bldg',
-        korName: 'GS25 복지관점',
-        engName: 'GS25 Welfare Bldg',
-        latitude: 35.8888041,
-        longitude: 128.6145960,
-        korDesc: '복지관 인근 편의점입니다.',
-        engDesc: 'Convenience store near Welfare Bldg.',
-        category: 'Store',
-      ),
-      Facility(
-        id: 'gs25_jinri_dorm',
-        korName: 'GS25 진리관점',
-        engName: 'GS25 Jinri Dorm',
-        latitude: 35.8869255,
-        longitude: 128.6093960,
-        korDesc: '진리관 인근 편의점입니다.',
-        engDesc: 'Convenience store near Jinri Dorm.',
-        category: 'Store',
-      ),
-      // 식당 (Restaurant)
-      Facility(
-        id: 'welfare_bldg_cafeteria',
-        korName: '복지관 식당',
-        engName: 'Welfare Bldg Cafeteria',
-        latitude: 35.8890373,
-        longitude: 128.6145270,
-        korDesc: '복지관에 위치한 학생 식당입니다.',
-        engDesc: 'Student cafeteria located in the Welfare Building.',
-        category: 'Restaurant',
-      ),
-      Facility(
-        id: 'cheomseong_dorm_cafeteria',
-        korName: '첨성관(기숙사) 식당',
-        engName: 'Cheomseong Dorm Cafeteria',
-        latitude: 35.8914266,
-        longitude: 128.6148814,
-        korDesc: '기숙사생들을 위한 식당입니다.',
-        engDesc: 'Cafeteria for dormitory residents.',
-        category: 'Restaurant',
-      ),
-      Facility(
-        id: 'information_center_cafeteria',
-        korName: '정보센터 식당',
-        engName: 'Information Center Cafeteria',
-        latitude: 35.8924120,
-        longitude: 128.6132110,
-        korDesc: '학생들이 많이 이용하는 학식당 중 하나입니다.',
-        engDesc: 'One of the most popular student cafeterias.',
-        category: 'Restaurant',
-      ),
-      Facility(
-        id: 'engineering_bldg_cafeteria',
-        korName: '공대 식당',
-        engName: 'Engineering Bldg Cafeteria',
-        latitude: 35.8883551,
-        longitude: 128.6097658,
-        korDesc: '공과대학 인근 학생 식당입니다.',
-        engDesc: 'Student cafeteria near the Engineering Building.',
-        category: 'Restaurant',
-      ),
-      Facility(
-        id: 'global_plaza_cafeteria',
-        korName: '글로벌플라자 식당',
-        engName: 'Global Plaza Cafeteria',
-        latitude: 35.8922051,
-        longitude: 128.6110748,
-        korDesc: '글로벌플라자 내부에 위치한 식당입니다.',
-        engDesc: 'Cafeteria located inside Global Plaza.',
-        category: 'Restaurant',
-      ),
-      Facility(
-        id: 'kyungdaria_restaurant',
-        korName: '경대리아',
-        engName: 'Kyungdaria',
-        latitude: 35.8914831,
-        longitude: 128.6127566,
-        korDesc: '경북대 도서관 휴게실에 있는 식당입니다.',
-        engDesc: 'A restaurant in the KNU library lounge.',
-        category: 'Restaurant',
-      ),
-    ];
-  }
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // 특정 카테고리의 시설만 필터링하여 반환
-  List<Facility> getFacilitiesByCategory(String category) {
-    if (category == 'All') return getAllFacilities();
-    return getAllFacilities().where((f) => f.category == category).toList();
+  // 실시간 데이터 스트림
+  Stream<List<Facility>> getFacilitiesStream() {
+    return _db.collection('facilities').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+
+        // 여기서 데이터를 하나씩 매핑하여 Facility 객체를 만듭니다.
+        return Facility(
+          id: doc.id,
+          korName: data['korName'] ?? '',
+          engName: data['engName'] ?? '',
+          latitude: (data['latitude'] as num).toDouble(),
+          longitude: (data['longitude'] as num).toDouble(),
+          korDesc: data['korDesc'] ?? '',
+          engDesc: data['engDesc'] ?? '',
+          category: data['category'] ?? '',
+          imageUrl: data['imageUrl'],
+          operatingHours: data['operatingHours'],
+          interiorImages: List<String>.from(data['interiorImages'] ?? []),
+        );
+      }).toList();
+    });
   }
 }
