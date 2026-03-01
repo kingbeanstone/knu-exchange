@@ -16,15 +16,14 @@ class CommunityCategoryFilter extends StatelessWidget {
     required this.onMyPostsSelected,
   });
 
-  // [수정] 1번째 줄 아이템: All, Hot, Free, Food
+  // [수정] Lounge -> General로 라벨 변경
   List<Map<String, dynamic>> get _row1Items => [
     {'label': 'All', 'icon': Icons.apps, 'value': 'all'},
     {'label': 'Hot', 'icon': Icons.local_fire_department, 'value': PostCategory.hot},
-    {'label': 'Lounge', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.lounge},
+    {'label': 'General', 'icon': Icons.chat_bubble_outline, 'value': PostCategory.lounge},
     {'label': 'Food', 'icon': Icons.restaurant_menu, 'value': PostCategory.food},
   ];
 
-  // [수정] 2번째 줄 아이템: My Posts, Question, Tip, Market
   List<Map<String, dynamic>> get _row2Items => [
     {'label': 'My Posts', 'icon': Icons.person_pin, 'value': 'mine'},
     {'label': 'Question', 'icon': Icons.help_outline, 'value': PostCategory.question},
@@ -48,7 +47,7 @@ class CommunityCategoryFilter extends StatelessWidget {
 
   Widget _buildFilterRow(List<Map<String, dynamic>> items) {
     return SizedBox(
-      height: 44, // 디자인에 맞춰 높이 소폭 조정
+      height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -70,12 +69,12 @@ class CommunityCategoryFilter extends StatelessWidget {
               : AppColors.knuRed;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8), // 간격 8
+            padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               showCheckmark: false,
               avatar: Icon(
                 item['icon'],
-                size: 16, // 아이콘 크기 16
+                size: 16,
                 color: isSelected ? Colors.white : themeColor,
               ),
               label: Text(item['label']),
@@ -94,11 +93,9 @@ class CommunityCategoryFilter extends StatelessWidget {
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13, // 폰트 크기 13
+                fontSize: 13,
               ),
-              // 아이콘(avatar)과 텍스트(label) 사이 간격 조정을 위해 여백 최소화
               labelPadding: const EdgeInsets.only(left: 0, right: 4),
-              // [수정] 아이콘 왼쪽의 빈 공간을 줄이기 위해 padding을 대칭이 아닌 개별 설정
               padding: const EdgeInsets.only(left: 4, right: 8, top: 0, bottom: 0),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),

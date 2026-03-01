@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// [수정] 'food' 카테고리 추가
 enum PostCategory { hot, question, tip, lounge, food }
 
 class Post {
@@ -32,13 +31,14 @@ class Post {
     this.imageUrls = const [],
   });
 
+  // [수정] Lounge 카테고리 표시명을 'General'로 변경
   String get categoryLabel {
     switch (category) {
       case PostCategory.hot: return 'Hot';
       case PostCategory.question: return 'Question';
       case PostCategory.tip: return 'Tip';
-      case PostCategory.lounge: return 'Lounge';
-      case PostCategory.food: return 'Food'; // [추가]
+      case PostCategory.lounge: return 'General'; // 'Lounge' -> 'General'
+      case PostCategory.food: return 'Food';
     }
   }
 
@@ -70,7 +70,7 @@ class Post {
       'authorId': authorId,
       'authorName': authorName,
       'createdAt': Timestamp.fromDate(createdAt),
-      'category': category.toString().split('.').last, // 저장 시 문자열 값만 저장
+      'category': category.toString().split('.').last,
       'likes': likes,
       'comments': comments,
       'isAnonymous': isAnonymous,
