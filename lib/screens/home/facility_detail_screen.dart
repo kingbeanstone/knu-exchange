@@ -111,7 +111,6 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                           const Tab(text: 'Home'),
                           if (_showMenuTab) const Tab(text: 'Menu'),
                           const Tab(text: 'Photos'),
-                          const Tab(text: 'Floor'),
                         ],
                       ),
                     ),
