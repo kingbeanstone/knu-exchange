@@ -1,6 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// [참고] 데이터베이스 호환성을 위해 enum 값 이름인 'lounge'는 유지합니다.
 enum PostCategory { hot, question, tip, lounge, food }
+
+// [추가] 카테고리별 표시 이름을 관리하는 확장 기능
+extension PostCategoryExtension on PostCategory {
+  String get label {
+    switch (this) {
+      case PostCategory.hot: return 'Hot';
+      case PostCategory.question: return 'Question';
+      case PostCategory.tip: return 'Tip';
+      case PostCategory.lounge: return 'General'; // Lounge 대신 General 반환
+      case PostCategory.food: return 'Food';
+    }
+  }
+}
 
 class Post {
   final String id;
@@ -31,16 +45,8 @@ class Post {
     this.imageUrls = const [],
   });
 
-  // [수정] Lounge 카테고리 표시명을 'General'로 변경
-  String get categoryLabel {
-    switch (category) {
-      case PostCategory.hot: return 'Hot';
-      case PostCategory.question: return 'Question';
-      case PostCategory.tip: return 'Tip';
-      case PostCategory.lounge: return 'General'; // 'Lounge' -> 'General'
-      case PostCategory.food: return 'Food';
-    }
-  }
+  // [수정] 위에서 정의한 label 확장 기능을 사용하여 중복 코드를 제거합니다.
+  String get categoryLabel => category.label;
 
   factory Post.fromFirestore(String id, Map<String, dynamic> data) {
     return Post(

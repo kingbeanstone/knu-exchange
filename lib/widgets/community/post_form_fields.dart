@@ -29,7 +29,7 @@ class PostFormFields extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 카테고리 선택
+          // 카테고리 선택 드롭다운
           DropdownButtonFormField<PostCategory>(
             value: selectedCategory,
             decoration: const InputDecoration(
@@ -37,10 +37,11 @@ class PostFormFields extends StatelessWidget {
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
+            // [수정] 단순 enum 이름을 대문자로 바꾸는 대신, 모델에 정의된 label(General 등)을 사용합니다.
             items: PostCategory.values.where((c) => c != PostCategory.hot).map((cat) {
               return DropdownMenuItem(
                 value: cat,
-                child: Text(cat.toString().split('.').last.toUpperCase()),
+                child: Text(cat.label), // 이제 'Lounge' 대신 'General'로 표시됩니다.
               );
             }).toList(),
             onChanged: onCategoryChanged,
