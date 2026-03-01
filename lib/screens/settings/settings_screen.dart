@@ -30,7 +30,8 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        // [수정] 제목을 중앙으로 정렬합니다.
+        centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 24),

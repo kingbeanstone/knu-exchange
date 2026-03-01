@@ -24,7 +24,7 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final unreadCount = context.watch<NotificationProvider>().unreadCount;
 
-    // AppBar configuration for search mode
+    // 검색 모드일 때의 상단바 설정
     if (isSearchMode) {
       return AppBar(
         backgroundColor: Colors.white,
@@ -32,13 +32,13 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: onSearchToggle, // Exit search mode on back press
+          onPressed: onSearchToggle,
         ),
         title: TextField(
           controller: searchController,
-          autofocus: true, // Immediately show keyboard when search is clicked
+          autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'Search posts by title...', // [Update] Translated to English
+            hintText: 'Search posts by title...',
             border: InputBorder.none,
             hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
           ),
@@ -59,7 +59,7 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     }
 
-    // Default AppBar configuration (Red background)
+    // 기본 상단바 설정 (빨간색 배경)
     return AppBar(
       title: Text(
         title,
@@ -71,9 +71,9 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.knuRed,
       foregroundColor: Colors.white,
       elevation: 0,
-      centerTitle: false,
+      // [수정] 제목을 중앙으로 정렬합니다.
+      centerTitle: true,
       actions: [
-        // Toggle search mode on search icon click
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: onSearchToggle,
