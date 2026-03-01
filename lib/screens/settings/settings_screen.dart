@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../admin/admin_dashboard_screen.dart';
 import '../../utils/app_colors.dart';
-import '../../widgets/settings/settings_widgets.dart';
+import '../../widgets/settings/settings_common_widgets.dart';
+import '../../widgets/settings/settings_profile_widgets.dart';
+import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
+import 'privacy_policy_screen.dart';
+import 'contact_screen.dart';
+import 'feedback_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,26 +20,37 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Settings',
+          style: TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        // [수정] 상단바 우측에 알림 버튼 추가
+        actions: const [
+          CommonNotificationButton(),
+          SizedBox(width: 8),
+        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24),
         children: [
-          // 1. 프로필 섹션
-          const SettingsSectionHeader(title: 'Profile'),
+          // 1. Profile Section
+          const SettingsSectionHeader(title: 'Account'),
           SettingsGroupCard(
             child: authProvider.isAuthenticated
                 ? SettingsProfileContent(auth: authProvider)
                 : const SettingsLoginPrompt(),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // 2. 관리자 섹션
+          // 2. Admin Section
           if (authProvider.isAdmin) ...[
             const SettingsSectionHeader(title: 'Management'),
             SettingsGroupCard(
@@ -42,38 +58,97 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.admin_panel_settings_rounded,
                 iconColor: Colors.blueAccent,
                 title: 'Admin Dashboard',
-                trailing: 'Manage',
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
 
-          // 3. 일반 설정 섹션
+          // 3. Preferences Section
           const SettingsSectionHeader(title: 'Preferences'),
           SettingsGroupCard(
             child: Column(
               children: [
-                SettingsMenuTile(icon: Icons.language, title: 'Language', trailing: 'English', onTap: () {}),
-                const SettingsDivider(),
-                SettingsMenuTile(icon: Icons.notifications_none_rounded, title: 'Notifications', trailing: 'On', onTap: () {}),
+                SettingsMenuTile(
+                  icon: Icons.notifications_none_rounded,
+                  iconColor: Colors.orange,
+                  title: 'Notifications',
+                  trailing: Switch(
+                    value: authProvider.isNotificationsEnabled,
+                    onChanged: authProvider.isAuthenticated
+                        ? (val) => authProvider.toggleNotifications(val)
+                        : null,
+                    activeColor: AppColors.knuRed,
+                    activeTrackColor: AppColors.knuRed.withOpacity(0.2),
+                  ),
+                ),
               ],
             ),
           ),
-
           const SizedBox(height: 32),
 
-          // 4. 계정 관리
+          // 4. Support Section
+          const SettingsSectionHeader(title: 'Support'),
+          SettingsGroupCard(
+            child: Column(
+              children: [
+                SettingsMenuTile(
+                  icon: Icons.privacy_tip_outlined,
+                  iconColor: Colors.green,
+                  title: 'Privacy Policy',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                SettingsMenuTile(
+                  icon: Icons.rate_review_outlined,
+                  iconColor: Colors.amber,
+                  title: 'Feedback',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FeedbackScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                SettingsMenuTile(
+                  icon: Icons.mail_outline,
+                  iconColor: Colors.blue,
+                  title: 'Contact Us',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ContactScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // 5. Account Management
           if (authProvider.isAuthenticated)
             Center(
               child: TextButton(
                 onPressed: () => _showDeleteAccountDialog(context, authProvider),
                 child: Text(
                   'Delete Account',
-                  style: TextStyle(color: Colors.red.shade300, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                 ),
               ),
             ),
@@ -87,22 +162,36 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to delete your account?\nAll your profile information will be permanently removed.'),
+        content: const Text(
+          'Are you sure you want to delete your account?\nAll your profile information will be permanently removed.',
+          style: TextStyle(height: 1.5),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey))
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await auth.deleteAccount();
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account has been deleted.')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account has been deleted.'))
+                  );
+                }
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e'))
+                  );
+                }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

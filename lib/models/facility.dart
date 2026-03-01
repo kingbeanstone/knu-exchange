@@ -1,12 +1,15 @@
 class Facility {
   final String id;
-  final String korName;     // 한국어 명칭
-  final String engName;     // 영어 명칭
+  final String korName;
+  final String engName;
   final double latitude;
   final double longitude;
-  final String korDesc;     // 한국어 설명
-  final String engDesc;     // 영어 설명
-  final String category;    // 예: Admin, Dormitory, Restaurant, Bank
+  final String korDesc;
+  final String engDesc;
+  final String category;
+  final String? imageUrl;
+  final String? operatingHours;
+  final List<String>? interiorImages;
 
   Facility({
     required this.id,
@@ -17,5 +20,8 @@ class Facility {
     required this.korDesc,
     required this.engDesc,
     required this.category,
+    this.imageUrl,
+    this.operatingHours,
+    this.interiorImages,
   });
 }

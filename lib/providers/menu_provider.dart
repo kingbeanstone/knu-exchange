@@ -11,7 +11,7 @@ class MenuProvider with ChangeNotifier {
   List<MenuItem> get allMenus => _allMenus;
   bool get isLoading => _isLoading;
 
-  // 전체 메뉴 새로고침 (사용자가 탭을 누를 때 호출 가능)
+  /// 구글 드라이브(원격 CSV)에서 전체 메뉴 데이터를 새로고침합니다.
   Future<void> refreshMenu() async {
     _isLoading = true;
     notifyListeners();
@@ -26,8 +26,10 @@ class MenuProvider with ChangeNotifier {
     }
   }
 
-  // 화면에서 특정 식당과 날짜로 필터링된 메뉴를 가져올 때 사용
+  /// 특정 장소와 날짜로 필터링된 메뉴 목록을 반환합니다.
   List<MenuItem> getFilteredMenu(String facilityId, String date) {
-    return _allMenus.where((m) => m.facility == facilityId && m.date == date).toList();
+    return _allMenus
+        .where((m) => m.facility == facilityId && m.date == date)
+        .toList();
   }
 }

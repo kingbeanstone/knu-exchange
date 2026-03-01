@@ -7,7 +7,11 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
+import '../../widgets/community/post_detail_header.dart';
+import '../../widgets/community/post_detail_content.dart';
+import '../../widgets/community/comment_input.dart';
 import '../../widgets/report_dialog.dart';
+import 'edit_post_screen.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -29,17 +33,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _initData() async {
-    final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
-    final commentProvider = Provider.of<CommentProvider>(context, listen: false);
+    _currentPost = widget.post;
+    await context.read<CommentProvider>().loadComments(widget.post.id);
+    if (mounted) {
+      setState(() => _isFetching = false);
+    }
+  }
 
-    await Future.wait([
-      communityProvider.getPostDetail(widget.post.id).then((p) {
-        if (p != null && mounted) setState(() => _currentPost = p);
-      }),
-      commentProvider.loadComments(widget.post.id),
-    ]);
-
-    if (mounted) setState(() => _isFetching = false);
+  void _syncPostData() {
+    final posts = context.read<CommunityProvider>().posts;
+    final updated = posts.firstWhere((p) => p.id == _currentPost.id, orElse: () => _currentPost);
+    setState(() {
+      _currentPost = updated;
+    });
   }
 
   void _confirmDelete() {
@@ -54,7 +60,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await Provider.of<CommunityProvider>(context, listen: false).removePost(_currentPost.id);
+                await Provider.of<CommunityProvider>(context, listen: false)
+                    .deletePost(widget.post.id);
                 if (mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted.')));
@@ -73,7 +80,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   void _showReportDialog() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login is required to report.')));
       return;
     }
     showDialog(
@@ -85,30 +92,38 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-
-    // [수정] 본인의 글이거나 관리자(isAdmin)인 경우 삭제 권한 부여
-    final bool canDelete = auth.isAuthenticated && (auth.user?.uid == _currentPost.authorId || auth.isAdmin);
+    final bool isAuthor = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
+    final bool canDelete = isAuthor || auth.isAdmin;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Post Detail'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
+        title: const Text('Post'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
+        centerTitle: true,
         actions: [
-          // [수정] 권한이 있으면 삭제 아이콘, 없으면 신고 아이콘 노출
+          if (isAuthor)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.grey),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditPostScreen(post: _currentPost)),
+                );
+                _syncPostData();
+              },
+            ),
           if (canDelete)
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Icons.delete_outline, color: Colors.grey),
               onPressed: _confirmDelete,
-              tooltip: 'Delete post',
             )
           else
             IconButton(
-              icon: const Icon(Icons.report_problem_outlined),
+              icon: const Icon(Icons.report_problem_outlined, color: Colors.grey),
               onPressed: _showReportDialog,
-              tooltip: 'Report this post',
             ),
         ],
       ),
@@ -118,49 +133,37 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
-                  const Divider(height: 40),
-                  SelectionArea(
-                      child: Text(_currentPost.content, style: const TextStyle(fontSize: 16, height: 1.7))
+                  PostDetailHeader(post: _currentPost),
+                  const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
+
+                  // 게시글 본문 내용
+                  PostDetailContent(
+                    content: _currentPost.content,
+                    imageUrls: _currentPost.imageUrls,
                   ),
-                  const SizedBox(height: 40),
-                  CommentSection(postId: _currentPost.id),
+
+                  // [수정] 좋아요 및 댓글 수 액션 바를 본문 바로 아래로 이동
+                  // 기존 bottomNavigationBar에서 제거하고 이곳에 배치합니다.
+                  PostActionBar(post: _currentPost),
+
+                  // 구분선 및 댓글 섹션
+                  Container(height: 8, color: AppColors.lightGrey),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: CommentSection(postId: _currentPost.id),
+                  ),
                 ],
               ),
             ),
           ),
+          // 댓글 입력창은 하단에 고정된 상태 유지
           CommentInput(postId: _currentPost.id),
         ],
       ),
-      bottomNavigationBar: PostActionBar(post: _currentPost),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: AppColors.knuRed.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(_currentPost.categoryLabel.toUpperCase(), style: const TextStyle(color: AppColors.knuRed, fontSize: 11, fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 16),
-        Text(_currentPost.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.3)),
-        const SizedBox(height: 20),
-        Row(children: [
-          const CircleAvatar(backgroundColor: AppColors.lightGrey, child: Icon(Icons.person, color: Colors.grey)),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_currentPost.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text('${_currentPost.createdAt.year}.${_currentPost.createdAt.month}.${_currentPost.createdAt.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ]),
-        ]),
-      ],
+      // [수정] bottomNavigationBar 영역 제거 (본문 내부로 이동됨)
     );
   }
 }

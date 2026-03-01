@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/notice/notice_card.dart';
+import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
+import 'notice_detail_screen.dart';
+import 'create_notice_screen.dart';
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({super.key});
@@ -12,90 +17,84 @@ class NoticeScreen extends StatefulWidget {
 
 class _NoticeScreenState extends State<NoticeScreen> {
   @override
-  void initState() {
-    super.initState();
-    // 화면 로드 시 공지사항 가져오기 (메서드명 수정: refreshNotices)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NoticeProvider>().refreshNotices();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final noticeProvider = context.watch<NoticeProvider>();
+    final provider = context.watch<NoticeProvider>();
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('공지사항'),
+        title: const Text(
+          'Notice',
+          style: TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 18,
+          ),
+        ),
         backgroundColor: AppColors.knuRed,
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
+        actions: [
+          // [수정] 관리자용 추가 버튼과 알림 버튼을 함께 배치
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline_rounded),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateNoticeScreen()),
+                );
+              },
+            ),
+          const CommonNotificationButton(),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: RefreshIndicator(
-        // 새로고침 시 호출 (메서드명 수정)
-        onRefresh: () => noticeProvider.refreshNotices(),
-        child: noticeProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : noticeProvider.notices.isEmpty
-            ? _buildEmptyState()
-            : ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: noticeProvider.notices.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final notice = noticeProvider.notices[index];
-            return Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey[200]!),
-              ),
-              child: ExpansionTile(
-                title: Text(
-                  notice.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    notice.date, // 필드명 수정: createdAt -> date
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ),
-                childrenPadding: const EdgeInsets.all(16),
-                expandedAlignment: Alignment.topLeft,
-                children: [
-                  Text(
-                    notice.content,
-                    style: const TextStyle(fontSize: 14, height: 1.6),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.knuRed))
+                : provider.notices.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              itemCount: provider.notices.length,
+              itemBuilder: (context, index) {
+                final notice = provider.notices[index];
+                return NoticeCard(
+                  notice: notice,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NoticeDetailScreen(noticeId: notice.id),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return ListView(
-      children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-        const Center(
-          child: Column(
-            children: [
-              Icon(Icons.notifications_none, size: 60, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text('등록된 공지사항이 없습니다.', style: TextStyle(color: Colors.grey)),
-            ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_off_outlined, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text(
+            "No notices yet.",
+            style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

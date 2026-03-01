@@ -51,28 +51,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('에러: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
+  // 에러 메시지 영문으로 변경
   String _getErrorMessage(String code) {
     switch (code) {
-      case 'email-already-in-use': return '이미 사용 중인 이메일입니다.';
-      case 'weak-password': return '비밀번호가 너무 취약합니다.';
-      case 'invalid-email': return '유효하지 않은 이메일 형식입니다.';
-      default: return '회원가입 중 오류가 발생했습니다.';
+      case 'email-already-in-use': return 'This email is already in use.';
+      case 'weak-password': return 'The password is too weak.';
+      case 'invalid-email': return 'Invalid email format.';
+      default: return 'An error occurred during sign up.';
     }
   }
 
+  // 성공 다이얼로그 문구 수정 (스팸함 확인 안내 추가)
   void _showSuccessDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('인증 메일 발송'),
+        title: const Text('Verification Email Sent'),
         content: const Text(
-          '가입하신 이메일로 인증 메일을 보냈습니다.\n메일함의 링크를 클릭하여 인증을 완료해주세요.',
+          'A verification email has been sent to your address.\nPlease click the link in the email to complete your registration.\n\n(Note: If you do not see the email, please check your spam folder, especially for Gmail users.)',
         ),
         actions: [
           TextButton(
@@ -80,7 +82,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: const Text('확인'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -109,7 +111,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.knuRed),
             ),
             const SizedBox(height: 8),
-            const Text('경북대 캠퍼스 라이프를 시작해보세요.', style: TextStyle(color: Colors.grey)),
+            // 요청하신 문구 영문으로 변경
+            const Text('Start your KNU campus life today.', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
 
             SignUpForm(
@@ -121,8 +124,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               isLoading: authProvider.isLoading,
               onSubmit: _submit,
             ),
-
-            // [삭제] 소셜 로그인 섹션(구글/애플)이 제거되었습니다.
 
             const SizedBox(height: 24),
             _buildLoginLink(),

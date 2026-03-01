@@ -1,38 +1,96 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   User? _user;
-  bool _isAdmin = false; // [추가] 관리자 상태 변수
+  bool _isAdmin = false;
   bool _isLoading = false;
+  bool _isInitialLoading = true;
+
+  // [추가] 알림 활성화 상태
+  bool _isNotificationsEnabled = true;
 
   User? get user => _user;
   bool get isAuthenticated => _user != null;
-  bool get isAdmin => _isAdmin; // [추가] 관리자 여부 Getter
+  bool get isAdmin => _isAdmin;
   bool get isLoading => _isLoading;
+  bool get isInitialLoading => _isInitialLoading;
+  bool get isNotificationsEnabled => _isNotificationsEnabled; // [추가] 게터
 
   AuthProvider() {
-    _user = FirebaseAuth.instance.currentUser;
-    if (_user != null) _checkAdminStatus(_user!.uid);
+    _initializeAuth();
+  }
 
-    _authService.user.listen((User? newUser) {
+  void _initializeAuth() {
+    _user = FirebaseAuth.instance.currentUser;
+    if (_user != null) {
+      _fetchUserData(_user!.uid);
+    }
+
+    _authService.user.listen((User? newUser) async {
       _user = newUser;
-      if (newUser != null) {
-        _checkAdminStatus(newUser.uid);
+
+      if (_user != null) {
+        await _fetchUserData(_user!.uid);
       } else {
         _isAdmin = false;
-        notifyListeners();
+        _isNotificationsEnabled = true; // 로그아웃 시 초기화
       }
+
+      _isInitialLoading = false;
+      notifyListeners();
     });
   }
 
-  // [추가] 사용자의 관리자 권한 정보를 확인합니다.
-  Future<void> _checkAdminStatus(String uid) async {
-    final profile = await _authService.getUserProfile(uid);
-    _isAdmin = profile?['isAdmin'] ?? false;
+  // [수정] Firestore에서 관리자 여부 및 알림 설정을 확인합니다.
+  Future<void> _fetchUserData(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc('knu-exchange-app')
+          .collection('users')
+          .doc(uid)
+          .collection('profile')
+          .doc('info')
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        _isAdmin = data?['isAdmin'] ?? false;
+        _isNotificationsEnabled = data?['isNotificationsEnabled'] ?? true; // 기본값 true
+      }
+    } catch (e) {
+      debugPrint("Error fetching user data: $e");
+    }
+
     notifyListeners();
+  }
+
+  // [추가] 알림 설정 토글 및 Firestore 업데이트
+  Future<void> toggleNotifications(bool value) async {
+    if (_user == null) return;
+
+    _isNotificationsEnabled = value;
+    notifyListeners();
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc('knu-exchange-app')
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('profile')
+          .doc('info')
+          .set({
+        'isNotificationsEnabled': value,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Error updating notification setting: $e");
+    }
   }
 
   void _setLoading(bool value) {
@@ -46,7 +104,7 @@ class AuthProvider with ChangeNotifier {
       final credential = await _authService.signIn(email, password);
       if (credential.user != null) {
         await credential.user!.reload();
-        await _checkAdminStatus(credential.user!.uid); // 로그인 즉시 관리자 체크
+        await _fetchUserData(credential.user!.uid);
 
         final refreshedUser = FirebaseAuth.instance.currentUser;
         if (refreshedUser != null && !refreshedUser.emailVerified) {

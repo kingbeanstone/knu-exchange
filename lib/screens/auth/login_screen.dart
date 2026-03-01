@@ -26,13 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _fillDebugInfo() {
-    setState(() {
-      _emailController.text = "wlsgudwns112@naver.com";
-      _passwordController.text = "123456";
-    });
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -42,10 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      if (mounted) Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Login Failed')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Login failed.'))
+        );
       }
     }
   }
@@ -56,7 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(elevation: 0, backgroundColor: Colors.white, foregroundColor: Colors.black),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        automaticallyImplyLeading: false,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -65,16 +64,15 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const AuthHeader(),
               const SizedBox(height: 40),
+
+              // [수정] LoginForm에서 불필요해진 onFillDebug 파라미터를 제거했습니다.
               LoginForm(
                 formKey: _formKey,
                 emailController: _emailController,
                 passwordController: _passwordController,
                 isLoading: authProvider.isLoading,
-                onFillDebug: _fillDebugInfo,
                 onSubmit: _submit,
               ),
-
-              // [삭제] 소셜 로그인 섹션이 완전히 제거되었습니다.
 
               const SizedBox(height: 24),
               _buildSignUpLink(),
@@ -92,8 +90,14 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         const Text("Don't have an account?"),
         TextButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen())),
-          child: const Text('Sign Up', style: TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold)),
+          onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SignUpScreen())
+          ),
+          child: const Text(
+              'Sign Up',
+              style: TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold)
+          ),
         ),
       ],
     );
