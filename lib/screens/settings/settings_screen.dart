@@ -146,9 +146,9 @@ class SettingsScreen extends StatelessWidget {
             Center(
               child: TextButton(
                 onPressed: () => _showDeleteAccountDialog(context, authProvider),
-                child: Text(
+                child: const Text(
                   'Delete Account',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  style: TextStyle(color: Colors.red, fontSize: 13), // [수정] 텍스트 색상을 빨간색으로 변경
                 ),
               ),
             ),
