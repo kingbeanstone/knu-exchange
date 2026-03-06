@@ -28,7 +28,7 @@ class _FacilityMenuTabState extends State<FacilityMenuTab> {
     'welfare_bldg_cafeteria',
     'information_center_cafeteria',
     'engineering_bldg_cafeteria',
-    'kyungdaria_cafeteria',
+    'kyungdaria',
     'cheomseong_dorm_cafeteria'
   ];
 
