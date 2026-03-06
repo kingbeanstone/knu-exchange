@@ -16,8 +16,6 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _commentController = TextEditingController();
   bool _isSubmitting = false;
-
-  // [수정] 댓글 작성 시 기본적으로 익명 체크박스가 선택되어 있도록 초기값을 true로 변경
   bool _isAnonymous = true;
 
   Future<void> _submitComment() async {
@@ -37,7 +35,6 @@ class _CommentInputState extends State<CommentInput> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Provider 내부에서 _replyingTo 상태를 참조하여 parentId를 자동으로 설정합니다.
       await commentProvider.addComment(
         widget.postId,
         auth.user?.displayName ?? "User",
@@ -60,7 +57,7 @@ class _CommentInputState extends State<CommentInput> {
 
   void _showLoginRequest() {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text("Log in is required."),
+      content: const Text("Login is required to comment."),
       action: SnackBarAction(
           label: "Login",
           onPressed: () => Navigator.push(
@@ -77,7 +74,6 @@ class _CommentInputState extends State<CommentInput> {
     final replyingTo = commentProvider.replyingTo;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
@@ -85,96 +81,105 @@ class _CommentInputState extends State<CommentInput> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             offset: const Offset(0, -2),
-            blurRadius: 5,
+            blurRadius: 10,
           ),
         ],
       ),
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // [추가] 답글 모드일 때 표시되는 상단 바
-            if (replyingTo != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.reply, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Replying to ${replyingTo.author}",
-                        style: const TextStyle(fontSize: 12, color: AppColors.darkGrey),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (replyingTo != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.reply, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Replying to ${replyingTo.author}...",
+                          style: const TextStyle(fontSize: 12, color: AppColors.darkGrey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () => commentProvider.setReplyingTo(null),
-                      child: const Icon(Icons.close, size: 16, color: Colors.grey),
-                    ),
-                  ],
+                      GestureDetector(
+                        onTap: () => commentProvider.setReplyingTo(null),
+                        child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-            Row(
-              children: [
-                SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: Checkbox(
-                    value: _isAnonymous,
-                    activeColor: AppColors.knuRed,
-                    onChanged: (val) => setState(() => _isAnonymous = val ?? false),
-                  ),
-                ),
-                const Text(
-                  "Comment Anonymously",
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(24),
+              Row(
+                children: [
+                  SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: Checkbox(
+                      value: _isAnonymous,
+                      activeColor: AppColors.knuRed,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (val) => setState(() => _isAnonymous = val ?? false),
                     ),
-                    child: TextField(
-                      controller: _commentController,
-                      enabled: !_isSubmitting,
-                      decoration: InputDecoration(
-                        hintText: replyingTo != null ? "Write a reply..." : "Add a comment...",
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Post Anonymously",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      maxLines: null,
+                      child: TextField(
+                        controller: _commentController,
+                        enabled: !_isSubmitting,
+                        decoration: InputDecoration(
+                          hintText: replyingTo != null ? "Write a reply..." : "Add a comment...",
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        maxLines: 5,
+                        minLines: 1,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                _isSubmitting
-                    ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : IconButton(
-                  onPressed: _submitComment,
-                  icon: const Icon(Icons.send_rounded, color: AppColors.knuRed),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  _isSubmitting
+                      ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.knuRed),
+                    ),
+                  )
+                      : IconButton(
+                    onPressed: _submitComment,
+                    icon: const Icon(Icons.send_rounded, color: AppColors.knuRed),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

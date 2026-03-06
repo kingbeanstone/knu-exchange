@@ -85,7 +85,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
     showDialog(
       context: context,
-      builder: (context) => ReportDialog(targetId: _currentPost.id, targetType: 'post'),
+      builder: (context) => ReportDialog(
+        targetId: _currentPost.id,
+        targetType: 'post',
+        reportedUserId: _currentPost.authorId,
+      ),
     );
   }
 
@@ -97,6 +101,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      // [중요] 키보드가 올라올 때 Scaffold가 바닥을 밀어올리도록 설정
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Post'),
         backgroundColor: Colors.white,
@@ -129,41 +135,44 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ),
       body: _isFetching
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : Column( // [핵심 변경] 전체를 Column으로 구성
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PostDetailHeader(post: _currentPost),
-                  const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
+          Expanded( // [핵심 변경] 본문 영역을 Expanded로 감싸 가변 높이 대응
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PostDetailHeader(post: _currentPost),
+                    const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
 
-                  // 게시글 본문 내용
-                  PostDetailContent(
-                    content: _currentPost.content,
-                    imageUrls: _currentPost.imageUrls,
-                  ),
+                    // 게시글 본문 내용
+                    PostDetailContent(
+                      content: _currentPost.content,
+                      imageUrls: _currentPost.imageUrls,
+                    ),
 
-                  // [수정] 좋아요 및 댓글 수 액션 바를 본문 바로 아래로 이동
-                  // 기존 bottomNavigationBar에서 제거하고 이곳에 배치합니다.
-                  PostActionBar(post: _currentPost),
+                    // 좋아요 및 댓글 수 액션 바
+                    PostActionBar(post: _currentPost),
 
-                  // 구분선 및 댓글 섹션
-                  Container(height: 8, color: AppColors.lightGrey),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                    child: CommentSection(postId: _currentPost.id),
-                  ),
-                ],
+                    // 구분선 및 댓글 섹션
+                    Container(height: 8, color: AppColors.lightGrey),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      child: CommentSection(postId: _currentPost.id),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          // 댓글 입력창은 하단에 고정된 상태 유지
+          // [핵심 변경] 입력창을 body의 Column 마지막 자식으로 배치
+          // 이렇게 하면 Scaffold의 높이가 키보드에 의해 줄어들 때 함께 위로 밀려 올라갑니다.
           CommentInput(postId: _currentPost.id),
         ],
       ),
-      // [수정] bottomNavigationBar 영역 제거 (본문 내부로 이동됨)
     );
   }
 }

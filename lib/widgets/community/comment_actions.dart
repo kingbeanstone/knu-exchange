@@ -29,18 +29,13 @@ class CommentActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 1. 답글 버튼
         if (comment.parentId == null)
           _buildIconButton(
             icon: Icons.reply_outlined,
             onPressed: () => context.read<CommentProvider>().setReplyingTo(comment),
             tooltip: 'Reply',
           ),
-
-        // 2. 좋아요 버튼 및 카운트
         _buildLikeSection(context, authProvider, isLiked),
-
-        // 3. 더보기 메뉴
         _buildMoreMenu(context),
       ],
     );
@@ -56,7 +51,6 @@ class CommentActions extends StatelessWidget {
       icon: Icon(icon, size: 18, color: color),
       onPressed: onPressed,
       constraints: const BoxConstraints(),
-      // [수정] 가로 여백을 미세하게 줄여 좁은 화면 대응
       padding: const EdgeInsets.symmetric(horizontal: 3),
       visualDensity: VisualDensity.compact,
       tooltip: tooltip,
@@ -88,7 +82,7 @@ class CommentActions extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-        const SizedBox(width: 2), // [수정] 간격 조정
+        const SizedBox(width: 2),
       ],
     );
   }
@@ -137,6 +131,8 @@ class CommentActions extends StatelessWidget {
       builder: (context) => ReportDialog(
         targetId: comment.id,
         targetType: 'comment',
+        // [수정] 댓글 신고 시에도 작성자 ID를 전달하도록 수정 (Required 파라미터 대응)
+        reportedUserId: comment.authorId,
       ),
     );
   }
