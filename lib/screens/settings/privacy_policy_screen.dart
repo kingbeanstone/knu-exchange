@@ -11,7 +11,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
 Last updated: February 15 2026
 
-Knuni (“the App”) respects your privacy and is committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
+Knu Exchange (“the App”) respects your privacy and is committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
 
 ---
 

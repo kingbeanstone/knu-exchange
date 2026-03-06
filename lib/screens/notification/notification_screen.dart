@@ -6,7 +6,8 @@ import '../../providers/community_provider.dart';
 import '../../models/notification_item.dart';
 import '../../utils/app_colors.dart';
 import '../community/post_detail_screen.dart';
-import '../notice/notice_detail_screen.dart'; // [추가] 공지 상세 화면 임포트
+import '../notice/notice_detail_screen.dart';
+import '../../widgets/settings/settings_profile_widgets.dart'; // SettingsLoginPrompt 사용
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -15,6 +16,29 @@ class NotificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final notifProvider = Provider.of<NotificationProvider>(context);
+
+    // [핵심 수정] 비로그인 상태에서는 알림 목록 대신 로그인 안내 화면을 표시하여 Null check 에러를 방지합니다.
+    if (!auth.isAuthenticated || auth.user == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text('Notifications'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: SettingsLoginPrompt(), // 설정 탭에서 사용하는 로그인 유도 UI 재사용
+          ),
+        ),
+      );
+    }
+
+    // 로그인된 상태에서는 안전하게 uid를 참조할 수 있습니다.
+    final String currentUserId = auth.user!.uid;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -27,7 +51,7 @@ class NotificationScreen extends StatelessWidget {
         actions: [
           if (notifProvider.notifications.isNotEmpty)
             TextButton(
-              onPressed: () => notifProvider.markAllAsRead(auth.user!.uid),
+              onPressed: () => notifProvider.markAllAsRead(currentUserId),
               child: const Text('Mark all as read', style: TextStyle(color: Colors.grey)),
             ),
         ],
@@ -39,7 +63,7 @@ class NotificationScreen extends StatelessWidget {
         separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.lightGrey),
         itemBuilder: (context, index) {
           final item = notifProvider.notifications[index];
-          return _buildNotificationItem(context, item, auth.user!.uid);
+          return _buildNotificationItem(context, item, currentUserId);
         },
       ),
     );
@@ -51,7 +75,6 @@ class NotificationScreen extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: item.isRead ? AppColors.lightGrey : AppColors.knuRed.withOpacity(0.1),
         child: Icon(
-          // [수정] 알림 타입에 따른 아이콘 분기
           item.type == NotificationType.comment
               ? Icons.comment_outlined
               : (item.type == NotificationType.system ? Icons.campaign_rounded : Icons.notifications_none),
@@ -87,12 +110,9 @@ class NotificationScreen extends StatelessWidget {
         ],
       ),
       onTap: () async {
-        // 1. 읽음 처리
         context.read<NotificationProvider>().markAsRead(userId, item.id);
 
-        // 2. [수정] 알림 타입에 따른 화면 이동 로직
         if (item.type == NotificationType.system || item.postId.startsWith('notice_')) {
-          // 공지사항인 경우 (postId가 notice_로 시작하거나 system 타입인 경우)
           if (context.mounted) {
             Navigator.push(
               context,
@@ -100,7 +120,6 @@ class NotificationScreen extends StatelessWidget {
             );
           }
         } else {
-          // 일반 커뮤니티 게시글인 경우
           final communityProvider = context.read<CommunityProvider>();
           final targetPost = await communityProvider.fetchPostById(item.postId);
 
