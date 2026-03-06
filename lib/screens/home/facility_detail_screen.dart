@@ -21,7 +21,14 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
   void initState() {
     super.initState();
     _showMenuTab = widget.facility.category == 'Restaurant' || widget.facility.category == 'Cafe';
-    _tabController = TabController(length: _showMenuTab ? 4 : 3, vsync: this);
+    // [수정] Floor 탭 제거에 따라 전체 길이를 1씩 줄임 (4->3 또는 3->2)
+    _tabController = TabController(length: _showMenuTab ? 3 : 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -57,19 +64,17 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                   pinned: true,
                   backgroundColor: AppColors.knuRed,
                   foregroundColor: Colors.white,
-                  flexibleSpace: LayoutBuilder( // 👈 원래의 동적 위치 계산 로직 복구
+                  flexibleSpace: LayoutBuilder(
                     builder: (BuildContext context, BoxConstraints constraints) {
                       var top = constraints.biggest.height;
-                      // 접혔을 때(104)와 펼쳐졌을 때(200) 사이의 비율 계산
                       double expandRatio = ((top - 104) / (200 - 104)).clamp(0.0, 1.0);
-                      // 비율에 따라 좌측 패딩 조절 (접힐수록 56에 가까워짐)
                       double paddingStart = 56.0 - (36.0 * expandRatio);
 
                       return FlexibleSpaceBar(
                         centerTitle: false,
                         titlePadding: EdgeInsetsDirectional.only(
                           start: paddingStart,
-                          bottom: 62, // 탭바 위쪽 위치 고정
+                          bottom: 62,
                         ),
                         title: Text(
                           f.engName,
@@ -111,7 +116,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                           const Tab(text: 'Home'),
                           if (_showMenuTab) const Tab(text: 'Menu'),
                           const Tab(text: 'Photos'),
-                          const Tab(text: 'Floor'),
+                          // [삭제] Floor 탭
                         ],
                       ),
                     ),
@@ -125,7 +130,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                 _buildHomeTab(f),
                 if (_showMenuTab) FacilityMenuTab(facility: f, customHeaders: customHeaders),
                 FacilityPhotosTab(photos: f.interiorImages ?? []),
-                const Center(child: Text('Floor info is coming soon!')),
+                // [삭제] Floor 탭 컨텐츠
               ],
             ),
           ),

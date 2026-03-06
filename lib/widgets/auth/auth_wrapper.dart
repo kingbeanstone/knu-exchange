@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../screens/auth/login_screen.dart';
+import '../../providers/fcm_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../screens/main_screen.dart';
 import '../../utils/app_colors.dart';
 
-/// A widget that monitors the app's authentication state to automatically
-/// show either the login screen or the main screen.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -14,7 +13,6 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // 1. When the initial user information is being loaded (Splash screen role)
     if (authProvider.isInitialLoading) {
       return const Scaffold(
         body: Center(
@@ -30,12 +28,16 @@ class AuthWrapper extends StatelessWidget {
       );
     }
 
-    // 2. If logged in, navigate to the main screen (screen with the tab bar)
+    // [수정] 로그인 여부와 상관없이 무조건 MainScreen으로 진입하게 변경합니다.
+    // 로그인 페이지는 이제 설정 탭이나 기능 제한 팝업을 통해 접근합니다.
     if (authProvider.isAuthenticated) {
-      return const MainScreen();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final userId = authProvider.user!.uid;
+        context.read<FCMProvider>().setupFCM(userId);
+        context.read<NotificationProvider>().initNotifications(userId);
+      });
     }
 
-    // 3. If not logged in, navigate to the login screen
-    return const LoginScreen();
+    return const MainScreen();
   }
 }

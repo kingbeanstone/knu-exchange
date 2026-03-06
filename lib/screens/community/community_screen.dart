@@ -10,6 +10,7 @@ import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_app_bar.dart';
 import '../../widgets/community/community_empty_state.dart';
+import '../../widgets/common/login_prompt_modal.dart'; // [추가] 모달 임포트
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.isAuthenticated) {
-        // Initialize notification and FCM services
         Provider.of<NotificationProvider>(context, listen: false)
             .initNotifications(auth.user!.uid);
         Provider.of<FCMProvider>(context, listen: false)
@@ -52,7 +52,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final provider = Provider.of<CommunityProvider>(context, listen: false);
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    // Infinite scroll logic: load more posts when reaching the bottom
     if (!provider.isSearching &&
         _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200) {
@@ -83,7 +82,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      // AppBar with integrated search logic
       appBar: CommunityAppBar(
         title: 'Community',
         isSearchMode: _isSearchMode,
@@ -101,7 +99,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       body: Column(
         children: [
-          if (!_isSearchMode) // Show top border only when not in search mode
+          if (!_isSearchMode)
             Container(height: 1, color: Colors.grey[200]),
 
           CommunityCategoryFilter(
@@ -111,6 +109,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
               communityProvider.setCategory(category);
             },
             onMyPostsSelected: (isActive) {
+              // [수정] 내 글 보기 시 로그인 여부 체크
+              if (!auth.isAuthenticated) {
+                LoginPromptModal.show(context, message: 'Login is required to see your posts.');
+                return;
+              }
               communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
             },
           ),
@@ -154,7 +157,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Determine initial category for new post based on current filter
+          // [수정] 글쓰기 버튼 클릭 시 로그인 여부 체크
+          if (!auth.isAuthenticated) {
+            LoginPromptModal.show(context, message: 'Please log in to share your thoughts with the community.');
+            return;
+          }
+
           PostCategory initialCategory = PostCategory.lounge;
           if (selectedCategory != null &&
               selectedCategory != PostCategory.hot &&
