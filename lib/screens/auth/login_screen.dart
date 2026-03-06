@@ -29,49 +29,51 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // 로딩 상태 시작 전에 포커스 해제
     FocusScope.of(context).unfocus();
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
+      // 1. 로그인 시도 및 사용자 데이터 로드 완료까지 대기
       await authProvider.login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
-      // [수정] 로그인 성공 시 안전하게 Navigator를 닫습니다.
-      // 비동기 작업(await) 이후에는 context가 여전히 유효한지 확인하는 것이 필수입니다.
       if (!mounted) return;
 
-      // 만약 Navigator 스택에 현재 화면이 존재한다면 닫습니다.
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-
-      // 성공 피드백 (선택 사항)
+      // 2. [수정] 성공 시 명시적으로 스낵바를 띄우고 화면을 닫습니다.
+      // SettingsScreen은 Provider를 구독하고 있으므로 pop 이후 즉시 프로필 화면으로 바뀝니다.
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Welcome back!'),
+          content: Text('Login successful! Welcome.'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 1),
         ),
       );
+
+      // 약간의 지연 후 창을 닫아 스낵바를 확인할 시간을 줍니다.
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         String errorMessage = 'Login failed.';
         if (e.code == 'user-not-found') errorMessage = 'No user found with this email.';
         else if (e.code == 'wrong-password') errorMessage = 'Incorrect password.';
         else if (e.code == 'invalid-email') errorMessage = 'Invalid email format.';
+        else if (e.code == 'email-not-verified') errorMessage = 'Please verify your email first.';
 
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? errorMessage))
+            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red)
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('An unexpected error occurred: $e'))
+            SnackBar(content: Text('An error occurred: $e'), backgroundColor: Colors.red)
         );
       }
     }
@@ -79,7 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    // isLoading 상태를 감시하여 버튼 활성/비활성 처리
+    final isLoading = context.select<AuthProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -87,7 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        // 뒤로가기 버튼은 자동으로 유지됨
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -102,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 formKey: _formKey,
                 emailController: _emailController,
                 passwordController: _passwordController,
-                isLoading: authProvider.isLoading,
+                isLoading: isLoading,
                 onSubmit: _submit,
               ),
 
