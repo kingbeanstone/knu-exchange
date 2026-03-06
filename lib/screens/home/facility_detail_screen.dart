@@ -116,7 +116,6 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                           const Tab(text: 'Home'),
                           if (_showMenuTab) const Tab(text: 'Menu'),
                           const Tab(text: 'Photos'),
-                          // [삭제] Floor 탭
                         ],
                       ),
                     ),
@@ -130,7 +129,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                 _buildHomeTab(f),
                 if (_showMenuTab) FacilityMenuTab(facility: f, customHeaders: customHeaders),
                 FacilityPhotosTab(photos: f.interiorImages ?? []),
-                // [삭제] Floor 탭 컨텐츠
+                const Center(child: Text('Floor info is coming soon!')),
               ],
             ),
           ),
