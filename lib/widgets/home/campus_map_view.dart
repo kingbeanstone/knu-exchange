@@ -59,7 +59,6 @@ class CampusMapViewState extends State<CampusMapView> {
 
     for (var f in widget.facilities) {
       // Prevent crash if facility has invalid coordinates
-      if (f.latitude == null || f.longitude == null) continue;
 
       final marker = NMarker(
         id: f.id,
