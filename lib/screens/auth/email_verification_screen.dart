@@ -31,14 +31,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
     });
   }
-
-  void _onVerificationSuccess() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Email verified successfully!')),
-    );
-    // 자동 로그인을 원하면 여기서 메인 화면으로, 아니면 로그인 페이지로 이동
-    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-  }
+  
 
   @override
   void dispose() {
