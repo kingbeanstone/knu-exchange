@@ -58,6 +58,9 @@ class CampusMapViewState extends State<CampusMapView> {
     _selectedMarker = null;
 
     for (var f in widget.facilities) {
+      // Prevent crash if facility has invalid coordinates
+      if (f.latitude == null || f.longitude == null) continue;
+
       final marker = NMarker(
         id: f.id,
         position: NLatLng(f.latitude, f.longitude),
@@ -72,7 +75,7 @@ class CampusMapViewState extends State<CampusMapView> {
         size: const Size(28, 28),
       );
 
-      if (!mounted) return;
+      if (!mounted) continue;
 
       marker.setIcon(iconImage);
 
@@ -81,7 +84,7 @@ class CampusMapViewState extends State<CampusMapView> {
       });
 
       _markers.add(marker);
-      _controller!.addOverlay(marker);
+      await _controller!.addOverlay(marker);
     }
 
     final cameraPosition = await _controller!.getCameraPosition();
@@ -99,11 +102,22 @@ class CampusMapViewState extends State<CampusMapView> {
       if (facility == null) continue;
 
       if (shouldShow) {
-        marker.setCaption(
-          NOverlayCaption(text: facility.engName),
-        );
+        final name = facility.engName;
+        if (name != null && name.isNotEmpty) {
+          marker.setCaption(
+            NOverlayCaption(text: name),
+          );
+        } else {
+          // Avoid sending null to native layer
+          marker.setCaption(
+            const NOverlayCaption(text: ""),
+          );
+        }
       } else {
-        marker.setCaption(null);
+        // Do not send null because flutter_naver_map iOS plugin force‑unwraps it
+        marker.setCaption(
+          const NOverlayCaption(text: ""),
+        );
       }
     }
   }
