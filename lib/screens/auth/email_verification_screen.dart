@@ -46,48 +46,93 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         title: const Text('Verify Email'),
         backgroundColor: AppColors.knuRed,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.mark_email_unread_outlined, size: 80, color: AppColors.knuRed),
-            const SizedBox(height: 24),
-            const Text(
-              'Check your inbox!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'A verification email has been sent to your address.\nPlease click the link in the email to complete your registration.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20), // 간격 추가
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
 
-// [추가] 스팸함 확인 안내 문구
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                '(Note: If you do not see the email, please check your spam folder, especially for Gmail users.)',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.mark_email_unread_outlined,
+                    size: 64,
+                    color: AppColors.knuRed,
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 32),
+
+                const Text(
+                  'Check your email',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                const Text(
+                  'We sent a verification link to your email address.\nPlease verify your email to continue.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'If you do not see the email, please check your spam folder (especially for Gmail users).',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                const CircularProgressIndicator(
+                  color: AppColors.knuRed,
+                ),
+
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Waiting for verification...',
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.black,
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel and go back',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 32),
-            const CircularProgressIndicator(color: AppColors.knuRed),
-            const SizedBox(height: 16),
-            const Text('Waiting for verification...', style: TextStyle(fontStyle: FontStyle.italic)),
-            const SizedBox(height: 48),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel and go back', style: TextStyle(color: Colors.grey)),
-            ),
-          ],
+          ),
         ),
       ),
     );
