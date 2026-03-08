@@ -34,6 +34,7 @@ When using the App, we may collect:
 - Comments
 - Other text content voluntarily submitted by users
 
+
 ### **c) Technical Information**
 
 We may automatically collect:
@@ -42,6 +43,12 @@ We may automatically collect:
 - Operating system version
 - App version
 - Basic usage logs
+
+### **d) Location Information**
+
+The App may request access to your device’s location to display your current position on the campus map.
+
+Location data is used only within the App to provide map functionality and is not stored or shared with third parties.
 
 ---
 

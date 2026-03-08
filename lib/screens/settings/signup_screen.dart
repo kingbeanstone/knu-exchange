@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import '../auth/email_verification_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/auth/signup_form.dart';
@@ -42,7 +43,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (mounted) {
-        _showSuccessDialog();
+        // [수정] 팝업 대신 인증 대기 페이지로 이동
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const EmailVerificationScreen()),
+        );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -64,29 +68,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       case 'invalid-email': return 'Invalid email format.';
       default: return 'An error occurred during sign up.';
     }
-  }
-
-  // 성공 다이얼로그 문구 수정 (스팸함 확인 안내 추가)
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Verification Email Sent'),
-        content: const Text(
-          'A verification email has been sent to your address.\nPlease click the link in the email to complete your registration.\n\n(Note: If you do not see the email, please check your spam folder, especially for Gmail users.)',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
