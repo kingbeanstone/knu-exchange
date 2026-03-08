@@ -13,11 +13,21 @@ class AuthProvider with ChangeNotifier {
   bool _isNotificationsEnabled = true;
 
   User? get user => _user;
-  bool get isAuthenticated => _user != null;
+  // [수정] 이메일 인증이 완료된 경우에만 true를 반환하도록 변경합니다.
+  bool get isAuthenticated => _user != null && _user!.emailVerified;
   bool get isAdmin => _isAdmin;
   bool get isLoading => _isLoading;
   bool get isInitialLoading => _isInitialLoading;
   bool get isNotificationsEnabled => _isNotificationsEnabled;
+
+  // [추가] 현재 이메일 인증 대기 중인지 확인하는 상태
+  bool _isWaitingVerification = false;
+  bool get isWaitingVerification => _isWaitingVerification;
+
+  void setWaitingVerification(bool value) {
+    _isWaitingVerification = value;
+    notifyListeners();
+  }
 
   AuthProvider() {
     _initializeAuth();
@@ -97,24 +107,33 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// 로그인 로직: 데이터 로딩 완료를 보장하여 UI 토글이 즉시 반영되도록 합니다.
+  /// 로그인 로직: 최신 인증 상태를 반영하도록 수정
   Future<void> login(String email, String password) async {
     _setLoading(true);
     try {
       final credential = await _authService.signIn(email, password);
-      if (credential.user != null) {
-        // 이메일 인증 여부 확인
-        if (!credential.user!.emailVerified) {
-          await credential.user!.reload();
-          if (!FirebaseAuth.instance.currentUser!.emailVerified) {
-            throw FirebaseAuthException(code: 'email-not-verified');
-          }
+      User? user = credential.user;
+
+      if (user != null) {
+        // 1. 서버로부터 최신 유저 정보(이메일 인증 여부 등)를 가져옴
+        await user.reload();
+        // 2. reload 후에는 FirebaseAuth.instance.currentUser를 통해 최신 객체를 다시 받아야 함
+        user = FirebaseAuth.instance.currentUser;
+
+        // 3. 이메일 인증 여부 최종 확인
+        if (user != null && !user.emailVerified) {
+          // 인증이 안 되었다면 로그아웃 시키고 에러를 던짐
+          await _authService.signOut();
+          throw FirebaseAuthException(code: 'email-not-verified');
         }
-        // 사용자 데이터 강제 최신화 (isAdmin, 알림 설정 등)
-        await _fetchUserData(credential.user!.uid);
+
+        // 4. 인증이 완료되었다면 내부 유저 변수 업데이트 및 데이터 로드
+        _user = user;
+        await _fetchUserData(user!.uid);
       }
     } finally {
       _setLoading(false);
+      notifyListeners(); // UI에 상태 변화를 알려서 화면 전환 유도
     }
   }
 
@@ -125,11 +144,28 @@ class AuthProvider with ChangeNotifier {
       final credential = await _authService.signUp(email, password, nickname: nickname);
       if (credential.user != null) {
         await credential.user!.sendEmailVerification();
-        await _authService.signOut();
+        // [추가] 가입 직후 인증 대기 상태로 설정
+        _isWaitingVerification = true;
+        notifyListeners();
       }
     } finally {
       _setLoading(false);
     }
+  }
+
+  // [수정] 이메일 인증 확인 메서드
+  Future<bool> checkEmailVerified() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.reload();
+      if (user.emailVerified) {
+        _user = user; // 최신 유저 정보 업데이트
+        _isWaitingVerification = false; // 인증 완료 시 대기 상태 해제
+        notifyListeners();
+        return true;
+      }
+    }
+    return false;
   }
 
   /// 로그아웃 로직

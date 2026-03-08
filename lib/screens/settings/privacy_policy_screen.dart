@@ -9,19 +9,22 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
 **KNU Exchange Privacy Policy**
 
-Last updated: February 15 2026
+Last updated: March 7, 2026
 
-Knu Exchange (“the App”) respects your privacy and is committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
+KNU Exchange (“the App”) respects your privacy and is committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and how it is protected.
 
 ---
 
 ## **1. Information We Collect**
 
+Users can browse most features of the App without creating an account.
+An account is only required for community features such as posting or commenting.
+
 We may collect the following types of information:
 
 ### **a) Account Information**
 
-When you create an account or log in using Firebase Authentication, we may collect:
+Some features of the App (such as posting or commenting) require creating an account using Firebase Authentication. When you create an account, we may collect:
 
 - Email address
 - Unique user identifier (UID)
@@ -34,6 +37,7 @@ When using the App, we may collect:
 - Comments
 - Other text content voluntarily submitted by users
 
+
 ### **c) Technical Information**
 
 We may automatically collect:
@@ -42,6 +46,12 @@ We may automatically collect:
 - Operating system version
 - App version
 - Basic usage logs
+
+### **d) Location Information**
+
+The App may request access to your device’s location to display your current position on the campus map.
+
+Location data is used only within the App to provide map functionality and is not stored or shared with third parties.
 
 ---
 
@@ -70,7 +80,7 @@ We do not sell or rent your personal information to third parties.
 
 The App uses the following third-party services:
 
-- **Google Firebase (Authentication, Firestore, Analytics if enabled)**
+- **Google Firebase services (Authentication and Firestore)**
 
 These services may process data in accordance with their own privacy policies.
 
