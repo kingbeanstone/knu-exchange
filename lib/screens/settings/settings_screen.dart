@@ -6,6 +6,7 @@ import '../../widgets/settings/settings_common_widgets.dart';
 import '../../widgets/settings/settings_profile_widgets.dart';
 import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
 import 'privacy_policy_screen.dart';
+import 'terms_screen.dart';
 import 'contact_screen.dart';
 import 'feedback_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
@@ -104,6 +105,20 @@ class SettingsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SettingsDivider(),
+                SettingsMenuTile(
+                  icon: Icons.description_outlined,
+                  iconColor: Colors.teal,
+                  title: 'Terms of Service',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TermsScreen(),
                       ),
                     );
                   },

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/post.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/date_formatter.dart';
@@ -68,9 +70,27 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      DateFormatter.formatRelativeTime(post.createdAt),
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    Row(
+                      children: [
+                        Text(
+                          DateFormatter.formatRelativeTime(post.createdAt),
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'block') {
+                              blockUser(context, post.authorId);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'block',
+                              child: Text('Block User'),
+                            ),
+                          ],
+                          icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -162,6 +182,23 @@ class PostCard extends StatelessWidget {
           style: const TextStyle(color: Colors.grey, fontSize: 12),
         ),
       ],
+    );
+  }
+  Future<void> blockUser(BuildContext context, String blockedUid) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('blockedUsers')
+        .doc(blockedUid)
+        .set({
+      'blockedAt': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('User blocked')),
     );
   }
 }
