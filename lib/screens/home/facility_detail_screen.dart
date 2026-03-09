@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/facility.dart';
 import '../../utils/app_colors.dart';
@@ -87,7 +88,17 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                           fit: StackFit.expand,
                           children: [
                             f.imageUrl != null
-                                ? Image.network(f.imageUrl!, fit: BoxFit.cover)
+                                ? CachedNetworkImage(
+                                    imageUrl: f.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.image_not_supported),
+                                    ),
+                                  )
                                 : Container(color: Colors.grey[300]),
                             const DecoratedBox(
                               decoration: BoxDecoration(
@@ -129,7 +140,6 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                 _buildHomeTab(f),
                 if (_showMenuTab) FacilityMenuTab(facility: f, customHeaders: customHeaders),
                 FacilityPhotosTab(photos: f.interiorImages ?? []),
-                const Center(child: Text('Floor info is coming soon!')),
               ],
             ),
           ),

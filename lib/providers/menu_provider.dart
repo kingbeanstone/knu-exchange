@@ -7,17 +7,21 @@ class MenuProvider with ChangeNotifier {
 
   List<MenuItem> _allMenus = [];
   bool _isLoading = false;
+  bool _loaded = false;
 
   List<MenuItem> get allMenus => _allMenus;
   bool get isLoading => _isLoading;
 
   /// 구글 드라이브(원격 CSV)에서 전체 메뉴 데이터를 새로고침합니다.
   Future<void> refreshMenu() async {
+    if (_loaded && _allMenus.isNotEmpty) return;
+
     _isLoading = true;
     notifyListeners();
 
     try {
       _allMenus = await _service.fetchRemoteMenu();
+      _loaded = true;
     } catch (e) {
       debugPrint("Menu refresh failed: $e");
     } finally {
