@@ -19,6 +19,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nicknameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isEulaAgreed = false;
 
   @override
   void dispose() {
@@ -29,9 +30,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // [통합 수정] 약관 체크와 회원가입 로직을 하나로 합쳤습니다.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 1. 약관 동의 여부 먼저 확인
+    if (!_isEulaAgreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must agree to the Terms (EULA) to continue.'))
+      );
+      return;
+    }
+
+    // 2. 가입 진행
     FocusScope.of(context).unfocus();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -43,7 +54,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (mounted) {
-        // [수정] 팝업 대신 인증 대기 페이지로 이동
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const EmailVerificationScreen()),
         );
@@ -60,7 +70,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // 에러 메시지 영문으로 변경
   String _getErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use': return 'This email is already in use.';
@@ -92,7 +101,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.knuRed),
             ),
             const SizedBox(height: 8),
-            // 요청하신 문구 영문으로 변경
             const Text('Start your KNU campus life today.', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
 
@@ -104,6 +112,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
               confirmPasswordController: _confirmPasswordController,
               isLoading: authProvider.isLoading,
               onSubmit: _submit,
+            ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Checkbox(
+                  value: _isEulaAgreed,
+                  onChanged: (val) => setState(() => _isEulaAgreed = val ?? false),
+                  activeColor: AppColors.knuRed,
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      // 상세 약관 다이얼로그 추가 가능
+                    },
+                    child: const Text(
+                      'I agree to the Terms of Service (EULA). We have zero tolerance for objectionable content or abusive users.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),

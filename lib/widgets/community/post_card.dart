@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/date_formatter.dart';
 import '../../screens/community/post_detail_screen.dart';
+import '../../services/auth_service.dart';
+import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -18,7 +22,8 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            // [수정] withOpacity 대신 withValues 사용 (Line 26 경고 해결)
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -29,9 +34,6 @@ class PostCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // [트릭 개선] 상세 페이지 진입 전 게시글의 "모든" 이미지를 미리 캐싱합니다.
-            // 사용자가 글을 클릭하고 화면이 전환되는 찰나에 모든 사진의 로딩을 시작하여
-            // 상세 페이지에서 사진 슬라이드를 넘길 때 딜레이를 최소화합니다.
             if (post.imageUrls.isNotEmpty) {
               for (var url in post.imageUrls) {
                 precacheImage(NetworkImage(url), context);
@@ -56,7 +58,8 @@ class PostCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.knuRed.withOpacity(0.1),
+                        // [수정] withOpacity 대신 withValues 사용 (Line 61 경고 해결)
+                        color: AppColors.knuRed.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -117,7 +120,7 @@ class PostCard extends StatelessWidget {
                             width: 70,
                             height: 70,
                             fit: BoxFit.cover,
-                            cacheWidth: 200, // 리스트 썸네일용 최적화
+                            cacheWidth: 200,
                             errorBuilder: (context, error, stackTrace) => Container(
                               width: 70,
                               height: 70,
@@ -139,6 +142,13 @@ class PostCard extends StatelessWidget {
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.block, size: 16, color: Colors.grey),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                      onPressed: () => _showBlockDialog(context, post.authorId, post.author),
+                    ),
+                    const SizedBox(width: 12),
                     _buildStatItem(Icons.favorite_border, post.likes.toString()),
                     const SizedBox(width: 12),
                     _buildStatItem(Icons.chat_bubble_outline, post.comments.toString()),
@@ -148,6 +158,43 @@ class PostCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showBlockDialog(BuildContext context, String authorId, String authorName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Block User'),
+        content: Text('Do you want to block "$authorName"? \nAll content from this user will be hidden instantly.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final authService = Provider.of<AuthService>(context, listen: false);
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
+
+              // 1. 서버에 차단 등록
+              await authService.blockUser(authorId, authorName);
+
+              // 2. [매우 중요] 내 폰에 저장된 차단 목록을 서버와 동기화
+              await authProvider.refreshUserModel();
+
+              // 3. 현재 화면에서 즉시 제거
+              communityProvider.removePostsByAuthor(authorId);
+
+              if (context.mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User blocked successfully.'))
+                );
+              }
+            },
+            child: const Text('Block', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

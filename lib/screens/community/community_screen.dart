@@ -53,10 +53,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (!provider.isSearching &&
-        _scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200) {
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
-        provider.fetchPosts(userId: auth.user?.uid);
+        // [수정] blockedUsers를 반드시 넘겨줘야 합니다.
+        provider.fetchPosts(
+          userId: auth.user?.uid,
+          blockedUsers: auth.userModel?.blockedUsers,
+        );
       }
     }
   }
@@ -131,6 +134,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               onRefresh: () => communityProvider.fetchPosts(
                 isRefresh: true,
                 userId: auth.user?.uid,
+                blockedUsers: auth.userModel?.blockedUsers, // [수정] 누락된 인자 추가
               ),
               child: ListView.builder(
                 controller: _scrollController,

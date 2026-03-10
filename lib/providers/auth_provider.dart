@@ -3,83 +3,87 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart'; // [확인] UserModel 임포트
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   User? _user;
+  UserModel? _userModel; // 커스텀 UserModel 저장 변수
   bool _isAdmin = false;
   bool _isLoading = false;
   bool _isInitialLoading = true;
   bool _isNotificationsEnabled = true;
 
   User? get user => _user;
-  // [수정] 이메일 인증이 완료된 경우에만 true를 반환하도록 변경합니다.
+  // 외부(CommunityScreen 등)에서 차단 목록을 참조하기 위한 게터
+  UserModel? get userModel => _userModel;
+
   bool get isAuthenticated => _user != null && _user!.emailVerified;
   bool get isAdmin => _isAdmin;
   bool get isLoading => _isLoading;
   bool get isInitialLoading => _isInitialLoading;
   bool get isNotificationsEnabled => _isNotificationsEnabled;
 
-  // [추가] 현재 이메일 인증 대기 중인지 확인하는 상태
   bool _isWaitingVerification = false;
   bool get isWaitingVerification => _isWaitingVerification;
-
-  void setWaitingVerification(bool value) {
-    _isWaitingVerification = value;
-    notifyListeners();
-  }
 
   AuthProvider() {
     _initializeAuth();
   }
 
   void _initializeAuth() {
-    // 1. 현재 사용자 즉시 할당
     _user = FirebaseAuth.instance.currentUser;
     if (_user != null) {
       _fetchUserData(_user!.uid);
     }
 
-    // 2. 인증 상태 변화 스트림 리스너
     _authService.user.listen((User? newUser) async {
       _user = newUser;
 
       if (_user != null) {
         await _fetchUserData(_user!.uid);
       } else {
+        // 로그아웃 시 관련 상태 초기화
+        _userModel = null;
         _isAdmin = false;
-        _isNotificationsEnabled = true; // 로그아웃 시 초기화
+        _isNotificationsEnabled = true;
       }
 
       _isInitialLoading = false;
-      notifyListeners(); // 상태 변화 알림 -> UI 토글 유도
+      notifyListeners();
     });
   }
 
-  /// Firestore에서 관리자 여부 및 알림 설정을 확인합니다.
+  /// [핵심 수정] Firestore에서 유저 데이터를 가져와 UserModel을 완성합니다.
   Future<void> _fetchUserData(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('artifacts')
-          .doc('knu-exchange-app')
-          .collection('users')
-          .doc(uid)
-          .collection('profile')
-          .doc('info')
-          .get();
+      // 1. AuthService를 통해 Firestore의 profile/info 데이터를 가져옵니다.
+      final data = await _authService.getUserProfile(uid);
 
-      if (doc.exists) {
-        final data = doc.data();
-        _isAdmin = data?['isAdmin'] ?? false;
-        _isNotificationsEnabled = data?['isNotificationsEnabled'] ?? true;
+      if (data != null) {
+        // 2. 가져온 Map 데이터를 UserModel 객체로 변환하여 저장합니다.
+        // 여기에 blockedUsers 정보가 포함되어 있어야 새로고침 시 필터링이 작동합니다.
+        _userModel = UserModel.fromMap(data);
+
+        // 3. 기타 UI용 상태 값 업데이트
+        _isAdmin = _userModel?.isAdmin ?? false;
+        _isNotificationsEnabled = data['isNotificationsEnabled'] ?? true;
       }
     } catch (e) {
       debugPrint("Error fetching user data: $e");
     }
-    notifyListeners(); // 데이터 로드 완료 후 알림
+    notifyListeners();
   }
 
-  /// 알림 설정 토글 및 Firestore 업데이트
+  /// 차단 기능 실행 후 최신 차단 목록을 반영하기 위해 데이터를 다시 불러오는 메서드
+  Future<void> refreshUserModel() async {
+    if (_user != null) {
+      await _fetchUserData(_user!.uid); // Firestore에서 최신 blockedUsers 가져옴
+      debugPrint("📢 내 프로필 동기화 완료: ${_userModel?.blockedUsers.length}명 차단 중");
+    }
+  }
+
+  // 알림 설정 토글
   Future<void> toggleNotifications(bool value) async {
     if (_user == null) return;
 
@@ -107,7 +111,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// 로그인 로직: 최신 인증 상태를 반영하도록 수정
+  /// 로그인 로직
   Future<void> login(String email, String password) async {
     _setLoading(true);
     try {
@@ -115,25 +119,21 @@ class AuthProvider with ChangeNotifier {
       User? user = credential.user;
 
       if (user != null) {
-        // 1. 서버로부터 최신 유저 정보(이메일 인증 여부 등)를 가져옴
         await user.reload();
-        // 2. reload 후에는 FirebaseAuth.instance.currentUser를 통해 최신 객체를 다시 받아야 함
         user = FirebaseAuth.instance.currentUser;
 
-        // 3. 이메일 인증 여부 최종 확인
         if (user != null && !user.emailVerified) {
-          // 인증이 안 되었다면 로그아웃 시키고 에러를 던짐
           await _authService.signOut();
           throw FirebaseAuthException(code: 'email-not-verified');
         }
 
-        // 4. 인증이 완료되었다면 내부 유저 변수 업데이트 및 데이터 로드
         _user = user;
+        // 로그인 성공 시 유저 데이터 로드
         await _fetchUserData(user!.uid);
       }
     } finally {
       _setLoading(false);
-      notifyListeners(); // UI에 상태 변화를 알려서 화면 전환 유도
+      notifyListeners();
     }
   }
 
@@ -144,7 +144,6 @@ class AuthProvider with ChangeNotifier {
       final credential = await _authService.signUp(email, password, nickname: nickname);
       if (credential.user != null) {
         await credential.user!.sendEmailVerification();
-        // [추가] 가입 직후 인증 대기 상태로 설정
         _isWaitingVerification = true;
         notifyListeners();
       }
@@ -153,14 +152,15 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // [수정] 이메일 인증 확인 메서드
+  /// 이메일 인증 확인 메서드
   Future<bool> checkEmailVerified() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await user.reload();
       if (user.emailVerified) {
-        _user = user; // 최신 유저 정보 업데이트
-        _isWaitingVerification = false; // 인증 완료 시 대기 상태 해제
+        _user = user;
+        _isWaitingVerification = false;
+        await _fetchUserData(user.uid); // 인증 완료 시 데이터 로드
         notifyListeners();
         return true;
       }
@@ -174,9 +174,11 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.signOut();
       _user = null;
+      _userModel = null; // 유저 모델 초기화
       _isAdmin = false;
     } finally {
       _setLoading(false);
+      notifyListeners();
     }
   }
 
@@ -186,7 +188,6 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.updateNickname(newNickname);
       _user = FirebaseAuth.instance.currentUser;
-      // 변경 사항 반영을 위해 데이터 다시 로드
       if (_user != null) await _fetchUserData(_user!.uid);
     } finally {
       _setLoading(false);
@@ -199,9 +200,11 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.deleteAccount();
       _user = null;
+      _userModel = null;
       _isAdmin = false;
     } finally {
       _setLoading(false);
+      notifyListeners();
     }
   }
 }
