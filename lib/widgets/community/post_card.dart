@@ -4,7 +4,6 @@ import '../../models/post.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/date_formatter.dart';
 import '../../screens/community/post_detail_screen.dart';
-import '../../services/auth_service.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
 
