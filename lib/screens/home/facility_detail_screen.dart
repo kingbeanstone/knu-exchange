@@ -22,8 +22,33 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
   void initState() {
     super.initState();
     _showMenuTab = widget.facility.category == 'Restaurant' || widget.facility.category == 'Cafe';
-    // [수정] Floor 탭 제거에 따라 전체 길이를 1씩 줄임 (4->3 또는 3->2)
     _tabController = TabController(length: _showMenuTab ? 3 : 2, vsync: this);
+
+    // 화면 프레임 렌더링 후 이미지 캐싱 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheFacilityImages();
+    });
+  }
+
+  void _precacheFacilityImages() {
+    // 1. 대표 이미지는 이미 Home에서 받았겠지만, 만약을 위해 한 번 더 체크
+    if (widget.facility.imageUrl != null && widget.facility.imageUrl!.isNotEmpty) {
+      precacheImage(CachedNetworkImageProvider(widget.facility.imageUrl!), context);
+    }
+
+    // 2. 내부 사진은 딱 상위 3장만 먼저 로드합니다. (로딩 속도 최적화의 핵심)
+    final interior = widget.facility.interiorImages;
+    if (interior != null && interior.isNotEmpty) {
+      // 사진이 3장 미만일 경우를 고려해 개수 결정
+      int limit = interior.length > 3 ? 3 : interior.length;
+
+      for (int i = 0; i < limit; i++) {
+        final url = interior[i];
+        if (url.isNotEmpty) {
+          precacheImage(CachedNetworkImageProvider(url), context);
+        }
+      }
+    }
   }
 
   @override
@@ -37,7 +62,10 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('facilities').doc(widget.facility.id).snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (snapshot.hasError) return Scaffold(body: Center(child: Text("Error: ${snapshot.error}")));
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
         final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
         final List<String> customHeaders = List<String>.from(data['menuHeaders'] ?? []);
@@ -65,9 +93,10 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                   pinned: true,
                   backgroundColor: AppColors.knuRed,
                   foregroundColor: Colors.white,
-                  flexibleSpace: LayoutBuilder(
+                  flexibleSpace: LayoutBuilder( // ✅ 원래의 LayoutBuilder 로직 복구
                     builder: (BuildContext context, BoxConstraints constraints) {
                       var top = constraints.biggest.height;
+                      // 스크롤 정도에 따른 패딩 계산 (기존 로직)
                       double expandRatio = ((top - 104) / (200 - 104)).clamp(0.0, 1.0);
                       double paddingStart = 56.0 - (36.0 * expandRatio);
 
@@ -79,26 +108,18 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
                         ),
                         title: Text(
                           f.engName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         background: Stack(
                           fit: StackFit.expand,
                           children: [
-                            f.imageUrl != null
+                            f.imageUrl != null && f.imageUrl!.isNotEmpty
                                 ? CachedNetworkImage(
-                                    imageUrl: f.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                    errorWidget: (context, url, error) => Container(
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.image_not_supported),
-                                    ),
-                                  )
+                              imageUrl: f.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) => Container(color: Colors.grey[300]),
+                            )
                                 : Container(color: Colors.grey[300]),
                             const DecoratedBox(
                               decoration: BoxDecoration(
@@ -148,6 +169,7 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
     );
   }
 
+  // _buildHomeTab 및 _buildInfoRow 위젯은 기존과 동일하게 유지하시면 됩니다.
   Widget _buildHomeTab(Facility f) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),

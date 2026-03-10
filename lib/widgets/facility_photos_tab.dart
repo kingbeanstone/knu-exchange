@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class FacilityPhotosTab extends StatelessWidget {
   final List<String> photos;
@@ -38,16 +39,20 @@ class FacilityPhotosTab extends StatelessWidget {
             tag: photos[index],
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                photos[index],
+              child: CachedNetworkImage(
+                imageUrl: photos[index],
                 fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  );
-                },
+                memCacheWidth: 300, // 메모리 효율을 위해 추가
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.error_outline, color: Colors.grey),
+                ),
               ),
             ),
           ),

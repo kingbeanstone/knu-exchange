@@ -9,6 +9,7 @@ import '../../widgets/home/map_controls.dart';
 import '../../widgets/home/campus_map_view.dart';
 import '../../widgets/common_notification_button.dart'; // [추가] 공통 알림 버튼 임포트
 import 'facility_detail_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(String facilityId) onGoToCafeteria;
@@ -39,6 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
         final allFacilities = snapshot.data!;
+
+        // ✅ [추가] 데이터가 로드되면 즉시 대표 이미지들을 캐싱합니다.
+        _precacheFacilityThumbnails(allFacilities);
+
         final filteredFacilities = _selectedCategory == 'All'
             ? allFacilities
             : allFacilities.where((f) => f.category == _selectedCategory).toList();
@@ -93,6 +98,18 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // ✅ [추가] 대표 이미지 캐싱 함수
+  void _precacheFacilityThumbnails(List<Facility> facilities) {
+    for (var f in facilities) {
+      if (f.imageUrl != null && f.imageUrl!.isNotEmpty) {
+        precacheImage(
+          CachedNetworkImageProvider(f.imageUrl!),
+          context,
+        );
+      }
+    }
   }
 
   void _resetToKnu() {
