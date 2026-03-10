@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post.dart';
 import '../services/community_service.dart';
 
@@ -12,6 +13,65 @@ mixin CommunityActionMixin on ChangeNotifier {
   void _setLoading(bool value) {
     _isLoadingAction = value;
     notifyListeners();
+  }
+
+  // [수정] 파라미터 이름을 화면(Screen) 호출부와 100% 일치시키고 로딩 해제 보장
+  Future<void> blockUser({
+    required String currentUserId,
+    required String blockedUserId,
+    required String blockedUserName,
+    required VoidCallback onBlockedUI,
+  }) async {
+    _setLoading(true); // 빙글빙글 시작
+    try {
+      // Firestore 차단 목록 업데이트
+      await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc('knu-exchange-app')
+          .collection('users')
+          .doc(currentUserId)
+          .collection('profile')
+          .doc('info')
+          .set({
+        'blockedUsers': FieldValue.arrayUnion([blockedUserId]),
+      }, SetOptions(merge: true));
+
+      // UI에서 즉시 글을 삭제하는 콜백 실행 (애플 Guideline 1.2 대응)
+      onBlockedUI();
+
+      debugPrint("📢 $blockedUserName 유저 차단 완료");
+    } catch (e) {
+      debugPrint("Block user error: $e");
+    } finally {
+      _setLoading(false); // [핵심] 성공/실패와 상관없이 빙글빙글 종료
+    }
+  }
+
+  // 게시글 신고 로직 (애플 가이드라인 준수)
+  Future<void> reportPost({
+    required String postId,
+    required String reporterId,
+    required String reason,
+  }) async {
+    _setLoading(true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('artifacts')
+          .doc('knu-exchange-app')
+          .collection('public')
+          .doc('data')
+          .collection('reports')
+          .add({
+        'postId': postId,
+        'reporterId': reporterId,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Report error: $e");
+    } finally {
+      _setLoading(false); // 로딩 해제
+    }
   }
 
   Future<void> addPost(Post post, {List<File>? images, required Function onRefresh}) async {
@@ -60,7 +120,6 @@ mixin CommunityActionMixin on ChangeNotifier {
       List<String> finalUrls = List.from(remainingUrls);
 
       if (newImages != null && newImages.isNotEmpty) {
-        // [수정] 서비스의 uploadPostImages에 prefix 파라미터 전달
         final uploadedNewUrls = await _service.uploadPostImages(post.id, newImages, prefix: "update");
         finalUrls.addAll(uploadedNewUrls);
       }
@@ -80,7 +139,6 @@ mixin CommunityActionMixin on ChangeNotifier {
         imageUrls: finalUrls,
       );
 
-      // [수정] 서비스의 updatePost 호출
       await _service.updatePost(updatedPost);
       await onRefresh();
     } catch (e) {
@@ -92,12 +150,15 @@ mixin CommunityActionMixin on ChangeNotifier {
   }
 
   Future<void> deletePost(String postId) async {
+    _setLoading(true); // 삭제 시에도 로딩 상태 관리 추가
     try {
       await _service.deletePost(postId);
       notifyListeners();
     } catch (e) {
       debugPrint("Delete post error: $e");
       rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -107,5 +168,6 @@ mixin CommunityActionMixin on ChangeNotifier {
     } catch (e) {
       debugPrint("Toggle like error: $e");
     }
+    // 좋아요는 보통 전체 화면 로딩을 걸지 않으므로 setLoading을 생략하거나 필요 시 추가합니다.
   }
 }

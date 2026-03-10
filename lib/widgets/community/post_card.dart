@@ -172,21 +172,32 @@ class PostCard extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              final authService = Provider.of<AuthService>(context, listen: false);
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final community = Provider.of<CommunityProvider>(context, listen: false);
 
-              // 1. 서버에 차단 등록
-              await authService.blockUser(authorId, authorName);
+              if (auth.user == null) return;
 
-              // 2. [매우 중요] 내 폰에 저장된 차단 목록을 서버와 동기화
-              await authProvider.refreshUserModel();
+              // [핵심 수정 1] 팝업창을 즉시 닫습니다.
+              // await 앞에 두어야 사용자가 버튼을 누르자마자 창이 사라집니다.
+              Navigator.pop(ctx);
 
-              // 3. 현재 화면에서 즉시 제거
-              communityProvider.removePostsByAuthor(authorId);
+              // 1. 차단 실행 (Mixin 로직 호출)
+              // 이제 Mixin에서 finally로 로딩을 해제하므로 빙글빙글이 멈출 것입니다.
+              await community.blockUser(
+                currentUserId: auth.user!.uid,
+                blockedUserId: authorId,
+                blockedUserName: authorName,
+                onBlockedUI: () {
+                  // 2. 즉시 UI에서 제거 (애플 필수 조건)
+                  community.removePostsByAuthor(authorId);
+                },
+              );
 
+              // 3. [동기화] 내 로컬 모델의 차단 목록 업데이트
+              await auth.refreshUserModel();
+
+              // [핵심 수정 2] SnackBar 표시 시 현재 화면이 살아있는지 확인
               if (context.mounted) {
-                Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('User blocked successfully.'))
                 );

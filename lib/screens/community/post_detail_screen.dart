@@ -79,6 +79,54 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  // [수정] 차단 다이얼로그 - 팝업 즉시 닫기 및 화면 종료 로직 강화
+  void _showBlockDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Block User'),
+        content: Text('Block "${_currentPost.authorName}"? \nYou will no longer see any posts from this user.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final community = Provider.of<CommunityProvider>(context, listen: false);
+
+              if (auth.user == null) return;
+
+              // 1. 차단 팝업창을 즉시 닫음 (사용자 경험 개선)
+              Navigator.pop(ctx);
+
+              // 2. 차단 실행 및 리스트에서 즉시 제거 (애플 Guideline 1.2 준수)
+              // 이제 Mixin에서 finally로 로딩을 해제하므로 빙글빙글이 멈춥니다.
+              await community.blockUser(
+                currentUserId: auth.user!.uid,
+                blockedUserId: _currentPost.authorId,
+                blockedUserName: _currentPost.authorName,
+                onBlockedUI: () {
+                  community.removePostsByAuthor(_currentPost.authorId);
+                },
+              );
+
+              // 3. 내 로컬 차단 목록 최신화
+              await auth.refreshUserModel();
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User blocked and content removed.'))
+                );
+                // 4. 상세 페이지 닫기 (차단한 유저의 글이므로 즉시 퇴장)
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Block', style: TextStyle(color: AppColors.knuRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showReportDialog() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isAuthenticated) {
@@ -103,7 +151,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // [중요] 키보드가 올라올 때 Scaffold가 바닥을 밀어올리도록 설정
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Post'),
@@ -128,18 +175,24 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               icon: const Icon(Icons.delete_outline, color: Colors.grey),
               onPressed: _confirmDelete,
             )
-          else
+          else ...[
+            // 차단 버튼 추가 (애플 권장사항)
+            IconButton(
+              icon: const Icon(Icons.block, color: Colors.grey),
+              onPressed: _showBlockDialog,
+            ),
             IconButton(
               icon: const Icon(Icons.report_problem_outlined, color: Colors.grey),
               onPressed: _showReportDialog,
             ),
+          ],
         ],
       ),
       body: _isFetching
           ? const Center(child: CircularProgressIndicator())
-          : Column( // [핵심 변경] 전체를 Column으로 구성
+          : Column(
         children: [
-          Expanded( // [핵심 변경] 본문 영역을 Expanded로 감싸 가변 높이 대응
+          Expanded(
             child: GestureDetector(
               onTap: () => FocusScope.of(context).unfocus(),
               child: SingleChildScrollView(
@@ -149,17 +202,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   children: [
                     PostDetailHeader(post: _currentPost),
                     const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
-
-                    // 게시글 본문 내용
                     PostDetailContent(
                       content: _currentPost.content,
                       imageUrls: _currentPost.imageUrls,
                     ),
-
-                    // 좋아요 및 댓글 수 액션 바
                     PostActionBar(post: _currentPost),
-
-                    // 구분선 및 댓글 섹션
                     Container(height: 8, color: AppColors.lightGrey),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -170,8 +217,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
             ),
           ),
-          // [핵심 변경] 입력창을 body의 Column 마지막 자식으로 배치
-          // 이렇게 하면 Scaffold의 높이가 키보드에 의해 줄어들 때 함께 위로 밀려 올라갑니다.
           CommentInput(postId: _currentPost.id),
         ],
       ),
