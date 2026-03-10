@@ -7,7 +7,7 @@ import '../../models/notification_item.dart';
 import '../../utils/app_colors.dart';
 import '../community/post_detail_screen.dart';
 import '../notice/notice_detail_screen.dart';
-import '../../widgets/settings/settings_profile_widgets.dart'; // SettingsLoginPrompt 사용
+import '../../widgets/settings/settings_profile_widgets.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -17,7 +17,6 @@ class NotificationScreen extends StatelessWidget {
     final auth = Provider.of<AuthProvider>(context);
     final notifProvider = Provider.of<NotificationProvider>(context);
 
-    // [핵심 수정] 비로그인 상태에서는 알림 목록 대신 로그인 안내 화면을 표시하여 Null check 에러를 방지합니다.
     if (!auth.isAuthenticated || auth.user == null) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -31,13 +30,12 @@ class NotificationScreen extends StatelessWidget {
         body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24.0),
-            child: SettingsLoginPrompt(), // 설정 탭에서 사용하는 로그인 유도 UI 재사용
+            child: SettingsLoginPrompt(),
           ),
         ),
       );
     }
 
-    // 로그인된 상태에서는 안전하게 uid를 참조할 수 있습니다.
     final String currentUserId = auth.user!.uid;
 
     return Scaffold(
@@ -71,9 +69,11 @@ class NotificationScreen extends StatelessWidget {
 
   Widget _buildNotificationItem(BuildContext context, NotificationItem item, String userId) {
     return ListTile(
-      tileColor: item.isRead ? Colors.white : AppColors.knuRed.withOpacity(0.05),
+      // [수정] withOpacity 대신 withValues 사용 (경고 해결)
+      tileColor: item.isRead ? Colors.white : AppColors.knuRed.withValues(alpha: 0.05),
       leading: CircleAvatar(
-        backgroundColor: item.isRead ? AppColors.lightGrey : AppColors.knuRed.withOpacity(0.1),
+        // [수정] withOpacity 대신 withValues 사용 (경고 해결)
+        backgroundColor: item.isRead ? AppColors.lightGrey : AppColors.knuRed.withValues(alpha: 0.1),
         child: Icon(
           item.type == NotificationType.comment
               ? Icons.comment_outlined
@@ -121,6 +121,7 @@ class NotificationScreen extends StatelessWidget {
           }
         } else {
           final communityProvider = context.read<CommunityProvider>();
+          // [참고] CommunityProvider에 fetchPostById가 정의되어 있어야 에러가 나지 않습니다.
           final targetPost = await communityProvider.fetchPostById(item.postId);
 
           if (targetPost != null && context.mounted) {

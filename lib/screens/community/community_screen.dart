@@ -10,7 +10,7 @@ import '../../widgets/community/post_card.dart';
 import '../../widgets/community/community_category_filter.dart';
 import '../../widgets/community/community_app_bar.dart';
 import '../../widgets/community/community_empty_state.dart';
-import '../../widgets/common/login_prompt_modal.dart'; // [추가] 모달 임포트
+import '../../widgets/common/login_prompt_modal.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -53,9 +53,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     if (!provider.isSearching &&
-        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       if (provider.hasMore && !provider.isLoadingMore) {
-        // [수정] blockedUsers를 반드시 넘겨줘야 합니다.
+        // [수정] 스크롤 시 차단 목록 전달
         provider.fetchPosts(
           userId: auth.user?.uid,
           blockedUsers: auth.userModel?.blockedUsers,
@@ -98,7 +99,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
             }
           });
         },
-        onSearchChanged: (val) => communityProvider.performSearch(val),
+        // [수정] 검색 시 차단 목록 전달
+        onSearchChanged: (val) => communityProvider.performSearch(
+          val,
+          blockedUsers: auth.userModel?.blockedUsers,
+        ),
       ),
       body: Column(
         children: [
@@ -109,15 +114,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
             selectedCategory: selectedCategory,
             isMyPostsSelected: isMyPostsOnly,
             onCategorySelected: (category) {
-              communityProvider.setCategory(category);
+              // [수정] 카테고리 변경 시 차단 목록 전달
+              communityProvider.setCategory(category, blockedUsers: auth.userModel?.blockedUsers);
             },
             onMyPostsSelected: (isActive) {
-              // [수정] 내 글 보기 시 로그인 여부 체크
               if (!auth.isAuthenticated) {
                 LoginPromptModal.show(context, message: 'Login is required to see your posts.');
                 return;
               }
-              communityProvider.setMyPostsOnly(isActive, auth.user?.uid);
+              // [수정] 내 글 보기 시 차단 목록 전달
+              communityProvider.setMyPostsOnly(isActive, auth.user?.uid, blockedUsers: auth.userModel?.blockedUsers);
             },
           ),
           const SizedBox(height: 4),
@@ -134,7 +140,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               onRefresh: () => communityProvider.fetchPosts(
                 isRefresh: true,
                 userId: auth.user?.uid,
-                blockedUsers: auth.userModel?.blockedUsers, // [수정] 누락된 인자 추가
+                blockedUsers: auth.userModel?.blockedUsers, //
               ),
               child: ListView.builder(
                 controller: _scrollController,
@@ -161,7 +167,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // [수정] 글쓰기 버튼 클릭 시 로그인 여부 체크
           if (!auth.isAuthenticated) {
             LoginPromptModal.show(context, message: 'Please log in to share your thoughts with the community.');
             return;
