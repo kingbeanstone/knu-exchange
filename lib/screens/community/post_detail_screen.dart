@@ -195,14 +195,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                 );
 
-                if (!_currentPost.isAnonymous) {
-                  items.add(
-                    const PopupMenuItem<String>(
-                      value: 'block',
-                      child: Text('Block user'),
-                    ),
-                  );
-                }
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'block',
+                    child: Text('Block user'),
+                  ),
+                );
 
                 return items;
               },

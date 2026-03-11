@@ -8,12 +8,16 @@ import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class PostCard extends StatelessWidget {
+  static final Set<String> _hiddenPosts = {};
   final Post post;
 
   const PostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
+    if (_hiddenPosts.contains(post.id)) {
+      return const SizedBox();
+    }
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -52,12 +56,10 @@ class PostCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        // [수정] withOpacity 대신 withValues 사용 (Line 61 경고 해결)
                         color: AppColors.knuRed.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -70,9 +72,36 @@ class PostCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       DateFormatter.formatRelativeTime(post.createdAt),
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                    const Spacer(),
+                    Transform.translate(
+                      offset: const Offset(4, 0),
+                      child: PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                        onSelected: (value) {
+                          if (value == 'hide') {
+                            final community = Provider.of<CommunityProvider>(context, listen: false);
+                            community.removePostsByAuthor(post.authorId);
+                            _hiddenPosts.add(post.id);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Post hidden')),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'hide',
+                            child: Text('Hide Post'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
