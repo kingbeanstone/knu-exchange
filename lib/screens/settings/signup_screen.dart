@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import '../auth/email_verification_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/auth/signup_form.dart';
+import '../settings/terms_of_service_screen.dart';
+import '../settings/privacy_policy_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -37,7 +40,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // 1. 약관 동의 여부 먼저 확인
     if (!_isEulaAgreed) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You must agree to the Terms (EULA) to continue.'))
+          const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy to continue.'))
       );
       return;
     }
@@ -123,13 +126,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   activeColor: AppColors.knuRed,
                 ),
                 Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      // 상세 약관 다이얼로그 추가 가능
-                    },
-                    child: const Text(
-                      'I agree to the Terms of Service (EULA). We have zero tolerance for objectionable content or abusive users.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      children: [
+                        const TextSpan(text: 'I agree to the '),
+                        TextSpan(
+                          text: 'Terms of Service',
+                          style: const TextStyle(
+                            color: AppColors.knuRed,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TermsOfServiceScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: ' and '),
+                        TextSpan(
+                          text: 'Privacy Policy',
+                          style: const TextStyle(
+                            color: AppColors.knuRed,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PrivacyPolicyScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
                     ),
                   ),
                 ),

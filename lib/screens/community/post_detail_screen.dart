@@ -176,14 +176,36 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               onPressed: _confirmDelete,
             )
           else ...[
-            // 차단 버튼 추가 (애플 권장사항)
-            IconButton(
-              icon: const Icon(Icons.block, color: Colors.grey),
-              onPressed: _showBlockDialog,
-            ),
-            IconButton(
-              icon: const Icon(Icons.report_problem_outlined, color: Colors.grey),
-              onPressed: _showReportDialog,
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onSelected: (value) {
+                if (value == 'report') {
+                  _showReportDialog();
+                } else if (value == 'block') {
+                  _showBlockDialog();
+                }
+              },
+              itemBuilder: (context) {
+                final items = <PopupMenuEntry<String>>[];
+
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'report',
+                    child: Text('Report post'),
+                  ),
+                );
+
+                if (!_currentPost.isAnonymous) {
+                  items.add(
+                    const PopupMenuItem<String>(
+                      value: 'block',
+                      child: Text('Block user'),
+                    ),
+                  );
+                }
+
+                return items;
+              },
             ),
           ],
         ],

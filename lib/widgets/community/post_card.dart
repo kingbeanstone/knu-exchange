@@ -141,13 +141,6 @@ class PostCard extends StatelessWidget {
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.block, size: 16, color: Colors.grey),
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                      onPressed: () => _showBlockDialog(context, post.authorId, post.author),
-                    ),
-                    const SizedBox(width: 12),
                     _buildStatItem(Icons.favorite_border, post.likes.toString()),
                     const SizedBox(width: 12),
                     _buildStatItem(Icons.chat_bubble_outline, post.comments.toString()),
