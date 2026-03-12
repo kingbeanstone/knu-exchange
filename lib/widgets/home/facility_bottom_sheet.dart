@@ -5,29 +5,29 @@ import '../../../utils/app_colors.dart';
 class FacilityBottomSheet extends StatelessWidget {
   final Facility facility;
   final VoidCallback onMoreInfo;
-  // 🗑️ onViewMenu 콜백 제거
 
   const FacilityBottomSheet({
     super.key,
     required this.facility,
     required this.onMoreInfo,
-    // 🗑️ 생성자에서 onViewMenu 제거
   });
 
   @override
   Widget build(BuildContext context) {
-    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final double screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPadding > 0 ? bottomPadding + 10 : 24),
+      // 1. 하단 시트의 전체 높이를 화면의 45% 정도로 고정 (원하는 높이로 조절 가능)
+      height: screenHeight * 0.30,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 상단 제목 섹션 (고정)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -61,11 +61,21 @@ class FacilityBottomSheet extends StatelessWidget {
             ],
           ),
           const Divider(height: 32),
-          Text(
-            facility.engDesc,
-            style: const TextStyle(fontSize: 15, height: 1.5),
+
+          // 2. 내용 섹션 (스크롤 가능하도록 Expanded + SingleChildScrollView 적용)
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(), // 부드러운 스크롤 효과
+              child: Text(
+                facility.engDesc,
+                style: const TextStyle(fontSize: 15, height: 1.5),
+              ),
+            ),
           ),
-          const SizedBox(height: 24),
+
+          const SizedBox(height: 16),
+
+          // 하단 버튼 섹션 (고정)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -79,7 +89,6 @@ class FacilityBottomSheet extends StatelessWidget {
               child: const Text('More Info'),
             ),
           ),
-          // 🗑️ View Menu 버튼(if (onViewMenu != null) ...) 블록 전체 삭제
         ],
       ),
     );
