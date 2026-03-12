@@ -64,7 +64,7 @@ class ContactScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.darkGrey),
                   ),
                   subtitle: const Text(
-                    'TeamMillionM@gmail.com',
+                    'TeamMillionM@gmail.com\nContact us for feedback, questions, or to report abusive or inappropriate content.',
                     style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   trailing: TextButton(
