@@ -3,7 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/link_utils.dart';
-import '../community/image_viewer_screen.dart';
+import '../common/full_screen_gallery.dart';
 
 class NoticeDetailBody extends StatefulWidget {
   final String content;
@@ -55,24 +55,29 @@ class _NoticeDetailBodyState extends State<NoticeDetailBody> {
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: GestureDetector(
                           onTap: () {
+                            // ✅ 수정: 삼성 스타일 갤러리로 이동
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ImageViewerScreen(
-                                  imageUrls: widget.imageUrls,
+                                builder: (context) => FullScreenGallery(
+                                  photos: widget.imageUrls,
                                   initialIndex: index,
                                 ),
                               ),
                             );
                           },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.imageUrls[index],
-                              width: double.infinity,
-                              height: 300,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(color: Colors.grey[100]),
+                          // ✅ 추가: Hero 애니메이션 적용
+                          child: Hero(
+                            tag: widget.imageUrls[index],
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: widget.imageUrls[index],
+                                width: double.infinity,
+                                height: 300,
+                                fit: BoxFit.cover,
+                                placeholder: (_, _) => Container(color: Colors.grey[100]),
+                              ),
                             ),
                           ),
                         ),
@@ -96,7 +101,7 @@ class _NoticeDetailBodyState extends State<NoticeDetailBody> {
                             shape: BoxShape.circle,
                             color: _currentPage == index
                                 ? AppColors.knuRed
-                                : Colors.white.withOpacity(0.6),
+                                : Colors.white.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -121,7 +126,7 @@ class _NoticeDetailBodyState extends State<NoticeDetailBody> {
               p: TextStyle(
                 fontSize: 16,
                 height: 1.7,
-                color: Colors.black.withOpacity(0.8),
+                color: Colors.black.withValues(alpha: 0.8),
                 letterSpacing: -0.2,
               ),
               strong: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),

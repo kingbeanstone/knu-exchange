@@ -123,6 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showFacilityDetail(Facility facility) async {
+    // ✅ [추가] 바텀 시트가 열리는 순간, 이 시설의 모든 사진 캐싱 시작
+    // 상세 페이지로 넘어가기 전 약 0.5~1초의 시간을 벌 수 있습니다.
+    _precacheFacilityInteriorImages(facility);
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -144,5 +148,16 @@ class _HomeScreenState extends State<HomeScreen> {
     ).whenComplete(() {
       _mapKey.currentState?.clearSelectedMarker();
     });
+  }
+
+// ✅ [추가] 특정 시설의 전체 사진을 미리 로드하는 함수
+  void _precacheFacilityInteriorImages(Facility facility) {
+    if (facility.interiorImages != null) {
+      for (var url in facility.interiorImages!) {
+        if (url.isNotEmpty) {
+          precacheImage(CachedNetworkImageProvider(url), context);
+        }
+      }
+    }
   }
 }

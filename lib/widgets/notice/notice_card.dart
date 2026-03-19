@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/notice.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/date_formatter.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // ✅ 추가
 
 class NoticeCard extends StatelessWidget {
   final Notice notice;
@@ -22,7 +23,7 @@ class NoticeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -31,7 +32,15 @@ class NoticeCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            // ✅ 불필요한 null 체크(!)와 조건문 제거로 경고 해결
+            if (notice.imageUrls.isNotEmpty) {
+              for (var url in notice.imageUrls) {
+                precacheImage(CachedNetworkImageProvider(url), context);
+              }
+            }
+            onTap();
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -44,7 +53,8 @@ class NoticeCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.knuRed.withOpacity(0.1),
+                        // ✅ 수정: withOpacity 대신 withValues 사용 (경고 예방)
+                        color: AppColors.knuRed.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Row(
@@ -65,10 +75,7 @@ class NoticeCard extends StatelessWidget {
                     ),
                     Text(
                       DateFormatter.formatRelativeTime(notice.createdAt),
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],
                 ),
@@ -81,11 +88,9 @@ class NoticeCard extends StatelessWidget {
                     color: AppColors.darkGrey,
                     height: 1.3,
                   ),
-                  // 제목이 길어질 경우 최대 2줄까지 표시하고 나머지는 생략 처리합니다.
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                // [수정] 본문 미리보기(notice.content) 섹션을 제거했습니다.
               ],
             ),
           ),

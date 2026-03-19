@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'image_viewer_screen.dart'; // [추가] 이미지 뷰어 스크린 임포트
+import 'package:cached_network_image/cached_network_image.dart'; // ✅ 추가
+import '../common/full_screen_gallery.dart'; // ✅ 수정: 공통 갤러리 임포트
 
 class PostDetailContent extends StatefulWidget {
   final String content;
@@ -36,14 +37,14 @@ class _PostDetailContentState extends State<PostDetailContent> {
                     setState(() => _currentPage = index);
                   },
                   itemBuilder: (context, index) {
-                    // 이미지를 터치하면 전체 화면 뷰어로 이동
                     return GestureDetector(
                       onTap: () {
+                        // ✅ 수정: 삼성 스타일 갤러리로 이동
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ImageViewerScreen(
-                              imageUrls: widget.imageUrls,
+                            builder: (context) => FullScreenGallery(
+                              photos: widget.imageUrls,
                               initialIndex: index,
                             ),
                           ),
@@ -51,34 +52,25 @@ class _PostDetailContentState extends State<PostDetailContent> {
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            widget.imageUrls[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            // [수정] 화질 저하 문제를 해결하기 위해 cacheHeight 제한을 제거합니다.
-                            // 이제 원본 해상도로 선명하게 렌더링됩니다.
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                height: 300,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(12),
+                        child: Hero(
+                          // ✅ 추가: Hero 애니메이션 적용
+                          tag: widget.imageUrls[index],
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: widget.imageUrls[index],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 300,
+                              // ✅ 화질을 위해 memCacheWidth 등은 설정하지 않음
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[100],
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 ),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                        : null,
-                                    strokeWidth: 2,
-                                    color: Colors.grey[300],
-                                  ),
-                                ),
-                              );
-                            },
+                              ),
+                              errorWidget: (context, url, error) => const Icon(Icons.error),
+                            ),
                           ),
                         ),
                       ),
@@ -94,7 +86,7 @@ class _PostDetailContentState extends State<PostDetailContent> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -115,7 +107,7 @@ class _PostDetailContentState extends State<PostDetailContent> {
               style: TextStyle(
                 fontSize: 17,
                 height: 1.7,
-                color: Colors.black.withOpacity(0.8),
+                color: Colors.black.withValues(alpha: 0.8),
                 letterSpacing: -0.3,
               ),
             ),

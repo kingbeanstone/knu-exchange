@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/notice/notice_detail_header.dart';
 import '../../widgets/notice/notice_detail_body.dart';
 import 'edit_notice_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class NoticeDetailScreen extends StatelessWidget {
   final String noticeId;
@@ -85,6 +86,12 @@ class NoticeDetailScreen extends StatelessWidget {
             imageUrls = List<String>.from(data['imageUrls']);
           } else if (data['imageUrl'] != null) {
             imageUrls = [data['imageUrl'] as String];
+          }
+          // ✅ [추가] 공지사항 이미지 캐싱 시작
+          if (imageUrls.isNotEmpty) {
+            for (var url in imageUrls) {
+              precacheImage(CachedNetworkImageProvider(url), context);
+            }
           }
 
           return SingleChildScrollView(

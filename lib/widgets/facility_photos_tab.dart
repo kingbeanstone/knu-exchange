@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'common/full_screen_gallery.dart'; // 방금 만든 파일 임포트
 
 class FacilityPhotosTab extends StatelessWidget {
   final List<String> photos;
@@ -17,7 +18,8 @@ class FacilityPhotosTab extends StatelessWidget {
           children: [
             Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text('No photos available yet.', style: TextStyle(color: Colors.grey)),
+            Text('No photos available yet.',
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -29,12 +31,19 @@ class FacilityPhotosTab extends StatelessWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: 1.0,
       ),
       itemCount: photos.length,
       itemBuilder: (context, index) {
         return GestureDetector(
-          onTap: () => _openPhotoGallery(context, index),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    FullScreenGallery(photos: photos, initialIndex: index),
+              ),
+            );
+          },
           child: Hero(
             tag: photos[index],
             child: ClipRRect(
@@ -42,34 +51,14 @@ class FacilityPhotosTab extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: photos[index],
                 fit: BoxFit.cover,
-                memCacheWidth: 300, // 메모리 효율을 위해 추가
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.error_outline, color: Colors.grey),
-                ),
+                // memCacheWidth를 제거해서 화질 유지
+                placeholder: (context, url) =>
+                    Container(color: Colors.grey[200]),
               ),
             ),
           ),
         );
       },
-    );
-  }
-
-  void _openPhotoGallery(BuildContext context, int initialIndex) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SamsungStyleGalleryScreen(
-          photos: photos,
-          initialIndex: initialIndex,
-        ),
-      ),
     );
   }
 }
@@ -116,11 +105,12 @@ class _SamsungStyleGalleryScreenState extends State<SamsungStyleGalleryScreen> {
         itemCount: widget.photos.length,
         builder: (context, index) {
           return PhotoViewGalleryPageOptions(
-            imageProvider: NetworkImage(widget.photos[index]),
+            // ✅ NetworkImage 대신 CachedNetworkImageProvider를 사용해야
+            // 미리 로딩(Precaching)된 데이터를 즉시 보여줍니다.
+            imageProvider: CachedNetworkImageProvider(widget.photos[index]),
             heroAttributes: PhotoViewHeroAttributes(tag: widget.photos[index]),
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 3.0,
-            // ❌ 기존 에러 원인: loadingBuilder는 여기서 정의하지 않습니다.
           );
         },
         pageController: _pageController,

@@ -6,6 +6,7 @@ import '../../utils/date_formatter.dart';
 import '../../screens/community/post_detail_screen.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // ✅ 임포트 추가
 
 class PostCard extends StatelessWidget {
   static final Set<String> _hiddenPosts = {};
@@ -37,11 +38,8 @@ class PostCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            if (post.imageUrls.isNotEmpty) {
-              for (var url in post.imageUrls) {
-                precacheImage(NetworkImage(url), context);
-              }
-            }
+            // 상세 페이지에서 쓸 원본을 한 번 더 캐싱 시도
+            precacheImage(CachedNetworkImageProvider(post.imageUrls.first), context);
 
             Navigator.push(
               context,
@@ -109,6 +107,7 @@ class PostCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 1. 왼쪽: 텍스트 정보 (제목, 본문)
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,22 +137,32 @@ class PostCard extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                    // 2. 오른쪽: 이미지 (이미지가 있을 때만 표시)
                     if (post.imageUrls.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            post.imageUrls.first,
-                            width: 70,
-                            height: 70,
-                            fit: BoxFit.cover,
-                            cacheWidth: 200,
-                            errorBuilder: (context, error, stackTrace) => Container(
+                        child: Hero(
+                          tag: post.imageUrls.first, // 상세 페이지와 연결되는 애니메이션 태그
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: post.imageUrls.first,
                               width: 70,
                               height: 70,
-                              color: Colors.grey[100],
-                              child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 20),
+                              fit: BoxFit.cover,
+                              memCacheWidth: 200, // 리스트용 저해상도 캐싱 (메모리 절약)
+                              placeholder: (context, url) => Container(
+                                width: 70,
+                                height: 70,
+                                color: Colors.grey[100],
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                width: 70,
+                                height: 70,
+                                color: Colors.grey[100],
+                                child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 20),
+                              ),
                             ),
                           ),
                         ),

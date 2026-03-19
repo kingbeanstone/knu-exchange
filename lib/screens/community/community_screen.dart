@@ -12,6 +12,7 @@ import '../../widgets/community/community_app_bar.dart';
 import '../../widgets/community/community_empty_state.dart';
 import '../../widgets/common/login_prompt_modal.dart';
 import 'create_post_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -43,6 +44,20 @@ class _CommunityScreenState extends State<CommunityScreen> {
       }
     });
   }
+  // 데이터를 가져온 직후 실행
+  void _precacheUpcomingImages(List<Post> posts) {
+    // 상위 10개 게시물의 첫 번째 이미지만 미리 캐싱
+    // 불러온 모든 게시글의 이미지를 캐싱
+    for (var post in posts) {
+      if (post.imageUrls.isNotEmpty) {
+        precacheImage(
+          CachedNetworkImageProvider(post.imageUrls.first),
+          context,
+        );
+      }
+    }
+  }
+
 
   // [추가] 유저 정보를 포함하여 첫 게시글을 불러오는 함수
   void _loadInitialData() {
@@ -54,7 +69,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
       isRefresh: true,
       userId: auth.user?.uid,
       blockedUsers: auth.userModel?.blockedUsers,
-    );
+    ).then((_) {
+      // ✅ [추가] 게시글 로딩이 완료된 후 이미지를 미리 캐싱합니다.
+      if (mounted) {
+        _precacheUpcomingImages(community.posts);
+      }
+    });
   }
 
   @override

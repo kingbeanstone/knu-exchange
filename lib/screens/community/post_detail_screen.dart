@@ -9,9 +9,9 @@ import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
 import '../../widgets/community/post_detail_header.dart';
 import '../../widgets/community/post_detail_content.dart';
-import '../../widgets/community/comment_input.dart';
 import '../../widgets/report_dialog.dart';
 import 'edit_post_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -36,6 +36,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _initData() async {
     _currentPost = widget.post;
+    // ✅ [추가] 게시글의 모든 이미지 미리 로드
+    if (_currentPost.imageUrls.isNotEmpty) {
+      for (var url in _currentPost.imageUrls) {
+        precacheImage(CachedNetworkImageProvider(url), context);
+      }
+    }
+
     await context.read<CommentProvider>().loadComments(widget.post.id);
     if (mounted) {
       setState(() => _isFetching = false);

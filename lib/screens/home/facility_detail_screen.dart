@@ -31,19 +31,16 @@ class _FacilityDetailScreenState extends State<FacilityDetailScreen> with Single
   }
 
   void _precacheFacilityImages() {
-    // 1. 대표 이미지는 이미 Home에서 받았겠지만, 만약을 위해 한 번 더 체크
+    // 1. 대표 이미지 캐싱
     if (widget.facility.imageUrl != null && widget.facility.imageUrl!.isNotEmpty) {
       precacheImage(CachedNetworkImageProvider(widget.facility.imageUrl!), context);
     }
 
-    // 2. 내부 사진은 딱 상위 3장만 먼저 로드합니다. (로딩 속도 최적화의 핵심)
+    // 2. 내부 사진 전체 캐싱 (3장 제한 삭제)
+    // 상세 페이지 'Photos' 탭을 누르기 전에 이미 메모리에 올라가게 됩니다.
     final interior = widget.facility.interiorImages;
     if (interior != null && interior.isNotEmpty) {
-      // 사진이 3장 미만일 경우를 고려해 개수 결정
-      int limit = interior.length > 3 ? 3 : interior.length;
-
-      for (int i = 0; i < limit; i++) {
-        final url = interior[i];
+      for (var url in interior) {
         if (url.isNotEmpty) {
           precacheImage(CachedNetworkImageProvider(url), context);
         }
