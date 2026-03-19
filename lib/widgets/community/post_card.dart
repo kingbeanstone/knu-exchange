@@ -84,19 +84,26 @@ class PostCard extends StatelessWidget {
                         icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
                         onSelected: (value) {
                           if (value == 'hide') {
+                            // 숨기기 로직
                             final community = Provider.of<CommunityProvider>(context, listen: false);
                             community.removePostsByAuthor(post.authorId);
                             _hiddenPosts.add(post.id);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Post hidden')),
-                            );
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post hidden')));
+                          }
+                          // ✅ [추가] 차단 메뉴 선택 시 함수 호출
+                          else if (value == 'block') {
+                            _showBlockDialog(context, post.authorId, post.author);
                           }
                         },
                         itemBuilder: (context) => [
                           const PopupMenuItem(
                             value: 'hide',
                             child: Text('Hide Post'),
+                          ),
+                          // ✅ [추가] 차단 메뉴 아이템 추가
+                          const PopupMenuItem(
+                            value: 'block',
+                            child: Text('Block User', style: TextStyle(color: Colors.red)),
                           ),
                         ],
                       ),
