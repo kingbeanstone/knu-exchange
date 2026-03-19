@@ -79,6 +79,14 @@ class NoticeDetailScreen extends StatelessWidget {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
+          // [수정] 다중 이미지 리스트 추출 및 하위 호환성 처리
+          List<String> imageUrls = [];
+          if (data['imageUrls'] != null) {
+            imageUrls = List<String>.from(data['imageUrls']);
+          } else if (data['imageUrl'] != null) {
+            imageUrls = [data['imageUrl'] as String];
+          }
+
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +96,13 @@ class NoticeDetailScreen extends StatelessWidget {
                   createdAt: data['createdAt'] as Timestamp,
                 ),
                 const Divider(height: 1, thickness: 1, color: AppColors.lightGrey),
-                NoticeDetailBody(content: data['content'] ?? ''),
+
+                // [수정] 단일 imageUrl 대신 imageUrls 리스트 전달
+                NoticeDetailBody(
+                  content: data['content'] ?? '',
+                  imageUrls: imageUrls,
+                ),
+
                 const SizedBox(height: 60),
               ],
             ),
@@ -109,6 +123,14 @@ class NoticeDetailScreen extends StatelessWidget {
         final data = snapshot.data!.data() as Map<String, dynamic>?;
         if (data == null) return const SizedBox();
 
+        // [수정] 관리자 메뉴에서도 이미지 리스트 추출
+        List<String> imageUrls = [];
+        if (data['imageUrls'] != null) {
+          imageUrls = List<String>.from(data['imageUrls']);
+        } else if (data['imageUrl'] != null) {
+          imageUrls = [data['imageUrl'] as String];
+        }
+
         return PopupMenuButton<String>(
           icon: const Icon(Icons.more_horiz),
           onSelected: (value) {
@@ -120,6 +142,7 @@ class NoticeDetailScreen extends StatelessWidget {
                     noticeId: noticeId,
                     initialTitle: data['title'] ?? '',
                     initialContent: data['content'] ?? '',
+                    initialImageUrls: imageUrls, // [수정] initialImageUrls 리스트 전달
                   ),
                 ),
               );

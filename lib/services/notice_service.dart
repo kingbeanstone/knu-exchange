@@ -15,26 +15,42 @@ class NoticeService {
         snapshot.docs.map((doc) => Notice.fromFirestore(doc)).toList());
   }
 
-  /// [추가] 공지사항 작성 - Cloud Functions 트리거 경로와 일치시킴
-  Future<void> addNotice(String title, String content) async {
+  /// [수정] 공지사항 작성 - imageUrls 리스트 저장 지원
+  Future<void> addNotice(String title, String content, {List<String>? imageUrls}) async {
     try {
       await _firestore.collection('notices').add({
         'title': title,
         'content': content,
+        'imageUrls': imageUrls ?? [],
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint("Add notice error: $e");
+      debugPrint("Notice add error: $e");
       rethrow;
     }
   }
 
-  /// [추가] 공지사항 삭제
+  /// [수정] 공지사항 업데이트 - imageUrls 리스트 저장 지원
+  Future<void> updateNotice(String noticeId, String title, String content, {List<String>? imageUrls}) async {
+    try {
+      await _firestore.collection('notices').doc(noticeId).update({
+        'title': title,
+        'content': content,
+        'imageUrls': imageUrls ?? [],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Notice update error: $e");
+      rethrow;
+    }
+  }
+
+  /// 공지사항 삭제
   Future<void> deleteNotice(String noticeId) async {
     try {
       await _firestore.collection('notices').doc(noticeId).delete();
     } catch (e) {
-      debugPrint("Delete notice error: $e");
+      debugPrint("Notice delete error: $e");
       rethrow;
     }
   }
