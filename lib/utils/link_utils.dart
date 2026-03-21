@@ -16,15 +16,11 @@ class LinkUtil {
     final Uri uri = Uri.parse(processedUrl);
 
     try {
-      // 2. 실행 가능 여부 확인
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-      } else {
-        debugPrint("Could not launch $processedUrl");
-      }
+      // 2. 실행
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
     } catch (e) {
       debugPrint("Error launching URL: $e");
     }
