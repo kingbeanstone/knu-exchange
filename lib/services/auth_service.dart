@@ -29,6 +29,12 @@ class AuthService {
       return null;
     }
   }
+  Future<void> sendVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
 
   // 사용자 Firestore 프로필 생성 및 업데이트 공통 로직
   Future<void> _updateUserProfile(User user, {String? nickname}) async {

@@ -123,12 +123,12 @@ class AuthProvider with ChangeNotifier {
         user = FirebaseAuth.instance.currentUser;
 
         if (user != null && !user.emailVerified) {
-          await _authService.signOut();
+          // 인증되지 않았더라도 일단 _user에 저장하여 재발송 버튼이 작동할 수 있게 합니다.
+          _user = user;
           throw FirebaseAuthException(code: 'email-not-verified');
         }
 
         _user = user;
-        // 로그인 성공 시 유저 데이터 로드
         await _fetchUserData(user!.uid);
       }
     } finally {
@@ -166,6 +166,16 @@ class AuthProvider with ChangeNotifier {
       }
     }
     return false;
+  }
+  Future<void> resendVerificationEmail() async {
+    _setLoading(true);
+    try {
+      await _authService.sendVerificationEmail();
+      _isWaitingVerification = true;
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   /// 로그아웃 로직
