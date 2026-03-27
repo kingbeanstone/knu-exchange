@@ -169,23 +169,38 @@ class AuthProvider with ChangeNotifier {
   int get resendCooldown => _resendCooldown;
   Timer? _timer;
 
+  // [수정] Provider가 파괴될 때 타이머를 종료하여 메모리 누수를 방지합니다.
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+
   Future<void> resendVerificationEmailWithCooldown() async {
-    if (_resendCooldown > 0) return; // 쿨다운 중이면 실행 안 함
+    if (_resendCooldown > 0) return;
 
     try {
-      await resendVerificationEmail(); // 기존 재전송 함수 호출
+      await resendVerificationEmail();
 
-      // 60초 타이머 시작
+      // 기존에 혹시 돌아가고 있을지 모를 타이머를 먼저 취소합니다.
+      _timer?.cancel();
+
       _resendCooldown = 60;
+
+      // [수정] _timer 변수를 직접 사용하여 'unused' 경고를 해결합니다.
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_resendCooldown == 0) {
-          timer.cancel();
+          _timer?.cancel();
+          _timer = null;
+          notifyListeners();
         } else {
           _resendCooldown--;
           notifyListeners();
         }
       });
     } catch (e) {
+      debugPrint("Resend verification error: $e");
       rethrow;
     }
   }
