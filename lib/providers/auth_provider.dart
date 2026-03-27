@@ -153,6 +153,7 @@ class AuthProvider with ChangeNotifier {
     }
     return false;
   }
+
   Future<void> resendVerificationEmail() async {
     _setLoading(true);
     try {
@@ -161,6 +162,31 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     } finally {
       _setLoading(false);
+    }
+  }
+
+  int _resendCooldown = 0;
+  int get resendCooldown => _resendCooldown;
+  Timer? _timer;
+
+  Future<void> resendVerificationEmailWithCooldown() async {
+    if (_resendCooldown > 0) return; // 쿨다운 중이면 실행 안 함
+
+    try {
+      await resendVerificationEmail(); // 기존 재전송 함수 호출
+
+      // 60초 타이머 시작
+      _resendCooldown = 60;
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_resendCooldown == 0) {
+          timer.cancel();
+        } else {
+          _resendCooldown--;
+          notifyListeners();
+        }
+      });
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -203,6 +229,7 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   /// 회원가입 로직 (최종 개선 버전)
   Future<void> signUp(String email, String password, {required String nickname}) async {
     _setLoading(true);

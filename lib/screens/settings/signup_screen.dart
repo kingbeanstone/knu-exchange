@@ -37,7 +37,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // 1. 약관 동의 여부 먼저 확인
     if (!_isEulaAgreed) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy to continue.'))
@@ -45,14 +44,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // 2. 가입 진행
     FocusScope.of(context).unfocus();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text.trim();
+
     try {
+      // 1. 먼저 회원가입 시도
       await authProvider.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+        email,
+        password,
         nickname: _nicknameController.text.trim(),
       );
 
@@ -63,8 +65,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        String msg = _getErrorMessage(e.code);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        // 2. 만약 이미 가입된 이메일이라면?
+        if (e.code == 'email-already-in-use') {
+          try {
+            // 입력한 비밀번호로 로그인을 시도해봅니다.
+            await authProvider.login(email, password);
+
+            // 로그인이 성공했다면 이미 인증된 계정이므로 메인으로 이동하거나 처리 (필요시)
+            // 여기서는 일단 인증 페이지로 보내는 로직에 집중합니다.
+          } on FirebaseAuthException catch (loginError) {
+            // AuthProvider.login은 이메일 미인증 시 'email-not-verified' 에러를 던집니다.
+            if (loginError.code == 'email-not-verified') {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EmailVerificationScreen()),
+              );
+              return; // 에러 메시지 없이 바로 이동
+            }
+            // 비밀번호가 틀린 경우 등은 기존처럼 에러 메시지 표시
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_getErrorMessage(loginError.code)))
+            );
+          }
+        } else {
+          // 중복 이메일 외의 다른 가입 에러 처리
+          String msg = _getErrorMessage(e.code);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        }
       }
     } catch (e) {
       if (mounted) {
