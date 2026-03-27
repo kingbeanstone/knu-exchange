@@ -32,15 +32,15 @@ class SignUpForm extends StatelessWidget {
             controller: emailController,
             decoration: const InputDecoration(
               labelText: 'Email',
-              hintText: 'example@knu.ac.kr',
+              hintText: 'example@gmail.com',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.email_outlined),
             ),
             keyboardType: TextInputType.emailAddress,
             enabled: !isLoading,
             validator: (val) {
-              if (val == null || val.isEmpty) return '이메일을 입력해주세요.';
-              if (!val.contains('@') || !val.contains('.')) return '올바른 이메일 형식이 아닙니다.';
+              if (val == null || val.isEmpty) return 'Please enter your email.';
+              if (!val.contains('@') || !val.contains('.')) return 'Please enter a valid email address.';
               return null;
             },
           ),
@@ -51,14 +51,14 @@ class SignUpForm extends StatelessWidget {
             controller: nicknameController,
             decoration: const InputDecoration(
               labelText: 'Nickname',
-              hintText: '앱에서 사용할 이름을 입력하세요',
+            hintText: 'Enter the name you want to use in the app',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.person_outline),
             ),
             enabled: !isLoading,
             validator: (val) {
-              if (val == null || val.isEmpty) return '닉네임을 입력해주세요.';
-              if (val.length < 2) return '닉네임은 최소 2자 이상이어야 합니다.';
+              if (val == null || val.isEmpty) return 'Please enter a nickname.';
+              if (val.length < 2) return 'Nickname must be at least 2 characters.';
               return null;
             },
           ),
@@ -74,7 +74,7 @@ class SignUpForm extends StatelessWidget {
             ),
             obscureText: true,
             enabled: !isLoading,
-            validator: (val) => (val?.length ?? 0) < 6 ? '비밀번호는 최소 6자 이상입니다.' : null,
+            validator: (val) => (val?.length ?? 0) < 6 ? 'Password must be at least 6 characters.' : null,
           ),
           const SizedBox(height: 16),
 
@@ -89,7 +89,7 @@ class SignUpForm extends StatelessWidget {
             obscureText: true,
             enabled: !isLoading,
             validator: (val) {
-              if (val != passwordController.text) return '비밀번호가 일치하지 않습니다.';
+              if (val != passwordController.text) return 'Passwords do not match.';
               return null;
             },
           ),

@@ -5,6 +5,7 @@ class UserModel {
   final bool isExchangeStudent;  // 교환학생 여부
   final bool isAdmin;            // 관리자 여부 (추가)
   final String? photoUrl;        // 프로필 이미지
+  final List<String> blockedUsers; // [추가] 차단 유저 ID 리스트
 
   UserModel({
     required this.uid,
@@ -13,6 +14,7 @@ class UserModel {
     required this.isExchangeStudent,
     this.isAdmin = false,        // 기본값은 false
     this.photoUrl,
+    this.blockedUsers = const [], // [추가] 기본값 빈 리스트
   });
 
   // Firestore 저장용 Map 변환
@@ -24,6 +26,7 @@ class UserModel {
       'isExchangeStudent': isExchangeStudent,
       'isAdmin': isAdmin,
       'photoUrl': photoUrl,
+      'blockedUsers': blockedUsers, // [추가]
     };
   }
 
@@ -36,6 +39,7 @@ class UserModel {
       isExchangeStudent: map['isExchangeStudent'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
       photoUrl: map['photoUrl'],
+      blockedUsers: List<String>.from(map['blockedUsers'] ?? []), // [추가]
     );
   }
 }

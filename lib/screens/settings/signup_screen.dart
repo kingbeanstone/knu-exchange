@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import '../auth/email_verification_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/auth/signup_form.dart';
+import '../settings/terms_of_service_screen.dart';
+import '../settings/privacy_policy_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,6 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nicknameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isEulaAgreed = false;
 
   @override
   void dispose() {
@@ -28,9 +33,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // [통합 수정] 약관 체크와 회원가입 로직을 하나로 합쳤습니다.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 1. 약관 동의 여부 먼저 확인
+    if (!_isEulaAgreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must agree to the Terms of Service and Privacy Policy to continue.'))
+      );
+      return;
+    }
+
+    // 2. 가입 진행
     FocusScope.of(context).unfocus();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -42,7 +57,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (mounted) {
-        _showSuccessDialog();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const EmailVerificationScreen()),
+        );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -51,40 +68,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('에러: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   String _getErrorMessage(String code) {
     switch (code) {
-      case 'email-already-in-use': return '이미 사용 중인 이메일입니다.';
-      case 'weak-password': return '비밀번호가 너무 취약합니다.';
-      case 'invalid-email': return '유효하지 않은 이메일 형식입니다.';
-      default: return '회원가입 중 오류가 발생했습니다.';
+      case 'email-already-in-use': return 'This email is already in use.';
+      case 'weak-password': return 'The password is too weak.';
+      case 'invalid-email': return 'Invalid email format.';
+      default: return 'An error occurred during sign up.';
     }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('인증 메일 발송'),
-        content: const Text(
-          '가입하신 이메일로 인증 메일을 보냈습니다.\n메일함의 링크를 클릭하여 인증을 완료해주세요.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -109,7 +104,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.knuRed),
             ),
             const SizedBox(height: 8),
-            const Text('경북대 캠퍼스 라이프를 시작해보세요.', style: TextStyle(color: Colors.grey)),
+            const Text('Start your KNU campus life today.', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 32),
 
             SignUpForm(
@@ -121,8 +116,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
               isLoading: authProvider.isLoading,
               onSubmit: _submit,
             ),
+            const SizedBox(height: 16),
 
-            // [삭제] 소셜 로그인 섹션(구글/애플)이 제거되었습니다.
+            Row(
+              children: [
+                Checkbox(
+                  value: _isEulaAgreed,
+                  onChanged: (val) => setState(() => _isEulaAgreed = val ?? false),
+                  activeColor: AppColors.knuRed,
+                ),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      children: [
+                        const TextSpan(text: 'I agree to the '),
+                        TextSpan(
+                          text: 'Terms of Service',
+                          style: const TextStyle(
+                            color: AppColors.knuRed,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TermsOfServiceScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: ' and '),
+                        TextSpan(
+                          text: 'Privacy Policy',
+                          style: const TextStyle(
+                            color: AppColors.knuRed,
+                            decoration: TextDecoration.underline,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PrivacyPolicyScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 24),
             _buildLoginLink(),

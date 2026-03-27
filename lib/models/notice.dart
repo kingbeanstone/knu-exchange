@@ -1,20 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Notice {
-  final String date;    // 공지 날짜
-  final String title;   // 공지 제목
-  final String content; // 공지 내용
+  final String id;
+  final String title;
+  final String content;
+  final DateTime createdAt;
+  // [수정] 단일 이미지 URL에서 리스트 형태로 변경
+  final List<String> imageUrls;
 
   Notice({
-    required this.date,
+    required this.id,
     required this.title,
     required this.content,
+    required this.createdAt,
+    required this.imageUrls,
   });
 
-  // 구글 시트 CSV의 한 행(row) 데이터를 객체로 변환
-  factory Notice.fromCsv(List<dynamic> row) {
+  factory Notice.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    // [수정] Firestore의 'imageUrls' 필드를 리스트로 안전하게 변환
+    List<String> urls = [];
+    if (data['imageUrls'] != null) {
+      urls = List<String>.from(data['imageUrls']);
+    } else if (data['imageUrl'] != null) {
+      // 기존 단일 데이터 사용자를 위한 하위 호환성 유지
+      urls = [data['imageUrl'] as String];
+    }
+
     return Notice(
-      date: row.length > 0 ? row[0].toString().trim() : '',
-      title: row.length > 1 ? row[1].toString().trim() : '제목 없음',
-      content: row.length > 2 ? row[2].toString().trim() : '',
+      id: doc.id,
+      title: data['title'] ?? '',
+      content: data['content'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      imageUrls: urls,
     );
   }
 }

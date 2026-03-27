@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/comment_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/app_colors.dart';
+import '../../../models/comment.dart';
 import 'comment_item.dart';
 
 class CommentList extends StatelessWidget {
@@ -31,17 +32,38 @@ class CommentList extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
+    // 계층 구조 정렬 로직
+    final List<Comment> organizedComments = [];
+    final Map<String?, List<Comment>> commentGroups = {};
+
+    for (var comment in provider.comments) {
+      commentGroups.putIfAbsent(comment.parentId, () => []).add(comment);
+    }
+
+    final parents = commentGroups[null] ?? [];
+    for (var parent in parents) {
+      organizedComments.add(parent);
+      final replies = commentGroups[parent.id] ?? [];
+      organizedComments.addAll(replies);
+    }
+
+    return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: provider.comments.length,
-      separatorBuilder: (_, __) => const Divider(height: 24),
+      itemCount: organizedComments.length,
       itemBuilder: (context, index) {
-        final comment = provider.comments[index];
-        return CommentItem(
-          comment: comment,
-          isMyComment: auth.user?.uid == comment.authorId,
-          onDelete: () => _confirmDelete(context, provider, comment.id),
+        final comment = organizedComments[index];
+        return Column(
+          children: [
+            CommentItem(
+              postId: postId, // [수정] postId 전달
+              comment: comment,
+              isMyComment: auth.user?.uid == comment.authorId,
+              onDelete: () => _confirmDelete(context, provider, comment.id),
+            ),
+            if (index < organizedComments.length - 1)
+              const Divider(height: 1, color: AppColors.lightGrey),
+          ],
         );
       },
     );

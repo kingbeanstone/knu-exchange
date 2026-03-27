@@ -1,0 +1,205 @@
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/facility.dart';
+import '../../utils/app_colors.dart';
+import '../../widgets/facility_photos_tab.dart';
+import '../../widgets/facility_menu_tab.dart';
+
+class FacilityDetailScreen extends StatefulWidget {
+  final Facility facility;
+  const FacilityDetailScreen({super.key, required this.facility});
+
+  @override
+  State<FacilityDetailScreen> createState() => _FacilityDetailScreenState();
+}
+
+class _FacilityDetailScreenState extends State<FacilityDetailScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late bool _showMenuTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _showMenuTab = widget.facility.category == 'Restaurant' || widget.facility.category == 'Cafe';
+    _tabController = TabController(length: _showMenuTab ? 3 : 2, vsync: this);
+
+    // 화면 프레임 렌더링 후 이미지 캐싱 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _precacheFacilityImages();
+    });
+  }
+
+  void _precacheFacilityImages() {
+    // 1. 대표 이미지 캐싱
+    if (widget.facility.imageUrl != null && widget.facility.imageUrl!.isNotEmpty) {
+      precacheImage(CachedNetworkImageProvider(widget.facility.imageUrl!), context);
+    }
+
+    // 2. 내부 사진 전체 캐싱 (3장 제한 삭제)
+    // 상세 페이지 'Photos' 탭을 누르기 전에 이미 메모리에 올라가게 됩니다.
+    final interior = widget.facility.interiorImages;
+    if (interior != null && interior.isNotEmpty) {
+      for (var url in interior) {
+        if (url.isNotEmpty) {
+          precacheImage(CachedNetworkImageProvider(url), context);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('facilities').doc(widget.facility.id).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return Scaffold(body: Center(child: Text("Error: ${snapshot.error}")));
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final List<String> customHeaders = List<String>.from(data['menuHeaders'] ?? []);
+
+        final f = Facility(
+          id: widget.facility.id,
+          korName: data['korName'] ?? '',
+          engName: data['engName'] ?? '',
+          latitude: widget.facility.latitude,
+          longitude: widget.facility.longitude,
+          korDesc: data['korDesc'] ?? '',
+          engDesc: data['engDesc'] ?? '',
+          category: data['category'] ?? '',
+          imageUrl: data['imageUrl'],
+          operatingHours: data['operatingHours'],
+          interiorImages: List<String>.from(data['interiorImages'] ?? []),
+        );
+
+        return Scaffold(
+          body: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverAppBar(
+                  expandedHeight: 200.0,
+                  pinned: true,
+                  backgroundColor: AppColors.knuRed,
+                  foregroundColor: Colors.white,
+                  flexibleSpace: LayoutBuilder( // ✅ 원래의 LayoutBuilder 로직 복구
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      var top = constraints.biggest.height;
+                      // 스크롤 정도에 따른 패딩 계산 (기존 로직)
+                      double expandRatio = ((top - 104) / (200 - 104)).clamp(0.0, 1.0);
+                      double paddingStart = 56.0 - (36.0 * expandRatio);
+
+                      return FlexibleSpaceBar(
+                        centerTitle: false,
+                        titlePadding: EdgeInsetsDirectional.only(
+                          start: paddingStart,
+                          bottom: 62,
+                        ),
+                        title: Text(
+                          f.engName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        background: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            f.imageUrl != null && f.imageUrl!.isNotEmpty
+                                ? CachedNetworkImage(
+                              imageUrl: f.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) => Container(color: Colors.grey[300]),
+                            )
+                                : Container(color: Colors.grey[300]),
+                            const DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black54],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(48),
+                    child: Container(
+                      color: Colors.white,
+                      child: TabBar(
+                        controller: _tabController,
+                        labelColor: AppColors.knuRed,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: AppColors.knuRed,
+                        tabs: [
+                          const Tab(text: 'Home'),
+                          if (_showMenuTab) const Tab(text: 'Menu'),
+                          const Tab(text: 'Photos'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildHomeTab(f),
+                if (_showMenuTab) FacilityMenuTab(facility: f, customHeaders: customHeaders),
+                FacilityPhotosTab(photos: f.interiorImages ?? []),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // _buildHomeTab 및 _buildInfoRow 위젯은 기존과 동일하게 유지하시면 됩니다.
+  Widget _buildHomeTab(Facility f) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow(Icons.category, "Category", f.category),
+          _buildInfoRow(Icons.access_time, "Operating Hours", f.operatingHours ?? "Not specified"),
+          const Divider(height: 40),
+          const Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Text(f.engDesc, style: const TextStyle(fontSize: 16, height: 1.6)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.knuRed, size: 22),
+          const SizedBox(width: 15),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              Text(content, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

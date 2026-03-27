@@ -34,8 +34,8 @@ class MarkerIcon extends StatelessWidget {
     }
 
     return Container(
-      width: 48,
-      height: 48,
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
@@ -50,7 +50,7 @@ class MarkerIcon extends StatelessWidget {
       child: Icon(
         icon,
         color: Colors.white,
-        size: 28,
+        size: 16,
       ),
     );
   }

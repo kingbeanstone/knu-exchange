@@ -7,7 +7,11 @@ import '../../providers/auth_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/community/comment_section.dart';
 import '../../widgets/community/post_action_bar.dart';
+import '../../widgets/community/post_detail_header.dart';
+import '../../widgets/community/post_detail_content.dart';
 import '../../widgets/report_dialog.dart';
+import 'edit_post_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -25,21 +29,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   void initState() {
     super.initState();
     _currentPost = widget.post;
-    _initData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initData();
+    });
   }
 
   Future<void> _initData() async {
-    final communityProvider = Provider.of<CommunityProvider>(context, listen: false);
-    final commentProvider = Provider.of<CommentProvider>(context, listen: false);
+    _currentPost = widget.post;
+    // ✅ [추가] 게시글의 모든 이미지 미리 로드
+    if (_currentPost.imageUrls.isNotEmpty) {
+      for (var url in _currentPost.imageUrls) {
+        precacheImage(CachedNetworkImageProvider(url), context);
+      }
+    }
 
-    await Future.wait([
-      communityProvider.getPostDetail(widget.post.id).then((p) {
-        if (p != null && mounted) setState(() => _currentPost = p);
-      }),
-      commentProvider.loadComments(widget.post.id),
-    ]);
+    await context.read<CommentProvider>().loadComments(widget.post.id);
+    if (mounted) {
+      setState(() => _isFetching = false);
+    }
+  }
 
-    if (mounted) setState(() => _isFetching = false);
+  void _syncPostData() {
+    final posts = context.read<CommunityProvider>().posts;
+    final updated = posts.firstWhere((p) => p.id == _currentPost.id, orElse: () => _currentPost);
+    setState(() {
+      _currentPost = updated;
+    });
   }
 
   void _confirmDelete() {
@@ -54,7 +69,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await Provider.of<CommunityProvider>(context, listen: false).removePost(_currentPost.id);
+                await Provider.of<CommunityProvider>(context, listen: false)
+                    .deletePost(widget.post.id);
                 if (mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted.')));
@@ -70,46 +86,133 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  // [수정] 차단 다이얼로그 - 팝업 즉시 닫기 및 화면 종료 로직 강화
+  void _showBlockDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Block User'),
+        content: Text('Block "${_currentPost.authorName}"? \nYou will no longer see any posts from this user.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final community = Provider.of<CommunityProvider>(context, listen: false);
+
+              if (auth.user == null) return;
+
+              // 1. 차단 팝업창을 즉시 닫음 (사용자 경험 개선)
+              Navigator.pop(ctx);
+
+              // 2. 차단 실행 및 리스트에서 즉시 제거 (애플 Guideline 1.2 준수)
+              // 이제 Mixin에서 finally로 로딩을 해제하므로 빙글빙글이 멈춥니다.
+              await community.blockUser(
+                currentUserId: auth.user!.uid,
+                blockedUserId: _currentPost.authorId,
+                blockedUserName: _currentPost.authorName,
+                onBlockedUI: () {
+                  community.removePostsByAuthor(_currentPost.authorId);
+                },
+              );
+
+              // 3. 내 로컬 차단 목록 최신화
+              await auth.refreshUserModel();
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User blocked and content removed.'))
+                );
+                // 4. 상세 페이지 닫기 (차단한 유저의 글이므로 즉시 퇴장)
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Block', style: TextStyle(color: AppColors.knuRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showReportDialog() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     if (!auth.isAuthenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('신고를 위해 로그인이 필요합니다.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Login is required to report.')));
       return;
     }
     showDialog(
       context: context,
-      builder: (context) => ReportDialog(targetId: _currentPost.id, targetType: 'post'),
+      builder: (context) => ReportDialog(
+        targetId: _currentPost.id,
+        targetType: 'post',
+        reportedUserId: _currentPost.authorId,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-
-    // [수정] 본인의 글이거나 관리자(isAdmin)인 경우 삭제 권한 부여
-    final bool canDelete = auth.isAuthenticated && (auth.user?.uid == _currentPost.authorId || auth.isAdmin);
+    final bool isAuthor = auth.isAuthenticated && auth.user?.uid == _currentPost.authorId;
+    final bool canDelete = isAuthor || auth.isAdmin;
 
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('Post Detail'),
-        backgroundColor: AppColors.knuRed,
-        foregroundColor: Colors.white,
+        title: const Text('Post'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
+        centerTitle: true,
         actions: [
-          // [수정] 권한이 있으면 삭제 아이콘, 없으면 신고 아이콘 노출
+          if (isAuthor)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.grey),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditPostScreen(post: _currentPost)),
+                );
+                _syncPostData();
+              },
+            ),
           if (canDelete)
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Icons.delete_outline, color: Colors.grey),
               onPressed: _confirmDelete,
-              tooltip: 'Delete post',
             )
-          else
-            IconButton(
-              icon: const Icon(Icons.report_problem_outlined),
-              onPressed: _showReportDialog,
-              tooltip: 'Report this post',
+          else ...[
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onSelected: (value) {
+                if (value == 'report') {
+                  _showReportDialog();
+                } else if (value == 'block') {
+                  _showBlockDialog();
+                }
+              },
+              itemBuilder: (context) {
+                final items = <PopupMenuEntry<String>>[];
+
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'report',
+                    child: Text('Report post'),
+                  ),
+                );
+
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'block',
+                    child: Text('Block user'),
+                  ),
+                );
+
+                return items;
+              },
             ),
+          ],
         ],
       ),
       body: _isFetching
@@ -117,50 +220,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           : Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const Divider(height: 40),
-                  SelectionArea(
-                      child: Text(_currentPost.content, style: const TextStyle(fontSize: 16, height: 1.7))
-                  ),
-                  const SizedBox(height: 40),
-                  CommentSection(postId: _currentPost.id),
-                ],
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PostDetailHeader(post: _currentPost),
+                    const Divider(thickness: 1, height: 1, color: AppColors.lightGrey),
+                    PostDetailContent(
+                      content: _currentPost.content,
+                      imageUrls: _currentPost.imageUrls,
+                    ),
+                    PostActionBar(post: _currentPost),
+                    Container(height: 8, color: AppColors.lightGrey),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      child: CommentSection(postId: _currentPost.id),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           CommentInput(postId: _currentPost.id),
         ],
       ),
-      bottomNavigationBar: PostActionBar(post: _currentPost),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: AppColors.knuRed.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(_currentPost.categoryLabel.toUpperCase(), style: const TextStyle(color: AppColors.knuRed, fontSize: 11, fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 16),
-        Text(_currentPost.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, height: 1.3)),
-        const SizedBox(height: 20),
-        Row(children: [
-          const CircleAvatar(backgroundColor: AppColors.lightGrey, child: Icon(Icons.person, color: Colors.grey)),
-          const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_currentPost.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            Text('${_currentPost.createdAt.year}.${_currentPost.createdAt.month}.${_currentPost.createdAt.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ]),
-        ]),
-      ],
     );
   }
 }

@@ -61,7 +61,13 @@ class _PostActionBarState extends State<PostActionBar> {
   void _showLoginRequest() {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: const Text("Log in is required."),
-      action: SnackBarAction(label: "Login", onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()))),
+      action: SnackBarAction(
+        label: "Login",
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        ),
+      ),
     ));
   }
 
@@ -70,23 +76,45 @@ class _PostActionBarState extends State<PostActionBar> {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey.shade200))),
-        child: Row(children: [
-          InkWell(
-            onTap: _handleLike,
-            child: Row(children: [
-              Icon(_isLiked ? Icons.favorite : Icons.favorite_border, color: AppColors.knuRed, size: 24),
-              const SizedBox(width: 8),
-              Text('$_likeCount', style: const TextStyle(color: AppColors.knuRed, fontWeight: FontWeight.bold, fontSize: 16)),
-            ]),
-          ),
-          const SizedBox(width: 24),
-          Icon(Icons.chat_bubble_outline, color: Colors.grey[600], size: 22),
-          const SizedBox(width: 8),
-          Text('${widget.post.comments}', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined, color: Colors.grey)),
-        ]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            // 좋아요 섹션
+            InkWell(
+              onTap: _handleLike,
+              child: Row(
+                children: [
+                  Icon(
+                    _isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: AppColors.knuRed,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$_likeCount',
+                    style: const TextStyle(
+                      color: AppColors.knuRed,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            // 댓글 수 섹션
+            Icon(Icons.chat_bubble_outline, color: Colors.grey[600], size: 22),
+            const SizedBox(width: 8),
+            Text(
+              '${widget.post.comments}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+            // 공유 버튼이 제거되어 Spacer와 IconButton 코드가 삭제되었습니다.
+          ],
+        ),
       ),
     );
   }
