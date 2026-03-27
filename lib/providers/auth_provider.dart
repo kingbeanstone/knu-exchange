@@ -137,20 +137,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// 회원가입 로직
-  Future<void> signUp(String email, String password, {required String nickname}) async {
-    _setLoading(true);
-    try {
-      final credential = await _authService.signUp(email, password, nickname: nickname);
-      if (credential.user != null) {
-        await credential.user!.sendEmailVerification();
-        _isWaitingVerification = true;
-        notifyListeners();
-      }
-    } finally {
-      _setLoading(false);
-    }
-  }
 
   /// 이메일 인증 확인 메서드
   Future<bool> checkEmailVerified() async {
@@ -215,6 +201,28 @@ class AuthProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
       notifyListeners();
+    }
+  }
+  /// 회원가입 로직 (최종 개선 버전)
+  Future<void> signUp(String email, String password, {required String nickname}) async {
+    _setLoading(true);
+    try {
+      // 1. 서비스 호출하여 유저 생성 및 Firestore 프로필 저장
+      final credential = await _authService.signUp(email, password, nickname: nickname);
+
+      if (credential.user != null) {
+        // 2. 인증 이메일 발송
+        await credential.user!.sendEmailVerification();
+
+        _isWaitingVerification = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      // 에러 발생 시 로그를 남기고 UI(Screen)로 에러를 던짐
+      debugPrint("❌ 회원가입/메일발송 에러: $e");
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 }
