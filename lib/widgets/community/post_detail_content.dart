@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // ✅ 추가
 import '../common/full_screen_gallery.dart'; // ✅ 수정: 공통 갤러리 임포트
 
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:markdown/markdown.dart' as md;
+import '../../utils/link_utils.dart';
+
 class PostDetailContent extends StatefulWidget {
   final String content;
   final List<String> imageUrls;
@@ -102,13 +106,21 @@ class _PostDetailContentState extends State<PostDetailContent> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
           child: SelectionArea(
-            child: Text(
-              widget.content,
-              style: TextStyle(
-                fontSize: 17,
-                height: 1.7,
-                color: Colors.black.withValues(alpha: 0.8),
-                letterSpacing: -0.3,
+            child: MarkdownBody(
+              data: widget.content,
+              extensionSet: md.ExtensionSet.gitHubWeb,
+              onTapLink: (text, href, title) {
+                if (href != null) {
+                  LinkUtil.launch(href);
+                }
+              },
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(
+                  fontSize: 17,
+                  height: 1.7,
+                  color: Colors.black.withValues(alpha: 0.8),
+                  letterSpacing: -0.3,
+                ),
               ),
             ),
           ),
